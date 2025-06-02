@@ -1,0 +1,126 @@
+{
+  "tools": [
+    {
+      "name": "openai",
+      "description": "Use OpenAI model to generate responses for various tasks including text generation, analysis, and creative writing",
+      "provider": "openai",
+      "modelClass": "ChatOpenAI",
+      "defaultModel": "gpt-4-1106-preview",
+      "modelOptions": [
+        "gpt-4",
+        "gpt-4-turbo",
+        "gpt-3.5-turbo",
+        "gpt-4-1106-preview"
+      ]
+    },
+    {
+      "name": "anthropic",
+      "description": "Use Anthropic Claude model to generate responses, analysis, and creative content with advanced reasoning capabilities",
+      "provider": "anthropic",
+      "modelClass": "ChatAnthropic",
+      "defaultModel": "claude-3-5-sonnet-20240620",
+      "modelOptions": [
+        "claude-3-5-sonnet-20240620",
+        "claude-3-opus-20240229",
+        "claude-3-sonnet-20240229",
+        "claude-3-haiku-20240307"
+      ]
+    },
+    {
+      "name": "gemini",
+      "description": "Use Google Gemini model for text generation, analysis, and creative tasks with multimodal capabilities",
+      "provider": "google",
+      "modelClass": "custom",
+      "defaultModel": "gemini-1.5-pro",
+      "modelOptions": [
+        "gemini-1.5-pro",
+        "gemini-1.5-flash",
+        "gemini-pro",
+        "gemini-pro-vision"
+      ],
+      "customParameters": {
+        "temperature": {
+          "type": "number",
+          "description": "Sampling temperature for response generation",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    {
+      "name": "cohere",
+      "description": "Use Cohere models for text generation, classification, and semantic search tasks",
+      "provider": "cohere",
+      "modelClass": "custom",
+      "defaultModel": "command-r-plus",
+      "modelOptions": [
+        "command-r-plus",
+        "command-r",
+        "command",
+        "command-light"
+      ]
+    },
+    {
+      "name": "huggingface",
+      "description": "Use Hugging Face models for various NLP tasks including text generation, translation, and analysis",
+      "provider": "huggingface",
+      "modelClass": "custom",
+      "defaultModel": "meta-llama/Llama-2-7b-chat-hf",
+      "modelOptions": [
+        "meta-llama/Llama-2-7b-chat-hf",
+        "meta-llama/Llama-2-13b-chat-hf",
+        "mistralai/Mistral-7B-Instruct-v0.1",
+        "microsoft/DialoGPT-medium"
+      ],
+      "customParameters": {
+        "temperature": {
+          "type": "number",
+          "description": "Sampling temperature for response generation"
+        },
+        "top_p": {
+          "type": "number",
+          "description": "Nucleus sampling parameter"
+        }
+      }
+    }
+  ],
+  "mcpTools": [
+    {
+      "name": "github",
+      "description": "Access GitHub repositories, issues, PRs, and perform code analysis via MCP",
+      "provider": "mcp",
+      "server_url": "https://github.com/api/mcp",
+      "server_label": "github_mcp",
+      "allowed_tools": ["search_repositories", "get_file_content", "create_issue", "list_pull_requests"],
+      "require_approval": "prompt",
+      "auth": {
+        "type": "bearer",
+        "header_name": "Authorization",
+        "env_var": "GITHUB_TOKEN"
+      }
+    },
+    {
+      "name": "shopify",
+      "description": "Access Shopify store data, products, orders, and inventory via MCP",
+      "provider": "mcp",
+      "server_url": "https://your-store.myshopify.com/api/mcp",
+      "server_label": "shopify_store",
+      "allowed_tools": ["search_products", "get_product_details", "check_inventory", "get_order_status"],
+      "require_approval": "never",
+      "auth": {
+        "type": "api_key",
+        "header_name": "X-Shopify-Access-Token",
+        "env_var": "SHOPIFY_ACCESS_TOKEN"
+      }
+    },
+    {
+      "name": "filesystem",
+      "description": "Access local filesystem for reading and writing files via MCP stdio server",
+      "provider": "mcp",
+      "server_url": "stdio://npx -y @modelcontextprotocol/server-filesystem /path/to/directory",
+      "server_label": "local_fs",
+      "allowed_tools": ["read_file", "write_file", "list_directory"],
+      "require_approval": "prompt"
+    }
+  ]
+}

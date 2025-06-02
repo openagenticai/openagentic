@@ -7,7 +7,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
 import {
   allTools,
   createToolCollection,
-  openaiExecutableTool,
+  getDynamicTool,
 } from "openagentic"
 
 async function advancedGeminiExample() {
@@ -63,8 +63,9 @@ async function advancedGeminiExample() {
 
   console.log("\n=== Custom Tool Collection with Gemini ===")
 
-  // Create custom collection
-  const customTools = createToolCollection([openaiExecutableTool])
+  // Create custom collection using dynamic tools
+  const openaiTool = getDynamicTool("openai")!
+  const customTools = createToolCollection([openaiTool])
   const geminiWithCustom = model.bindTools(customTools.toolsForChatCompletion)
 
   const customResponse = await geminiWithCustom.invoke([

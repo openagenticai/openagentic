@@ -1,135 +1,75 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
+import { createAIWithTools } from "../src/ai"
 import {
   allTools,
-  anthropicExecutableTool,
   createToolCollection,
   executeTool,
-  openaiExecutableTool,
   tools,
 } from "../src/tools"
-import { anthropicTool } from "../src/tools/anthropic"
-// Import the mocked functions for assertions
-import { openaiTool } from "../src/tools/openai"
+import type { CostTracker, ExecutableTool } from "../src/types"
+import { getDynamicTool } from "../src/utils/dynamic-tools"
 
-// Mock the tool execution functions
-vi.mock("../src/tools/anthropic", () => ({
-  anthropicTool: {
-    type: "function",
-    function: {
-      name: "anthropic",
-      description: "Use Anthropic Claude model to generate responses",
-      parameters: {
-        type: "object",
-        properties: {
-          message: { type: "string", description: "The message to send to the Anthropic model" },
-          apiKey: { type: "string", description: "The API key for the Anthropic model" },
-          modelName: { type: "string", description: "The model name to use" },
-        },
-        required: ["message", "apiKey"],
-        additionalProperties: false,
-      },
-      strict: true,
-    },
-  },
-  anthropicExecutableTool: {
-    type: "function",
-    function: {
-      name: "anthropic",
-      description: "Use Anthropic Claude model to generate responses",
-      parameters: {
-        type: "object",
-        properties: {
-          message: { type: "string", description: "The message to send to the Anthropic model" },
-          apiKey: { type: "string", description: "The API key for the Anthropic model" },
-          modelName: { type: "string", description: "The model name to use" },
-        },
-        required: ["message", "apiKey"],
-        additionalProperties: false,
-      },
-      strict: true,
-    },
-    execute: vi.fn(),
-  },
-  executeAnthropic: vi.fn(),
-  anthropic: {
-    type: "function",
-    function: {
-      name: "anthropic",
-      description: "Use Anthropic Claude model to generate responses",
-      parameters: {
-        type: "object",
-        properties: {
-          message: { type: "string", description: "The message to send to the Anthropic model" },
-          apiKey: { type: "string", description: "The API key for the Anthropic model" },
-          modelName: { type: "string", description: "The model name to use" },
-        },
-        required: ["message", "apiKey"],
-        additionalProperties: false,
-      },
-      strict: true,
-    },
-  },
+// Get dynamic tools for testing
+const openaiExecutableTool = getDynamicTool("openai")! as ExecutableTool
+const anthropicExecutableTool = getDynamicTool("anthropic")! as ExecutableTool
+const openaiTool = { ...openaiExecutableTool }
+const anthropicTool = { ...anthropicExecutableTool }
+delete (openaiTool as any).execute
+delete (anthropicTool as any).execute
+
+// Mock LangChain modules for testing the actual tool functions
+vi.mock("@langchain/openai", () => ({
+  ChatOpenAI: vi.fn().mockImplementation(() => ({
+    invoke: vi.fn().mockResolvedValue({
+      content: "Mock OpenAI response",
+      response_metadata: { tokenUsage: { promptTokens: 10, completionTokens: 20 } },
+    }),
+  })),
 }))
 
-vi.mock("../src/tools/openai", () => ({
-  openaiTool: {
-    type: "function",
-    function: {
-      name: "openai",
-      description: "Use OpenAI model to generate responses",
-      parameters: {
-        type: "object",
-        properties: {
-          message: { type: "string", description: "The message to send to the OpenAI model" },
-          apiKey: { type: "string", description: "The API key for the OpenAI model" },
-          modelName: { type: "string", description: "The model name to use" },
-        },
-        required: ["message", "apiKey"],
-        additionalProperties: false,
-      },
-      strict: true,
-    },
-  },
-  openaiExecutableTool: {
-    type: "function",
-    function: {
-      name: "openai",
-      description: "Use OpenAI model to generate responses",
-      parameters: {
-        type: "object",
-        properties: {
-          message: { type: "string", description: "The message to send to the OpenAI model" },
-          apiKey: { type: "string", description: "The API key for the OpenAI model" },
-          modelName: { type: "string", description: "The model name to use" },
-        },
-        required: ["message", "apiKey"],
-        additionalProperties: false,
-      },
-      strict: true,
-    },
-    execute: vi.fn(),
-  },
-  executeOpenAi: vi.fn(),
-  openai: {
-    type: "function",
-    function: {
-      name: "openai",
-      description: "Use OpenAI model to generate responses",
-      parameters: {
-        type: "object",
-        properties: {
-          message: { type: "string", description: "The message to send to the OpenAI model" },
-          apiKey: { type: "string", description: "The API key for the OpenAI model" },
-          modelName: { type: "string", description: "The model name to use" },
-        },
-        required: ["message", "apiKey"],
-        additionalProperties: false,
-      },
-      strict: true,
-    },
-  },
+vi.mock("@langchain/anthropic", () => ({
+  ChatAnthropic: vi.fn().mockImplementation(() => ({
+    invoke: vi.fn().mockResolvedValue({
+      content: "Mock Anthropic response",
+      response_metadata: { tokenUsage: { promptTokens: 15, completionTokens: 25 } },
+    }),
+  })),
 }))
+
+vi.mock("@langchain/core/messages", () => ({
+  HumanMessage: vi.fn().mockImplementation(content => ({ content })),
+}))
+
+// Mock LangChain models for AI interface testing
+const mockModel = {
+  invoke: vi.fn(),
+  bindTools: vi.fn().mockImplementation(() => mockModel),
+  modelName: "gpt-4",
+}
+
+// Mock cost tracker for testing
+const createMockCostTracker = (remainingBudget = 100, maxBudget = 500): CostTracker => ({
+  totalCostCents: 0,
+  maxCostCents: maxBudget,
+  usageHistory: [],
+  getRemainingBudgetCents: vi.fn().mockReturnValue(remainingBudget),
+  canAfford: vi.fn().mockReturnValue(remainingBudget > 0),
+  addUsage: vi.fn(),
+  getDefaultMaxTokens: vi.fn().mockReturnValue(2048),
+  estimateCost: vi.fn().mockReturnValue(10),
+  estimateQueryCost: vi.fn().mockReturnValue(15),
+  canAffordQuery: vi.fn().mockReturnValue(remainingBudget > 15) as any,
+  getSummary: vi.fn().mockReturnValue({
+    totalCostCents: 25,
+    maxCostCents: maxBudget,
+    remainingBudgetCents: remainingBudget,
+    budgetUsedPercentage: 5,
+    totalQueries: 2,
+    orchestratorQueries: 1,
+    toolQueries: 1,
+  }),
+})
 
 describe("tools System", () => {
   beforeEach(() => {
@@ -162,6 +102,13 @@ describe("tools System", () => {
       const toolNames = tools.map(tool => tool.function.name)
       expect(toolNames).toContain("openai")
       expect(toolNames).toContain("anthropic")
+    })
+
+    it("should include maxTokens parameter in tool schemas", () => {
+      tools.forEach((tool) => {
+        expect(tool.function.parameters.properties).toHaveProperty("maxTokens")
+        expect(tool.function.parameters.properties.maxTokens.type).toBe("number")
+      })
     })
   })
 
@@ -245,48 +192,58 @@ describe("tools System", () => {
     })
 
     describe("allTools.execute", () => {
-      it("should execute openai tool successfully", async () => {
-        const mockResponse = {
-          success: true,
-          response: "OpenAI response",
-          model: "gpt-4",
-          usage: null,
-        }
-        vi.mocked(openaiExecutableTool.execute).mockResolvedValue(mockResponse)
-
-        const args = {
-          message: "Hello",
+      it("should execute openai tool without cost tracker", async () => {
+        const toolCall = createMockToolCall("openai", {
+          message: "Hello OpenAI",
           apiKey: "test-key",
-          modelName: "gpt-4",
-        }
-        const toolCall = createMockToolCall("openai", args)
+        })
 
         const result = await allTools.execute(toolCall)
 
-        expect(openaiExecutableTool.execute).toHaveBeenCalledWith(args)
-        expect(result).toBe(mockResponse)
+        expect(result).toHaveProperty("success", true)
+        expect(result).toHaveProperty("response", "Mock OpenAI response")
+        expect(result).toHaveProperty("model", "gpt-4-1106-preview")
       })
 
-      it("should execute anthropic tool successfully", async () => {
-        const mockResponse = {
-          success: true,
-          response: "Anthropic response",
-          model: "claude-3-5-sonnet-20240620",
-          usage: null,
-        }
-        vi.mocked(anthropicExecutableTool.execute).mockResolvedValue(mockResponse)
-
-        const args = {
-          message: "Hello",
+      it("should execute openai tool with cost tracker", async () => {
+        const mockCostTracker = createMockCostTracker(100)
+        const toolCall = createMockToolCall("openai", {
+          message: "Hello OpenAI",
           apiKey: "test-key",
-          modelName: "claude-3-5-sonnet-20240620",
-        }
-        const toolCall = createMockToolCall("anthropic", args)
+        })
+
+        const result = await allTools.execute(toolCall, mockCostTracker)
+
+        expect(result).toHaveProperty("success", true)
+        expect(result).toHaveProperty("response", "Mock OpenAI response")
+        expect(result).toHaveProperty("costTracker")
+      })
+
+      it("should execute anthropic tool without cost tracker", async () => {
+        const toolCall = createMockToolCall("anthropic", {
+          message: "Hello Claude",
+          apiKey: "test-key",
+        })
 
         const result = await allTools.execute(toolCall)
 
-        expect(anthropicExecutableTool.execute).toHaveBeenCalledWith(args)
-        expect(result).toBe(mockResponse)
+        expect(result).toHaveProperty("success", true)
+        expect(result).toHaveProperty("response", "Mock Anthropic response")
+        expect(result).toHaveProperty("model", "claude-3-5-sonnet-20240620")
+      })
+
+      it("should execute anthropic tool with cost tracker", async () => {
+        const mockCostTracker = createMockCostTracker(100)
+        const toolCall = createMockToolCall("anthropic", {
+          message: "Hello Claude",
+          apiKey: "test-key",
+        })
+
+        const result = await allTools.execute(toolCall, mockCostTracker)
+
+        expect(result).toHaveProperty("success", true)
+        expect(result).toHaveProperty("response", "Mock Anthropic response")
+        expect(result).toHaveProperty("costTracker")
       })
 
       it("should handle unknown tool names", async () => {
@@ -304,20 +261,6 @@ describe("tools System", () => {
         }
 
         await expect(allTools.execute(toolCall)).rejects.toThrow("Tool execution failed:")
-      })
-
-      it("should handle tool execution errors", async () => {
-        const error = new Error("Tool execution failed")
-        vi.mocked(openaiExecutableTool.execute).mockRejectedValue(error)
-
-        const args = {
-          message: "Hello",
-          apiKey: "test-key",
-          modelName: "gpt-4",
-        }
-        const toolCall = createMockToolCall("openai", args)
-
-        await expect(allTools.execute(toolCall)).rejects.toThrow("Tool execution failed: Tool execution failed")
       })
     })
 
@@ -360,6 +303,99 @@ describe("tools System", () => {
     it("should export executable tools", () => {
       expect(openaiExecutableTool).toHaveProperty("execute")
       expect(anthropicExecutableTool).toHaveProperty("execute")
+    })
+  })
+
+  describe("aI interface with cost tracking", () => {
+    beforeEach(() => {
+      mockModel.invoke.mockClear()
+      mockModel.bindTools.mockClear()
+    })
+
+    it("should create AI interface with tools", () => {
+      const ai = createAIWithTools(mockModel as any, allTools)
+
+      expect(ai).toHaveProperty("chat")
+      expect(ai).toHaveProperty("model")
+      expect(ai).toHaveProperty("tools")
+      expect(typeof ai.chat).toBe("function")
+    })
+
+    it("should chat without cost tracking", async () => {
+      const ai = createAIWithTools(mockModel as any, allTools)
+
+      mockModel.invoke.mockResolvedValue({
+        content: "Hello response",
+        response_metadata: { tokenUsage: { promptTokens: 10, completionTokens: 15 } },
+      })
+
+      const result = await ai.chat("Hello world")
+
+      expect(mockModel.invoke).toHaveBeenCalledWith([{ role: "user", content: "Hello world" }], undefined)
+      expect(result).toEqual({
+        response: "Hello response",
+        metadata: { tokenUsage: { promptTokens: 10, completionTokens: 15 } },
+      })
+      expect(result).not.toHaveProperty("costTracker")
+    })
+
+    it("should chat with cost tracking", async () => {
+      const ai = createAIWithTools(mockModel as any, allTools)
+
+      mockModel.invoke.mockResolvedValue({
+        content: "Hello response",
+        response_metadata: { tokenUsage: { promptTokens: 10, completionTokens: 15 } },
+      })
+
+      const result = await ai.chat("Hello world", { maxCostCents: 100 })
+
+      expect(mockModel.invoke).toHaveBeenCalledWith([{ role: "user", content: "Hello world" }], { maxTokens: 4096 })
+      expect(result).toHaveProperty("costTracker")
+      expect(result.costTracker).toBeDefined()
+    })
+
+    it("should handle budget exhaustion in orchestrator", async () => {
+      const ai = createAIWithTools(mockModel as any, allTools)
+
+      await expect(
+        ai.chat("This should fail due to budget", { maxCostCents: 1 }), // Very small budget
+      ).rejects.toThrow("Insufficient budget")
+    })
+
+    it("should use conservative mode", async () => {
+      const ai = createAIWithTools(mockModel as any, allTools)
+
+      mockModel.invoke.mockResolvedValue({
+        content: "Conservative response",
+        response_metadata: { tokenUsage: { promptTokens: 10, completionTokens: 15 } },
+      })
+
+      const result = await ai.chat("Hello", { maxCostCents: 100, conservativeMode: true })
+
+      expect(mockModel.invoke).toHaveBeenCalledWith([{ role: "user", content: "Hello" }], { maxTokens: 1024 })
+      expect(result).toHaveProperty("costTracker")
+    })
+
+    it("should handle models without bindTools method", () => {
+      const modelWithoutBindTools = { invoke: vi.fn() }
+      const ai = createAIWithTools(modelWithoutBindTools as any, allTools)
+
+      expect(ai).toHaveProperty("chat")
+      expect(ai.model).toBe(modelWithoutBindTools)
+    })
+
+    it("should handle response as string when content is missing", async () => {
+      const ai = createAIWithTools(mockModel as any, allTools)
+
+      const responseObject = {
+        toString: () => "String response",
+        response_metadata: {},
+      }
+      mockModel.invoke.mockResolvedValue(responseObject)
+
+      const result = await ai.chat("Hello")
+
+      expect(result.response).toBe("String response")
     })
   })
 })

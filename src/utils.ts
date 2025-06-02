@@ -1,12 +1,10 @@
-import type { ExecutableTool, FunctionDefinition, Tool, ToolCall, ToolCollection, ToolRegistry } from "./types"
+import type { CostTracker, ExecutableTool, FunctionDefinition, Tool, ToolCall, ToolCollection, ToolRegistry } from "./types"
 
 /**
- * Convert a Tool to OpenAI Chat Completions format
- * This is typically the format used by most LangChain integrations
+ * Convert a Tool to OpenAI Chat Completions API format
+ * Used with most OpenAI endpoints
  */
-export const toOpenAIFunction = (tool: Tool): Tool => {
-  return tool // Already in the correct format
-}
+export const toOpenAIChatTool = (tool: Tool): Tool => tool
 
 /**
  * Convert a Tool to OpenAI Responses API format
@@ -21,7 +19,7 @@ export const toOpenAIResponseTool = (tool: Tool): { type: "function", function: 
 
 /**
  * Create a tool collection from an array of executable tools
- * Provides multiple format options and execution capabilities
+ * Provides multiple format options and execution capabilities with optional cost tracking
  */
 export const createToolCollection = (executableTools: ExecutableTool[]): ToolCollection => {
   const tools: Tool[] = executableTools.map(({ execute, ...tool }) => tool)
@@ -32,7 +30,7 @@ export const createToolCollection = (executableTools: ExecutableTool[]): ToolCol
     registry[tool.function.name] = tool
   })
 
-  const execute = async (toolCall: ToolCall): Promise<any> => {
+  const execute = async (toolCall: ToolCall, costTracker?: CostTracker): Promise<any> => {
     const { name, arguments: args } = toolCall.function
     const tool = registry[name]
 
@@ -42,7 +40,7 @@ export const createToolCollection = (executableTools: ExecutableTool[]): ToolCol
 
     try {
       const parsedArgs = JSON.parse(args)
-      return await tool.execute(parsedArgs)
+      return await tool.execute(parsedArgs, costTracker)
     } catch (error) {
       throw new Error(`Tool execution failed: ${error instanceof Error ? error.message : "Unknown error"}`)
     }
