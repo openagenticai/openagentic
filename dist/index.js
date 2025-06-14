@@ -57,6 +57,7 @@ __export(index_exports, {
   ValidationError: () => ValidationError,
   anthropicModels: () => anthropicModels,
   builtInTools: () => builtInTools,
+  calculateCost: () => calculateCost,
   calculatorTool: () => calculatorTool,
   createAPIIntegrator: () => createAPIIntegrator,
   createAnthropicModel: () => createAnthropicModel,
@@ -86,6 +87,8 @@ __export(index_exports, {
   formatTokens: () => formatTokens,
   geminiModels: () => googleModels,
   generateId: () => generateId,
+  getAllModels: () => getAllModels,
+  getModelInfo: () => getModelInfo,
   googleModels: () => googleModels,
   googleVertexModels: () => googleVertexModels,
   httpRequestTool: () => httpRequestTool,
@@ -93,6 +96,7 @@ __export(index_exports, {
   isValidUrl: () => isValidUrl,
   openAIModels: () => openAIModels,
   perplexityModels: () => perplexityModels,
+  providerConfigs: () => providerConfigs,
   retry: () => retry,
   sanitizeToolName: () => sanitizeToolName,
   timestampTool: () => timestampTool,
@@ -1029,12 +1033,206 @@ function createSyncTool(name, description, parameters, execute, costEstimate = 0
   });
 }
 
-// src/providers/openai.ts
+// src/providers/index.ts
+var providerConfigs = {
+  openai: {
+    baseURL: "https://api.openai.com/v1",
+    models: {
+      "gpt-4": {
+        contextWindow: 8192,
+        cost: { input: 0.03, output: 0.06 },
+        description: "Most capable GPT-4 model"
+      },
+      "gpt-4-turbo": {
+        contextWindow: 128e3,
+        cost: { input: 0.01, output: 0.03 },
+        description: "GPT-4 Turbo with larger context window"
+      },
+      "gpt-4o": {
+        contextWindow: 128e3,
+        cost: { input: 5e-3, output: 0.015 },
+        description: "GPT-4 Omni - fastest and most cost-effective"
+      },
+      "gpt-4o-mini": {
+        contextWindow: 128e3,
+        cost: { input: 15e-5, output: 6e-4 },
+        description: "Smaller, faster GPT-4o variant"
+      },
+      "o3": {
+        contextWindow: 2e5,
+        cost: { input: 0.06, output: 0.24 },
+        description: "Latest reasoning model"
+      },
+      "o3-mini": {
+        contextWindow: 2e5,
+        cost: { input: 0.015, output: 0.06 },
+        description: "Smaller o3 variant with faster inference"
+      }
+    }
+  },
+  anthropic: {
+    baseURL: "https://api.anthropic.com",
+    models: {
+      "claude-4-opus-20250514": {
+        contextWindow: 2e5,
+        cost: { input: 0.015, output: 0.075 },
+        description: "Most capable Claude 4 model"
+      },
+      "claude-4-sonnet-20250514": {
+        contextWindow: 2e5,
+        cost: { input: 3e-3, output: 0.015 },
+        description: "Balanced Claude 4 model for most use cases"
+      }
+    }
+  },
+  google: {
+    baseURL: "https://generativelanguage.googleapis.com/v1beta",
+    models: {
+      "gemini-2.5-pro-preview-06-05": {
+        contextWindow: 2e6,
+        cost: { input: 1e-3, output: 2e-3 },
+        description: "Latest Gemini 2.5 Pro preview model"
+      },
+      "gemini-2.5-flash-preview-05-20": {
+        contextWindow: 1e6,
+        cost: { input: 5e-4, output: 1e-3 },
+        description: "Fast Gemini 2.5 Flash preview model"
+      },
+      "gemini-1.5-pro": {
+        contextWindow: 2e6,
+        cost: { input: 125e-5, output: 5e-3 },
+        description: "Gemini 1.5 Pro with large context window"
+      },
+      "gemini-1.5-flash": {
+        contextWindow: 1e6,
+        cost: { input: 75e-6, output: 3e-4 },
+        description: "Fast and efficient Gemini 1.5 model"
+      }
+    }
+  },
+  "google-vertex": {
+    baseURL: "https://us-central1-aiplatform.googleapis.com",
+    models: {
+      "gemini-2.5-pro-preview-06-05": {
+        contextWindow: 2e6,
+        cost: { input: 1e-3, output: 2e-3 },
+        description: "Latest Gemini 2.5 Pro preview model via Vertex AI"
+      },
+      "gemini-2.5-flash-preview-05-20": {
+        contextWindow: 1e6,
+        cost: { input: 5e-4, output: 1e-3 },
+        description: "Fast Gemini 2.5 Flash preview model via Vertex AI"
+      },
+      "gemini-1.5-pro": {
+        contextWindow: 2e6,
+        cost: { input: 125e-5, output: 5e-3 },
+        description: "Gemini 1.5 Pro via Vertex AI"
+      },
+      "gemini-1.5-flash": {
+        contextWindow: 1e6,
+        cost: { input: 75e-6, output: 3e-4 },
+        description: "Fast Gemini 1.5 model via Vertex AI"
+      }
+    }
+  },
+  perplexity: {
+    baseURL: "https://api.perplexity.ai",
+    models: {
+      "llama-3.1-sonar-small-128k-online": {
+        contextWindow: 127072,
+        cost: { input: 2e-4, output: 2e-4 },
+        description: "Small Llama 3.1 Sonar with online search"
+      },
+      "llama-3.1-sonar-large-128k-online": {
+        contextWindow: 127072,
+        cost: { input: 1e-3, output: 1e-3 },
+        description: "Large Llama 3.1 Sonar with online search"
+      },
+      "llama-3.1-sonar-huge-128k-online": {
+        contextWindow: 127072,
+        cost: { input: 5e-3, output: 5e-3 },
+        description: "Huge Llama 3.1 Sonar with online search"
+      }
+    }
+  },
+  xai: {
+    baseURL: "https://api.x.ai/v1",
+    models: {
+      "grok-beta": {
+        contextWindow: 131072,
+        cost: { input: 5e-3, output: 0.015 },
+        description: "Grok conversational AI model"
+      }
+    }
+  }
+};
 function createOpenAIModel(options) {
   return {
     provider: "openai",
     model: options.model,
     apiKey: options.apiKey || process.env.OPENAI_API_KEY,
+    baseURL: options.baseURL,
+    temperature: options.temperature ?? 0.7,
+    maxTokens: options.maxTokens,
+    topP: options.topP
+  };
+}
+function createAnthropicModel(options) {
+  return {
+    provider: "anthropic",
+    model: options.model,
+    apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
+    temperature: options.temperature ?? 0.7,
+    maxTokens: options.maxTokens ?? 1024,
+    topP: options.topP
+  };
+}
+function createGoogleModel(options) {
+  return {
+    provider: "google",
+    model: options.model,
+    apiKey: options.apiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    temperature: options.temperature ?? 0.7,
+    maxTokens: options.maxTokens,
+    topP: options.topP
+  };
+}
+function createGoogleVertexModel(options) {
+  return {
+    provider: "google-vertex",
+    model: options.model,
+    project: options.project,
+    location: options.location || "us-central1",
+    temperature: options.temperature ?? 0.7,
+    maxTokens: options.maxTokens,
+    topP: options.topP
+  };
+}
+function createPerplexityModel(options) {
+  return {
+    provider: "perplexity",
+    model: options.model,
+    apiKey: options.apiKey || process.env.PERPLEXITY_API_KEY,
+    temperature: options.temperature ?? 0.7,
+    maxTokens: options.maxTokens,
+    topP: options.topP
+  };
+}
+function createXAIModel(options) {
+  return {
+    provider: "xai",
+    model: options.model,
+    apiKey: options.apiKey || process.env.XAI_API_KEY,
+    temperature: options.temperature ?? 0.7,
+    maxTokens: options.maxTokens,
+    topP: options.topP
+  };
+}
+function createCustomModel(options) {
+  return {
+    provider: "custom",
+    model: options.model,
+    apiKey: options.apiKey,
     baseURL: options.baseURL,
     temperature: options.temperature ?? 0.7,
     maxTokens: options.maxTokens,
@@ -1067,18 +1265,6 @@ var openAIModels = {
     ...apiKey !== void 0 && { apiKey }
   })
 };
-
-// src/providers/anthropic.ts
-function createAnthropicModel(options) {
-  return {
-    provider: "anthropic",
-    model: options.model,
-    apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
-    temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens ?? 1024,
-    topP: options.topP
-  };
-}
 var anthropicModels = {
   claude4Opus: (apiKey) => createAnthropicModel({
     model: "claude-4-opus-20250514",
@@ -1089,29 +1275,6 @@ var anthropicModels = {
     ...apiKey !== void 0 && { apiKey }
   })
 };
-
-// src/providers/google.ts
-function createGoogleModel(options) {
-  return {
-    provider: "google",
-    model: options.model,
-    apiKey: options.apiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP
-  };
-}
-function createGoogleVertexModel(options) {
-  return {
-    provider: "google-vertex",
-    model: options.model,
-    project: options.project,
-    location: options.location || "us-central1",
-    temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP
-  };
-}
 var googleModels = {
   gemini25ProPreview: (apiKey) => createGoogleModel({
     model: "gemini-2.5-pro-preview-06-05",
@@ -1152,18 +1315,6 @@ var googleVertexModels = {
     ...location !== void 0 && { location }
   })
 };
-
-// src/providers/perplexity.ts
-function createPerplexityModel(options) {
-  return {
-    provider: "perplexity",
-    model: options.model,
-    apiKey: options.apiKey || process.env.PERPLEXITY_API_KEY,
-    temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP
-  };
-}
 var perplexityModels = {
   sonar: (apiKey) => createPerplexityModel({
     model: "llama-3.1-sonar-small-128k-online",
@@ -1178,36 +1329,35 @@ var perplexityModels = {
     ...apiKey !== void 0 && { apiKey }
   })
 };
-
-// src/providers/xai.ts
-function createXAIModel(options) {
-  return {
-    provider: "xai",
-    model: options.model,
-    apiKey: options.apiKey || process.env.XAI_API_KEY,
-    temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP
-  };
-}
 var xaiModels = {
   grok: (apiKey) => createXAIModel({
     model: "grok-beta",
     ...apiKey !== void 0 && { apiKey }
   })
 };
-
-// src/providers/custom.ts
-function createCustomModel(options) {
-  return {
-    provider: "custom",
-    model: options.model,
-    apiKey: options.apiKey,
-    baseURL: options.baseURL,
-    temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP
-  };
+function getModelInfo(provider, model) {
+  const config = providerConfigs[provider];
+  if (!config) {
+    throw new Error(`Unknown provider: ${provider}`);
+  }
+  const modelInfo = config.models[model];
+  if (!modelInfo) {
+    throw new Error(`Unknown model: ${model} for provider: ${provider}`);
+  }
+  return modelInfo;
+}
+function calculateCost(provider, model, inputTokens, outputTokens) {
+  const modelInfo = getModelInfo(provider, model);
+  return inputTokens * modelInfo.cost.input / 1e3 + outputTokens * modelInfo.cost.output / 1e3;
+}
+function getAllModels() {
+  const allModels = [];
+  Object.entries(providerConfigs).forEach(([provider, config]) => {
+    Object.entries(config.models).forEach(([model, info]) => {
+      allModels.push({ provider, model, info });
+    });
+  });
+  return allModels;
 }
 
 // src/types/index.ts
@@ -1445,6 +1595,7 @@ function createTaskAgent(options) {
   ValidationError,
   anthropicModels,
   builtInTools,
+  calculateCost,
   calculatorTool,
   createAPIIntegrator,
   createAnthropicModel,
@@ -1474,6 +1625,8 @@ function createTaskAgent(options) {
   formatTokens,
   geminiModels,
   generateId,
+  getAllModels,
+  getModelInfo,
   googleModels,
   googleVertexModels,
   httpRequestTool,
@@ -1481,6 +1634,7 @@ function createTaskAgent(options) {
   isValidUrl,
   openAIModels,
   perplexityModels,
+  providerConfigs,
   retry,
   sanitizeToolName,
   timestampTool,
