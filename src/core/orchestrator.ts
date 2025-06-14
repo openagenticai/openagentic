@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import type {
   OrchestratorConfig,
   ExecutionResult,
@@ -12,17 +11,18 @@ import { AIProvider } from './ai-provider';
 import { CostTracker } from './cost-tracker';
 import { ToolRegistry } from './tool-registry';
 import { OrchestratorError, BudgetExceededError, MaxIterationsError } from './errors';
+import { SimpleEventEmitter } from '../utils/simple-event-emitter';
 
-export class Orchestrator extends EventEmitter {
+export class Orchestrator {
   private config: OrchestratorConfig;
   private aiProvider: AIProvider;
   private costTracker: CostTracker;
   private toolRegistry: ToolRegistry;
   private messages: Message[] = [];
   private iterations: number = 0;
+  private eventEmitter = new SimpleEventEmitter<OrchestratorEvent>();
 
   constructor(config: OrchestratorConfig) {
-    super();
     this.config = config;
     this.aiProvider = new AIProvider(config.model);
     this.costTracker = new CostTracker(config.budget);
@@ -37,7 +37,7 @@ export class Orchestrator extends EventEmitter {
   }
 
   public async execute(userMessage: string): Promise<ExecutionResult> {
-    this.emit('start', { config: this.config });
+    this.eventEmitter.emit({ type: 'start', data: { config: this.config } });
     
     try {
       this.messages.push({
@@ -71,7 +71,7 @@ export class Orchestrator extends EventEmitter {
         };
 
         this.messages.push(assistantMessage);
-        this.emit('iteration', { iteration: this.iterations, message: assistantMessage });
+        this.eventEmitter.emit({ type: 'iteration', data: { iteration: this.iterations, message: assistantMessage } });
 
         // Handle tool calls if any
         if (response.tool_calls && response.tool_calls.length > 0) {
@@ -98,7 +98,7 @@ export class Orchestrator extends EventEmitter {
         toolCallsUsed: this.toolRegistry.getUsedTools(),
       };
 
-      this.emit('complete', result);
+      this.eventEmitter.emit({ type: 'complete', data: result });
       return result;
 
     } catch (error) {
@@ -111,26 +111,27 @@ export class Orchestrator extends EventEmitter {
         toolCallsUsed: this.toolRegistry.getUsedTools(),
       };
 
-      this.emit('error', { error: errorResult.error!, iteration: this.iterations });
+      this.eventEmitter.emit({ type: 'error', data: { error: errorResult.error!, iteration: this.iterations } });
       return errorResult;
     }
   }
 
   public onEvent(handler: EventHandler): void {
-    this.on('start', (data) => handler({ type: 'start', data }));
-    this.on('iteration', (data) => handler({ type: 'iteration', data }));
-    this.on('tool_call', (data) => handler({ type: 'tool_call', data }));
-    this.on('tool_result', (data) => handler({ type: 'tool_result', data }));
-    this.on('cost_update', (data) => handler({ type: 'cost_update', data }));
-    this.on('complete', (data) => handler({ type: 'complete', data }));
-    this.on('error', (data) => handler({ type: 'error', data }));
+    this.eventEmitter.on(handler);
+  }
+
+  public offEvent(handler: EventHandler): void {
+    this.eventEmitter.off(handler);
   }
 
   private async executeToolCall(toolCall: any): Promise<void> {
     try {
-      this.emit('tool_call', {
-        toolName: toolCall.function.name,
-        arguments: JSON.parse(toolCall.function.arguments),
+      this.eventEmitter.emit({
+        type: 'tool_call',
+        data: {
+          toolName: toolCall.function.name,
+          arguments: JSON.parse(toolCall.function.arguments),
+        }
       });
 
       const result = await this.toolRegistry.executeTool(
@@ -140,10 +141,13 @@ export class Orchestrator extends EventEmitter {
 
       this.costTracker.incrementToolCalls();
 
-      this.emit('tool_result', {
-        toolName: toolCall.function.name,
-        result,
-        success: true,
+      this.eventEmitter.emit({
+        type: 'tool_result',
+        data: {
+          toolName: toolCall.function.name,
+          result,
+          success: true,
+        }
       });
 
       // Add tool result to messages
@@ -154,10 +158,13 @@ export class Orchestrator extends EventEmitter {
       });
 
     } catch (error) {
-      this.emit('tool_result', {
-        toolName: toolCall.function.name,
-        result: error,
-        success: false,
+      this.eventEmitter.emit({
+        type: 'tool_result',
+        data: {
+          toolName: toolCall.function.name,
+          result: error,
+          success: false,
+        }
       });
 
       // Add error result to messages
@@ -203,5 +210,10 @@ export class Orchestrator extends EventEmitter {
     this.iterations = 0;
     this.costTracker.reset();
     this.toolRegistry.reset();
+    this.eventEmitter.clear(); // Clear event listeners on reset
+  }
+
+  public getEventListenerCount(): number {
+    return this.eventEmitter.listenerCount();
   }
 }

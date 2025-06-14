@@ -42,9 +42,6 @@ __export(orchestrators_exports, {
 });
 module.exports = __toCommonJS(orchestrators_exports);
 
-// src/core/orchestrator.ts
-var import_events = require("events");
-
 // src/core/errors.ts
 var OpenAgenticError = class extends Error {
   constructor(message) {
@@ -335,16 +332,61 @@ var ToolRegistry = class {
   }
 };
 
+// src/utils/simple-event-emitter.ts
+var SimpleEventEmitter = class {
+  listeners = [];
+  /**
+   * Add an event listener
+   */
+  on(listener) {
+    this.listeners.push(listener);
+  }
+  /**
+   * Remove an event listener
+   */
+  off(listener) {
+    const index = this.listeners.indexOf(listener);
+    if (index > -1) {
+      this.listeners.splice(index, 1);
+    }
+  }
+  /**
+   * Emit an event to all listeners
+   */
+  emit(event) {
+    const currentListeners = [...this.listeners];
+    currentListeners.forEach((listener) => {
+      try {
+        listener(event);
+      } catch (error) {
+        console.warn("Event listener error:", error);
+      }
+    });
+  }
+  /**
+   * Remove all listeners
+   */
+  clear() {
+    this.listeners = [];
+  }
+  /**
+   * Get the number of active listeners
+   */
+  listenerCount() {
+    return this.listeners.length;
+  }
+};
+
 // src/core/orchestrator.ts
-var Orchestrator = class extends import_events.EventEmitter {
+var Orchestrator = class {
   config;
   aiProvider;
   costTracker;
   toolRegistry;
   messages = [];
   iterations = 0;
+  eventEmitter = new SimpleEventEmitter();
   constructor(config) {
-    super();
     this.config = config;
     this.aiProvider = new AIProvider(config.model);
     this.costTracker = new CostTracker(config.budget);
@@ -357,7 +399,7 @@ var Orchestrator = class extends import_events.EventEmitter {
     }
   }
   async execute(userMessage) {
-    this.emit("start", { config: this.config });
+    this.eventEmitter.emit({ type: "start", data: { config: this.config } });
     try {
       this.messages.push({
         role: "user",
@@ -381,7 +423,7 @@ var Orchestrator = class extends import_events.EventEmitter {
           toolCalls: response.tool_calls
         };
         this.messages.push(assistantMessage);
-        this.emit("iteration", { iteration: this.iterations, message: assistantMessage });
+        this.eventEmitter.emit({ type: "iteration", data: { iteration: this.iterations, message: assistantMessage } });
         if (response.tool_calls && response.tool_calls.length > 0) {
           for (const toolCall of response.tool_calls) {
             await this.executeToolCall(toolCall);
@@ -401,7 +443,7 @@ var Orchestrator = class extends import_events.EventEmitter {
         iterations: this.iterations,
         toolCallsUsed: this.toolRegistry.getUsedTools()
       };
-      this.emit("complete", result);
+      this.eventEmitter.emit({ type: "complete", data: result });
       return result;
     } catch (error) {
       const errorResult = {
@@ -412,34 +454,37 @@ var Orchestrator = class extends import_events.EventEmitter {
         iterations: this.iterations,
         toolCallsUsed: this.toolRegistry.getUsedTools()
       };
-      this.emit("error", { error: errorResult.error, iteration: this.iterations });
+      this.eventEmitter.emit({ type: "error", data: { error: errorResult.error, iteration: this.iterations } });
       return errorResult;
     }
   }
   onEvent(handler) {
-    this.on("start", (data) => handler({ type: "start", data }));
-    this.on("iteration", (data) => handler({ type: "iteration", data }));
-    this.on("tool_call", (data) => handler({ type: "tool_call", data }));
-    this.on("tool_result", (data) => handler({ type: "tool_result", data }));
-    this.on("cost_update", (data) => handler({ type: "cost_update", data }));
-    this.on("complete", (data) => handler({ type: "complete", data }));
-    this.on("error", (data) => handler({ type: "error", data }));
+    this.eventEmitter.on(handler);
+  }
+  offEvent(handler) {
+    this.eventEmitter.off(handler);
   }
   async executeToolCall(toolCall) {
     try {
-      this.emit("tool_call", {
-        toolName: toolCall.function.name,
-        arguments: JSON.parse(toolCall.function.arguments)
+      this.eventEmitter.emit({
+        type: "tool_call",
+        data: {
+          toolName: toolCall.function.name,
+          arguments: JSON.parse(toolCall.function.arguments)
+        }
       });
       const result = await this.toolRegistry.executeTool(
         toolCall.function.name,
         JSON.parse(toolCall.function.arguments)
       );
       this.costTracker.incrementToolCalls();
-      this.emit("tool_result", {
-        toolName: toolCall.function.name,
-        result,
-        success: true
+      this.eventEmitter.emit({
+        type: "tool_result",
+        data: {
+          toolName: toolCall.function.name,
+          result,
+          success: true
+        }
       });
       this.messages.push({
         role: "tool",
@@ -447,10 +492,13 @@ var Orchestrator = class extends import_events.EventEmitter {
         toolCallId: toolCall.id
       });
     } catch (error) {
-      this.emit("tool_result", {
-        toolName: toolCall.function.name,
-        result: error,
-        success: false
+      this.eventEmitter.emit({
+        type: "tool_result",
+        data: {
+          toolName: toolCall.function.name,
+          result: error,
+          success: false
+        }
       });
       this.messages.push({
         role: "tool",
@@ -484,6 +532,10 @@ var Orchestrator = class extends import_events.EventEmitter {
     this.iterations = 0;
     this.costTracker.reset();
     this.toolRegistry.reset();
+    this.eventEmitter.clear();
+  }
+  getEventListenerCount() {
+    return this.eventEmitter.listenerCount();
   }
 };
 
