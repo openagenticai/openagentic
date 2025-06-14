@@ -24,13 +24,13 @@ __export(providers_exports, {
   calculateCost: () => calculateCost,
   createAnthropicModel: () => createAnthropicModel,
   createCustomModel: () => createCustomModel,
-  createGeminiModel: () => createGoogleModel,
+  createGeminiModel: () => createGeminiModel,
   createGoogleModel: () => createGoogleModel,
   createGoogleVertexModel: () => createGoogleVertexModel,
   createOpenAIModel: () => createOpenAIModel,
   createPerplexityModel: () => createPerplexityModel,
   createXAIModel: () => createXAIModel,
-  geminiModels: () => googleModels,
+  geminiModels: () => geminiModels,
   getAllModels: () => getAllModels,
   getModelInfo: () => getModelInfo,
   googleModels: () => googleModels,
@@ -342,6 +342,8 @@ var xaiModels = {
     ...apiKey !== void 0 && { apiKey }
   })
 };
+var geminiModels = googleModels;
+var createGeminiModel = createGoogleModel;
 function getModelInfo(provider, model) {
   const config = providerConfigs[provider];
   if (!config) {

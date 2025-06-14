@@ -364,7 +364,8 @@ export const xaiModels = {
 };
 
 // Legacy exports for backward compatibility
-export { googleModels as geminiModels, createGoogleModel as createGeminiModel };
+export const geminiModels = googleModels;
+export const createGeminiModel = createGoogleModel;
 
 // Utility functions
 export function getModelInfo(provider: string, model: string) {

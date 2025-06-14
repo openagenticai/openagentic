@@ -68,7 +68,7 @@ __export(index_exports, {
   createCustomModel: () => createCustomModel,
   createCustomerService: () => createCustomerService,
   createDataAnalyst: () => createDataAnalyst,
-  createGeminiModel: () => createGoogleModel,
+  createGeminiModel: () => createGeminiModel,
   createGoogleModel: () => createGoogleModel,
   createGoogleVertexModel: () => createGoogleVertexModel,
   createOpenAIModel: () => createOpenAIModel,
@@ -87,7 +87,7 @@ __export(index_exports, {
   delay: () => delay,
   formatCost: () => formatCost,
   formatTokens: () => formatTokens,
-  geminiModels: () => googleModels,
+  geminiModels: () => geminiModels,
   generateId: () => generateId,
   getAllModels: () => getAllModels,
   getModelInfo: () => getModelInfo,
@@ -1392,6 +1392,8 @@ var xaiModels = {
     ...apiKey !== void 0 && { apiKey }
   })
 };
+var geminiModels = googleModels;
+var createGeminiModel = createGoogleModel;
 function getModelInfo(provider, model) {
   const config = providerConfigs[provider];
   if (!config) {

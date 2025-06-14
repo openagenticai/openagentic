@@ -300,6 +300,8 @@ var xaiModels = {
     ...apiKey !== void 0 && { apiKey }
   })
 };
+var geminiModels = googleModels;
+var createGeminiModel = createGoogleModel;
 function getModelInfo(provider, model) {
   const config = providerConfigs[provider];
   if (!config) {
@@ -329,13 +331,13 @@ export {
   calculateCost,
   createAnthropicModel,
   createCustomModel,
-  createGoogleModel as createGeminiModel,
+  createGeminiModel,
   createGoogleModel,
   createGoogleVertexModel,
   createOpenAIModel,
   createPerplexityModel,
   createXAIModel,
-  googleModels as geminiModels,
+  geminiModels,
   getAllModels,
   getModelInfo,
   googleModels,
