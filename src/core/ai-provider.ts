@@ -31,24 +31,7 @@ export class AIProvider {
     streaming = false
   ): Promise<AIResponse> {
     try {
-      switch (this.model.provider) {
-        case 'openai':
-          return await this.completeOpenAI(messages, tools, streaming);
-        case 'anthropic':
-          return await this.completeAnthropic(messages, tools, streaming);
-        case 'google':
-          return await this.completeGoogle(messages, tools, streaming);
-        case 'google-vertex':
-          return await this.completeGoogleVertex(messages, tools, streaming);
-        case 'perplexity':
-          return await this.completePerplexity(messages, tools, streaming);
-        case 'xai':
-          return await this.completeXai(messages, tools, streaming);
-        case 'custom':
-          return await this.completeCustom(messages, tools, streaming);
-        default:
-          throw new ProviderError(`Unsupported provider: ${this.model.provider}`);
-      }
+      return await this.completeRequest(messages, tools, streaming);
     } catch (error) {
       throw new ProviderError(
         `Failed to complete request with ${this.model.provider}: ${
@@ -58,151 +41,133 @@ export class AIProvider {
     }
   }
 
-  private async completeOpenAI(
+  private async completeRequest(
     messages: Message[],
     tools?: any[],
     streaming = false
   ): Promise<AIResponse> {
+    // Check browser environment for Node.js-only providers
     if (typeof globalThis !== 'undefined' && 'window' in globalThis) {
-      throw new ProviderError('OpenAI provider not available in browser environment');
+      throw new ProviderError('AI providers not available in browser environment');
     }
 
     try {
-      const { createOpenAI } = await import('@ai-sdk/openai');
-      const { createAnthropic } = await import('@ai-sdk/anthropic');
-      const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-      const { createVertex } = await import('@ai-sdk/google-vertex');
-      const { createPerplexity } = await import('@ai-sdk/perplexity');
-      const { createXai } = await import('@ai-sdk/xai');
+      // Import AI SDK functions
       const { generateText } = await import('ai');
-
-      const openai = createOpenAI({
-        baseURL: this.model.baseURL,
-        apiKey: this.model.apiKey || '',
-      });
-
-      const anthropic = createAnthropic({
-        apiKey: this.model.apiKey || '',
-      });
-
-      const google = createGoogleGenerativeAI({
-        apiKey: this.model.apiKey || '',
-      });
-
-      const googleVertex = createVertex({
-        project: this.model.project || '',
-        location: this.model.location || '',
-      });
-
-      const perplexity = createPerplexity({
-        apiKey: this.model.apiKey || '',
-      });
-
-      const xai = createXai({
-        apiKey: this.model.apiKey || '',
-      });
-
-      const provider = this.model.provider === 'openai' ? openai :
-                      this.model.provider === 'anthropic' ? anthropic :
-                      this.model.provider === 'google' ? google :
-                      this.model.provider === 'google-vertex' ? googleVertex :
-                      this.model.provider === 'perplexity' ? perplexity :
-                      this.model.provider === 'xai' ? xai : openai;
-
-      const coreMessages = messages
-        .filter(m => m.role !== 'system')
-        .map(m => {
-          if (m.role === 'user') {
-            return { role: 'user' as const, content: m.content };
-          } else if (m.role === 'assistant') {
-            return { role: 'assistant' as const, content: m.content };
-          } else if (m.role === 'tool') {
-            return { 
-              role: 'tool' as const, 
-              content: [{ 
-                type: 'tool-result' as const, 
-                toolCallId: m.toolCallId || '', 
-                toolName: 'unknown',
-                result: m.content 
-              }] 
-            };
-          }
-          return { role: 'user' as const, content: m.content };
-        });
-
-      const systemMessage = messages.find(m => m.role === 'system')?.content;
-
-      const result = await generateText({
-        model: provider(this.model.model),
-        messages: coreMessages,
-        system: systemMessage,
-        temperature: this.model.temperature,
-        maxTokens: this.model.maxTokens,
-        topP: this.model.topP,
-      });
-
-      return {
-        content: result.text,
-        usage: result.usage ? {
-          prompt_tokens: result.usage.promptTokens,
-          completion_tokens: result.usage.completionTokens,
-          total_tokens: result.usage.totalTokens,
-        } : {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-        },
-      };
+      
+      // Create the appropriate provider
+      const provider = await this.createProvider();
+      
+      // Execute with the provider
+      return await this.executeWithProvider(provider, messages, tools, streaming, generateText);
     } catch (error) {
       throw new ProviderError(`AI SDK error: ${error}`);
     }
   }
 
-  private async completeAnthropic(
-    messages: Message[],
-    tools?: any[],
-    streaming = false
-  ): Promise<AIResponse> {
-    return this.completeOpenAI(messages, tools, streaming);
+  private async createProvider(): Promise<any> {
+    const apiKey = this.model.apiKey || '';
+    
+    switch (this.model.provider) {
+      case 'openai': {
+        const { createOpenAI } = await import('@ai-sdk/openai');
+        return createOpenAI({
+          baseURL: this.model.baseURL,
+          apiKey,
+        });
+      }
+      
+      case 'anthropic': {
+        const { createAnthropic } = await import('@ai-sdk/anthropic');
+        return createAnthropic({ apiKey });
+      }
+      
+      case 'google': {
+        const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+        return createGoogleGenerativeAI({ apiKey });
+      }
+      
+      case 'google-vertex': {
+        const { createVertex } = await import('@ai-sdk/google-vertex');
+        return createVertex({
+          project: this.model.project || '',
+          location: this.model.location || '',
+        });
+      }
+      
+      case 'perplexity': {
+        const { createPerplexity } = await import('@ai-sdk/perplexity');
+        return createPerplexity({ apiKey });
+      }
+      
+      case 'xai': {
+        const { createXai } = await import('@ai-sdk/xai');
+        return createXai({ apiKey });
+      }
+      
+      case 'custom':
+        throw new ProviderError('Custom provider not yet implemented');
+        
+      default:
+        throw new ProviderError(`Unsupported provider: ${this.model.provider}`);
+    }
   }
 
-  private async completeGoogle(
+  private async executeWithProvider(
+    provider: any,
     messages: Message[],
-    tools?: any[],
-    streaming = false
+    tools: any[] | undefined,
+    streaming: boolean,
+    generateText: any
   ): Promise<AIResponse> {
-    return this.completeOpenAI(messages, tools, streaming);
+    // Transform messages for AI SDK format
+    const coreMessages = this.transformMessages(messages);
+    const systemMessage = messages.find(m => m.role === 'system')?.content;
+
+    // Generate response using AI SDK
+    const result = await generateText({
+      model: provider(this.model.model),
+      messages: coreMessages,
+      system: systemMessage,
+      temperature: this.model.temperature,
+      maxTokens: this.model.maxTokens,
+      topP: this.model.topP,
+    });
+
+    return {
+      content: result.text,
+      usage: result.usage ? {
+        prompt_tokens: result.usage.promptTokens,
+        completion_tokens: result.usage.completionTokens,
+        total_tokens: result.usage.totalTokens,
+      } : {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+      },
+    };
   }
 
-  private async completeGoogleVertex(
-    messages: Message[],
-    tools?: any[],
-    streaming = false
-  ): Promise<AIResponse> {
-    return this.completeOpenAI(messages, tools, streaming);
-  }
-
-  private async completePerplexity(
-    messages: Message[],
-    tools?: any[],
-    streaming = false
-  ): Promise<AIResponse> {
-    return this.completeOpenAI(messages, tools, streaming);
-  }
-
-  private async completeXai(
-    messages: Message[],
-    tools?: any[],
-    streaming = false
-  ): Promise<AIResponse> {
-    return this.completeOpenAI(messages, tools, streaming);
-  }
-
-  private async completeCustom(
-    messages: Message[],
-    tools?: any[],
-    streaming = false
-  ): Promise<AIResponse> {
-    throw new ProviderError('Custom provider not yet implemented');
+  private transformMessages(messages: Message[]): any[] {
+    return messages
+      .filter(m => m.role !== 'system')
+      .map(m => {
+        if (m.role === 'user') {
+          return { role: 'user' as const, content: m.content };
+        } else if (m.role === 'assistant') {
+          return { role: 'assistant' as const, content: m.content };
+        } else if (m.role === 'tool') {
+          return { 
+            role: 'tool' as const, 
+            content: [{ 
+              type: 'tool-result' as const, 
+              toolCallId: m.toolCallId || '', 
+              toolName: 'unknown',
+              result: m.content 
+            }] 
+          };
+        }
+        return { role: 'user' as const, content: m.content };
+      });
   }
 }

@@ -56,123 +56,107 @@ var AIProvider = class {
   }
   async complete(messages, tools, streaming = false) {
     try {
-      switch (this.model.provider) {
-        case "openai":
-          return await this.completeOpenAI(messages, tools, streaming);
-        case "anthropic":
-          return await this.completeAnthropic(messages, tools, streaming);
-        case "google":
-          return await this.completeGoogle(messages, tools, streaming);
-        case "google-vertex":
-          return await this.completeGoogleVertex(messages, tools, streaming);
-        case "perplexity":
-          return await this.completePerplexity(messages, tools, streaming);
-        case "xai":
-          return await this.completeXai(messages, tools, streaming);
-        case "custom":
-          return await this.completeCustom(messages, tools, streaming);
-        default:
-          throw new ProviderError(`Unsupported provider: ${this.model.provider}`);
-      }
+      return await this.completeRequest(messages, tools, streaming);
     } catch (error) {
       throw new ProviderError(
         `Failed to complete request with ${this.model.provider}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
-  async completeOpenAI(messages, tools, streaming = false) {
+  async completeRequest(messages, tools, streaming = false) {
     if (typeof globalThis !== "undefined" && "window" in globalThis) {
-      throw new ProviderError("OpenAI provider not available in browser environment");
+      throw new ProviderError("AI providers not available in browser environment");
     }
     try {
-      const { createOpenAI } = await import("@ai-sdk/openai");
-      const { createAnthropic } = await import("@ai-sdk/anthropic");
-      const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
-      const { createVertex } = await import("@ai-sdk/google-vertex");
-      const { createPerplexity } = await import("@ai-sdk/perplexity");
-      const { createXai } = await import("@ai-sdk/xai");
       const { generateText } = await import("ai");
-      const openai = createOpenAI({
-        baseURL: this.model.baseURL,
-        apiKey: this.model.apiKey || ""
-      });
-      const anthropic = createAnthropic({
-        apiKey: this.model.apiKey || ""
-      });
-      const google = createGoogleGenerativeAI({
-        apiKey: this.model.apiKey || ""
-      });
-      const googleVertex = createVertex({
-        project: this.model.project || "",
-        location: this.model.location || ""
-      });
-      const perplexity = createPerplexity({
-        apiKey: this.model.apiKey || ""
-      });
-      const xai = createXai({
-        apiKey: this.model.apiKey || ""
-      });
-      const provider = this.model.provider === "openai" ? openai : this.model.provider === "anthropic" ? anthropic : this.model.provider === "google" ? google : this.model.provider === "google-vertex" ? googleVertex : this.model.provider === "perplexity" ? perplexity : this.model.provider === "xai" ? xai : openai;
-      const coreMessages = messages.filter((m) => m.role !== "system").map((m) => {
-        if (m.role === "user") {
-          return { role: "user", content: m.content };
-        } else if (m.role === "assistant") {
-          return { role: "assistant", content: m.content };
-        } else if (m.role === "tool") {
-          return {
-            role: "tool",
-            content: [{
-              type: "tool-result",
-              toolCallId: m.toolCallId || "",
-              toolName: "unknown",
-              result: m.content
-            }]
-          };
-        }
-        return { role: "user", content: m.content };
-      });
-      const systemMessage = messages.find((m) => m.role === "system")?.content;
-      const result = await generateText({
-        model: provider(this.model.model),
-        messages: coreMessages,
-        system: systemMessage,
-        temperature: this.model.temperature,
-        maxTokens: this.model.maxTokens,
-        topP: this.model.topP
-      });
-      return {
-        content: result.text,
-        usage: result.usage ? {
-          prompt_tokens: result.usage.promptTokens,
-          completion_tokens: result.usage.completionTokens,
-          total_tokens: result.usage.totalTokens
-        } : {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0
-        }
-      };
+      const provider = await this.createProvider();
+      return await this.executeWithProvider(provider, messages, tools, streaming, generateText);
     } catch (error) {
       throw new ProviderError(`AI SDK error: ${error}`);
     }
   }
-  async completeAnthropic(messages, tools, streaming = false) {
-    return this.completeOpenAI(messages, tools, streaming);
+  async createProvider() {
+    const apiKey = this.model.apiKey || "";
+    switch (this.model.provider) {
+      case "openai": {
+        const { createOpenAI } = await import("@ai-sdk/openai");
+        return createOpenAI({
+          baseURL: this.model.baseURL,
+          apiKey
+        });
+      }
+      case "anthropic": {
+        const { createAnthropic } = await import("@ai-sdk/anthropic");
+        return createAnthropic({ apiKey });
+      }
+      case "google": {
+        const { createGoogleGenerativeAI } = await import("@ai-sdk/google");
+        return createGoogleGenerativeAI({ apiKey });
+      }
+      case "google-vertex": {
+        const { createVertex } = await import("@ai-sdk/google-vertex");
+        return createVertex({
+          project: this.model.project || "",
+          location: this.model.location || ""
+        });
+      }
+      case "perplexity": {
+        const { createPerplexity } = await import("@ai-sdk/perplexity");
+        return createPerplexity({ apiKey });
+      }
+      case "xai": {
+        const { createXai } = await import("@ai-sdk/xai");
+        return createXai({ apiKey });
+      }
+      case "custom":
+        throw new ProviderError("Custom provider not yet implemented");
+      default:
+        throw new ProviderError(`Unsupported provider: ${this.model.provider}`);
+    }
   }
-  async completeGoogle(messages, tools, streaming = false) {
-    return this.completeOpenAI(messages, tools, streaming);
+  async executeWithProvider(provider, messages, tools, streaming, generateText) {
+    const coreMessages = this.transformMessages(messages);
+    const systemMessage = messages.find((m) => m.role === "system")?.content;
+    const result = await generateText({
+      model: provider(this.model.model),
+      messages: coreMessages,
+      system: systemMessage,
+      temperature: this.model.temperature,
+      maxTokens: this.model.maxTokens,
+      topP: this.model.topP
+    });
+    return {
+      content: result.text,
+      usage: result.usage ? {
+        prompt_tokens: result.usage.promptTokens,
+        completion_tokens: result.usage.completionTokens,
+        total_tokens: result.usage.totalTokens
+      } : {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0
+      }
+    };
   }
-  async completeGoogleVertex(messages, tools, streaming = false) {
-    return this.completeOpenAI(messages, tools, streaming);
-  }
-  async completePerplexity(messages, tools, streaming = false) {
-    return this.completeOpenAI(messages, tools, streaming);
-  }
-  async completeXai(messages, tools, streaming = false) {
-    return this.completeOpenAI(messages, tools, streaming);
-  }
-  async completeCustom(messages, tools, streaming = false) {
-    throw new ProviderError("Custom provider not yet implemented");
+  transformMessages(messages) {
+    return messages.filter((m) => m.role !== "system").map((m) => {
+      if (m.role === "user") {
+        return { role: "user", content: m.content };
+      } else if (m.role === "assistant") {
+        return { role: "assistant", content: m.content };
+      } else if (m.role === "tool") {
+        return {
+          role: "tool",
+          content: [{
+            type: "tool-result",
+            toolCallId: m.toolCallId || "",
+            toolName: "unknown",
+            result: m.content
+          }]
+        };
+      }
+      return { role: "user", content: m.content };
+    });
   }
 };
 
