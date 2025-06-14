@@ -1280,10 +1280,10 @@ var OrchestratorConfigSchema = import_zod.z.object({
   systemPrompt: import_zod.z.string().optional(),
   maxIterations: import_zod.z.number().positive().default(10),
   budget: import_zod.z.object({
-    maxCost: import_zod.z.number().positive().optional(),
-    maxTokens: import_zod.z.number().positive().optional(),
-    maxToolCalls: import_zod.z.number().positive().optional()
-  }).optional(),
+    maxCost: import_zod.z.number().positive(),
+    maxTokens: import_zod.z.number().positive(),
+    maxToolCalls: import_zod.z.number().positive()
+  }).partial().optional(),
   streaming: import_zod.z.boolean().default(false),
   debug: import_zod.z.boolean().default(false)
 });

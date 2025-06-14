@@ -67,10 +67,10 @@ export const OrchestratorConfigSchema = z.object({
   systemPrompt: z.string().optional(),
   maxIterations: z.number().positive().default(10),
   budget: z.object({
-    maxCost: z.number().positive().optional(),
-    maxTokens: z.number().positive().optional(),
-    maxToolCalls: z.number().positive().optional(),
-  }).optional(),
+    maxCost: z.number().positive(),
+    maxTokens: z.number().positive(),
+    maxToolCalls: z.number().positive(),
+  }).partial().optional(),
   streaming: z.boolean().default(false),
   debug: z.boolean().default(false),
 });
