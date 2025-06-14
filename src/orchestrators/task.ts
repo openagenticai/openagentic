@@ -1,4 +1,7 @@
 import { Orchestrator } from '../core/orchestrator';
+import { AIProvider } from '../core/ai-provider';
+import { CostTracker } from '../core/cost-tracker';
+import { ToolRegistry } from '../core/tool-registry';
 import type { AIModel, Tool, OrchestratorConfig } from '../types';
 
 export interface TaskStep {
@@ -17,7 +20,10 @@ export class TaskOrchestrator extends Orchestrator {
     model: AIModel,
     tools: Tool[] = [],
     steps: TaskStep[] = [],
-    systemPrompt?: string
+    systemPrompt?: string,
+    aiProvider?: AIProvider,
+    costTracker?: CostTracker,
+    toolRegistry?: ToolRegistry
   ) {
     const config: OrchestratorConfig = {
       model,
@@ -28,7 +34,13 @@ export class TaskOrchestrator extends Orchestrator {
       debug: false,
     };
     
-    super(config);
+    super(
+      config,
+      aiProvider || new AIProvider(model),
+      costTracker || new CostTracker(),
+      toolRegistry || new ToolRegistry(tools)
+    );
+    
     this.steps = steps;
   }
 

@@ -14,20 +14,16 @@ import { OrchestratorError, BudgetExceededError, MaxIterationsError } from './er
 import { SimpleEventEmitter } from '../utils/simple-event-emitter';
 
 export class Orchestrator {
-  private config: OrchestratorConfig;
-  private aiProvider: AIProvider;
-  private costTracker: CostTracker;
-  private toolRegistry: ToolRegistry;
   private messages: Message[] = [];
   private iterations: number = 0;
   private eventEmitter = new SimpleEventEmitter<OrchestratorEvent>();
 
-  constructor(config: OrchestratorConfig) {
-    this.config = config;
-    this.aiProvider = new AIProvider(config.model);
-    this.costTracker = new CostTracker(config.budget);
-    this.toolRegistry = new ToolRegistry(config.tools);
-
+  constructor(
+    private config: OrchestratorConfig,
+    private aiProvider: AIProvider = new AIProvider(config.model),
+    private costTracker: CostTracker = new CostTracker(config.budget),
+    private toolRegistry: ToolRegistry = new ToolRegistry(config.tools)
+  ) {
     if (config.systemPrompt) {
       this.messages.push({
         role: 'system',

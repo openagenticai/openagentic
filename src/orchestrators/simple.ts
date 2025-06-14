@@ -1,8 +1,18 @@
 import { Orchestrator } from '../core/orchestrator';
+import { AIProvider } from '../core/ai-provider';
+import { CostTracker } from '../core/cost-tracker';
+import { ToolRegistry } from '../core/tool-registry';
 import type { AIModel, Tool, OrchestratorConfig } from '../types';
 
 export class SimpleOrchestrator extends Orchestrator {
-  constructor(model: AIModel, tools: Tool[] = [], systemPrompt?: string) {
+  constructor(
+    model: AIModel, 
+    tools: Tool[] = [], 
+    systemPrompt?: string,
+    aiProvider?: AIProvider,
+    costTracker?: CostTracker,
+    toolRegistry?: ToolRegistry
+  ) {
     const config: OrchestratorConfig = {
       model,
       tools,
@@ -12,7 +22,12 @@ export class SimpleOrchestrator extends Orchestrator {
       debug: false,
     };
     
-    super(config);
+    super(
+      config,
+      aiProvider || new AIProvider(model),
+      costTracker || new CostTracker(),
+      toolRegistry || new ToolRegistry(tools)
+    );
   }
 
   public static create(options: {

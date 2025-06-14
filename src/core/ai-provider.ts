@@ -1,5 +1,6 @@
 import type { AIModel, Message } from '../types';
 import { ProviderError } from './errors';
+import { providerConfigs } from '../providers';
 
 interface AIResponse {
   content?: string;
@@ -19,11 +20,7 @@ interface AIResponse {
 }
 
 export class AIProvider {
-  private model: AIModel;
-
-  constructor(model: AIModel) {
-    this.model = model;
-  }
+  constructor(private model: AIModel) {}
 
   public async complete(
     messages: Message[],
@@ -169,5 +166,33 @@ export class AIProvider {
         }
         return { role: 'user' as const, content: m.content };
       });
+  }
+
+  // Calculate cost based on token usage
+  public calculateCost(inputTokens: number, outputTokens: number): number {
+    try {
+      const { calculateCost } = require('../providers');
+      return calculateCost(
+        this.model.provider,
+        this.model.model,
+        inputTokens,
+        outputTokens
+      );
+    } catch (error) {
+      // Fall back to approximation if specific pricing not available
+      const avgInputCost = 0.01 / 1000; // Average input cost per token
+      const avgOutputCost = 0.02 / 1000; // Average output cost per token
+      return (inputTokens * avgInputCost) + (outputTokens * avgOutputCost);
+    }
+  }
+
+  // Get model metadata if available
+  public getModelInfo(): any {
+    try {
+      const { getModelInfo } = require('../providers');
+      return getModelInfo(this.model.provider, this.model.model);
+    } catch (error) {
+      return null;
+    }
   }
 }

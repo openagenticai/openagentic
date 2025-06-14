@@ -1,10 +1,20 @@
 import { Orchestrator } from '../core/orchestrator';
+import { AIProvider } from '../core/ai-provider';
+import { CostTracker } from '../core/cost-tracker';
+import { ToolRegistry } from '../core/tool-registry';
 import type { AIModel, Tool, OrchestratorConfig, Message } from '../types';
 
 export class ConversationalOrchestrator extends Orchestrator {
   private conversationHistory: Message[] = [];
 
-  constructor(model: AIModel, tools: Tool[] = [], systemPrompt?: string) {
+  constructor(
+    model: AIModel, 
+    tools: Tool[] = [], 
+    systemPrompt?: string,
+    aiProvider?: AIProvider,
+    costTracker?: CostTracker,
+    toolRegistry?: ToolRegistry
+  ) {
     const config: OrchestratorConfig = {
       model,
       tools,
@@ -14,7 +24,12 @@ export class ConversationalOrchestrator extends Orchestrator {
       debug: false,
     };
     
-    super(config);
+    super(
+      config,
+      aiProvider || new AIProvider(model),
+      costTracker || new CostTracker(),
+      toolRegistry || new ToolRegistry(tools)
+    );
   }
 
   public async continueConversation(userMessage: string): Promise<any> {

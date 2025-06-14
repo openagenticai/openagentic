@@ -1,20 +1,5 @@
 import type { CostTracking } from '../types';
-
-const PRICING = {
-  openai: {
-    'gpt-4': { input: 0.03, output: 0.06 }, // per 1K tokens
-    'gpt-4-turbo': { input: 0.01, output: 0.03 },
-    'gpt-3.5-turbo': { input: 0.0015, output: 0.002 },
-  },
-  anthropic: {
-    'claude-3-opus': { input: 0.015, output: 0.075 },
-    'claude-3-sonnet': { input: 0.003, output: 0.015 },
-    'claude-3-haiku': { input: 0.00025, output: 0.00125 },
-  },
-  google: {
-    'gemini-pro': { input: 0.0005, output: 0.0015 },
-  },
-};
+import { AIProvider } from './ai-provider';
 
 export class CostTracker {
   private tracking: CostTracking = {
@@ -30,8 +15,15 @@ export class CostTracker {
     maxToolCalls?: number;
   } | undefined;
 
-  constructor(budget?: { maxCost?: number; maxTokens?: number; maxToolCalls?: number }) {
+  // Optional AIProvider for more accurate cost calculations
+  private aiProvider?: AIProvider;
+
+  constructor(
+    budget?: { maxCost?: number; maxTokens?: number; maxToolCalls?: number },
+    aiProvider?: AIProvider
+  ) {
     this.budget = budget;
+    this.aiProvider = aiProvider;
   }
 
   public updateTokenUsage(inputTokens: number, outputTokens: number): void {
@@ -83,13 +75,25 @@ export class CostTracker {
   }
 
   private updateEstimatedCost(): void {
-    // This is a simplified cost calculation
-    // In practice, you'd need to know the specific model and provider
-    const avgInputCost = 0.01 / 1000; // Average input cost per token
-    const avgOutputCost = 0.02 / 1000; // Average output cost per token
+    if (this.aiProvider) {
+      // Use the AIProvider to calculate costs if available
+      this.tracking.estimatedCost = this.aiProvider.calculateCost(
+        this.tracking.inputTokens,
+        this.tracking.outputTokens
+      );
+    } else {
+      // Fallback to simplified calculation
+      const avgInputCost = 0.01 / 1000; // Average input cost per token
+      const avgOutputCost = 0.02 / 1000; // Average output cost per token
 
-    this.tracking.estimatedCost = 
-      (this.tracking.inputTokens * avgInputCost) +
-      (this.tracking.outputTokens * avgOutputCost);
+      this.tracking.estimatedCost = 
+        (this.tracking.inputTokens * avgInputCost) +
+        (this.tracking.outputTokens * avgOutputCost);
+    }
+  }
+
+  // Allow updating the AIProvider
+  public setAIProvider(provider: AIProvider): void {
+    this.aiProvider = provider;
   }
 }
