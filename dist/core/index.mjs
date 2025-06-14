@@ -217,38 +217,39 @@ var ToolRegistry = class {
   tools = /* @__PURE__ */ new Map();
   usedTools = /* @__PURE__ */ new Set();
   constructor(tools = []) {
-    tools.forEach((tool) => this.registerTool(tool));
+    tools.forEach((tool) => this.register(tool));
   }
-  registerTool(tool) {
+  register(tool) {
     if (this.tools.has(tool.name)) {
       throw new ToolError(`Tool '${tool.name}' is already registered`);
     }
     this.tools.set(tool.name, tool);
   }
-  unregisterTool(name) {
+  unregister(name) {
     return this.tools.delete(name);
   }
-  async executeTool(name, parameters) {
+  async execute(name, args) {
     const tool = this.tools.get(name);
     if (!tool) {
       throw new ToolError(`Tool '${name}' not found`);
     }
     try {
-      this.validateParameters(tool, parameters);
       this.usedTools.add(name);
-      const result = await tool.execute(parameters);
-      return result;
+      return await tool.execute(args);
     } catch (error) {
       throw new ToolError(
         `Failed to execute tool '${name}': ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
-  getToolDefinitions() {
+  getDefinitions() {
     return Array.from(this.tools.values()).map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.parameters
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters
+      }
     }));
   }
   getUsedTools() {
@@ -262,41 +263,6 @@ var ToolRegistry = class {
   }
   reset() {
     this.usedTools.clear();
-  }
-  validateParameters(tool, parameters) {
-    const required = Object.entries(tool.parameters).filter(([, param]) => param.required).map(([name]) => name);
-    for (const requiredParam of required) {
-      if (!(requiredParam in parameters)) {
-        throw new ToolError(
-          `Missing required parameter '${requiredParam}' for tool '${tool.name}'`
-        );
-      }
-    }
-    for (const [paramName, paramValue] of Object.entries(parameters)) {
-      const paramSchema = tool.parameters[paramName];
-      if (!paramSchema) continue;
-      if (!this.validateParameterType(paramValue, paramSchema.type)) {
-        throw new ToolError(
-          `Invalid type for parameter '${paramName}' in tool '${tool.name}'. Expected ${paramSchema.type}, got ${typeof paramValue}`
-        );
-      }
-    }
-  }
-  validateParameterType(value, expectedType) {
-    switch (expectedType) {
-      case "string":
-        return typeof value === "string";
-      case "number":
-        return typeof value === "number";
-      case "boolean":
-        return typeof value === "boolean";
-      case "object":
-        return typeof value === "object" && value !== null && !Array.isArray(value);
-      case "array":
-        return Array.isArray(value);
-      default:
-        return true;
-    }
   }
 };
 
@@ -378,7 +344,8 @@ var Orchestrator = class {
         this.checkBudgetConstraints();
         const response = await this.aiProvider.complete(
           this.messages,
-          this.toolRegistry.getToolDefinitions(),
+          this.toolRegistry.getDefinitions(),
+          // Updated to match new method name
           this.config.streaming
         );
         this.costTracker.updateTokenUsage(
@@ -441,7 +408,8 @@ var Orchestrator = class {
           arguments: JSON.parse(toolCall.function.arguments)
         }
       });
-      const result = await this.toolRegistry.executeTool(
+      const result = await this.toolRegistry.execute(
+        // Updated to match new method name
         toolCall.function.name,
         JSON.parse(toolCall.function.arguments)
       );

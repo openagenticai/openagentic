@@ -54,7 +54,7 @@ export class Orchestrator {
         // Get AI response
         const response = await this.aiProvider.complete(
           this.messages,
-          this.toolRegistry.getToolDefinitions(),
+          this.toolRegistry.getDefinitions(), // Updated to match new method name
           this.config.streaming
         );
 
@@ -134,7 +134,7 @@ export class Orchestrator {
         }
       });
 
-      const result = await this.toolRegistry.executeTool(
+      const result = await this.toolRegistry.execute( // Updated to match new method name
         toolCall.function.name,
         JSON.parse(toolCall.function.arguments)
       );
