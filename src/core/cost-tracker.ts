@@ -24,13 +24,13 @@ export class CostTracker {
     estimatedCost: 0,
   };
 
-  private budget?: {
+  private budget: {
     maxCost?: number;
     maxTokens?: number;
     maxToolCalls?: number;
   } | undefined;
 
-  constructor(budget?: { maxCost?: number; maxTokens?: number; maxToolCalls?: number } | undefined) {
+  constructor(budget?: { maxCost?: number; maxTokens?: number; maxToolCalls?: number }) {
     this.budget = budget;
   }
 

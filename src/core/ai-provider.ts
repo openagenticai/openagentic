@@ -63,12 +63,17 @@ export class AIProvider {
     tools?: any[],
     streaming = false
   ): Promise<AIResponse> {
-    if (typeof globalThis.window !== 'undefined') {
+    if (typeof globalThis !== 'undefined' && 'window' in globalThis) {
       throw new ProviderError('OpenAI provider not available in browser environment');
     }
 
     try {
       const { createOpenAI } = await import('@ai-sdk/openai');
+      const { createAnthropic } = await import('@ai-sdk/anthropic');
+      const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+      const { createVertex } = await import('@ai-sdk/google-vertex');
+      const { createPerplexity } = await import('@ai-sdk/perplexity');
+      const { createXai } = await import('@ai-sdk/xai');
       const { generateText } = await import('ai');
 
       const openai = createOpenAI({
@@ -112,7 +117,15 @@ export class AIProvider {
           } else if (m.role === 'assistant') {
             return { role: 'assistant' as const, content: m.content };
           } else if (m.role === 'tool') {
-            return { role: 'tool' as const, content: [{ type: 'text' as const, text: m.content }], toolCallId: m.toolCallId || '' };
+            return { 
+              role: 'tool' as const, 
+              content: [{ 
+                type: 'tool-result' as const, 
+                toolCallId: m.toolCallId || '', 
+                toolName: 'unknown',
+                result: m.content 
+              }] 
+            };
           }
           return { role: 'user' as const, content: m.content };
         });
@@ -134,7 +147,11 @@ export class AIProvider {
           prompt_tokens: result.usage.promptTokens,
           completion_tokens: result.usage.completionTokens,
           total_tokens: result.usage.totalTokens,
-        } : undefined,
+        } : {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+        },
       };
     } catch (error) {
       throw new ProviderError(`AI SDK error: ${error}`);
