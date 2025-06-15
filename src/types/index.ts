@@ -46,31 +46,15 @@ export const ToolSchema = z.object({
   description: z.string(),
   parameters: z.record(ToolParameterSchema),
   execute: z.function(),
-  costEstimate: z.number().optional(),
 });
 
 export type Tool = z.infer<typeof ToolSchema>;
-
-export const CostTrackingSchema = z.object({
-  inputTokens: z.number().default(0),
-  outputTokens: z.number().default(0),
-  toolCalls: z.number().default(0),
-  estimatedCost: z.number().default(0),
-  actualCost: z.number().optional(),
-});
-
-export type CostTracking = z.infer<typeof CostTrackingSchema>;
 
 export const OrchestratorConfigSchema = z.object({
   model: AIModelSchema,
   tools: z.array(ToolSchema),
   systemPrompt: z.string().optional(),
   maxIterations: z.number().positive().default(10),
-  budget: z.object({
-    maxCost: z.number().positive(),
-    maxTokens: z.number().positive(),
-    maxToolCalls: z.number().positive(),
-  }).partial().optional(),
   streaming: z.boolean().default(false),
   debug: z.boolean().default(false),
 });
@@ -82,7 +66,6 @@ export const ExecutionResultSchema = z.object({
   result: z.any().optional(),
   error: z.string().optional(),
   messages: z.array(MessageSchema),
-  costTracking: CostTrackingSchema,
   iterations: z.number(),
   toolCallsUsed: z.array(z.string()),
 });
@@ -95,7 +78,6 @@ export type OrchestratorEvent =
   | { type: 'iteration'; data: { iteration: number; message: Message } }
   | { type: 'tool_call'; data: { toolName: string; arguments: Record<string, any> } }
   | { type: 'tool_result'; data: { toolName: string; result: any; success: boolean } }
-  | { type: 'cost_update'; data: CostTracking }
   | { type: 'complete'; data: ExecutionResult }
   | { type: 'error'; data: { error: string; iteration?: number } };
 

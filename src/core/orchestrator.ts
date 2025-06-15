@@ -2,13 +2,12 @@ import type {
   OrchestratorConfig,
   ExecutionResult,
   Message,
-  Tool,
   OrchestratorEvent,
   EventHandler,
 } from '../types';
 import { AIProvider } from './ai-provider';
 import { ToolRegistry } from './tool-registry';
-import { OrchestratorError, BudgetExceededError, MaxIterationsError } from './errors';
+import { MaxIterationsError } from './errors';
 import { SimpleEventEmitter } from '../utils/simple-event-emitter';
 
 export class Orchestrator {
@@ -40,17 +39,13 @@ export class Orchestrator {
 
       while (this.iterations < this.config.maxIterations) {
         this.iterations++;
-        
-        // Check budget constraints
-        this.checkBudgetConstraints();
 
-        // Get AI response
+        // Get AI response - use streaming or generateText based on config
         const response = await this.aiProvider.complete(
           this.messages,
-          this.toolRegistry.getDefinitions(), // Updated to match new method name
+          this.toolRegistry.getDefinitions(),
           this.config.streaming
         );
-
 
         const assistantMessage: Message = {
           role: 'assistant',
@@ -102,6 +97,19 @@ export class Orchestrator {
     }
   }
 
+  // Custom orchestration support - allows chaining multiple models or custom logic
+  public async executeWithCustomLogic(
+    userMessage: string, 
+    customLogic: (orchestrator: Orchestrator, messages: Message[]) => Promise<ExecutionResult>
+  ): Promise<ExecutionResult> {
+    this.messages.push({
+      role: 'user',
+      content: userMessage,
+    });
+
+    return await customLogic(this, this.messages);
+  }
+
   public onEvent(handler: EventHandler): void {
     this.eventEmitter.on(handler);
   }
@@ -120,7 +128,7 @@ export class Orchestrator {
         }
       });
 
-      const result = await this.toolRegistry.execute( // Updated to match new method name
+      const result = await this.toolRegistry.execute(
         toolCall.function.name,
         JSON.parse(toolCall.function.arguments)
       );
@@ -160,8 +168,6 @@ export class Orchestrator {
     }
   }
 
-  
-
   public getMessages(): Message[] {
     return [...this.messages];
   }
@@ -172,10 +178,28 @@ export class Orchestrator {
       : [];
     this.iterations = 0;
     this.toolRegistry.reset();
-    this.eventEmitter.clear(); // Clear event listeners on reset
+    this.eventEmitter.clear();
   }
 
-  public getEventListenerCount(): number {
-    return this.eventEmitter.listenerCount();
+  // Helper methods for custom orchestration
+  public async callModel(messages: Message[]): Promise<any> {
+    return await this.aiProvider.complete(messages, this.toolRegistry.getDefinitions(), this.config.streaming);
+  }
+
+  public addMessage(message: Message): void {
+    this.messages.push(message);
+  }
+
+  public getToolRegistry(): ToolRegistry {
+    return this.toolRegistry;
+  }
+
+  public getAIProvider(): AIProvider {
+    return this.aiProvider;
+  }
+
+  // Switch models mid-orchestration for custom logic
+  public switchModel(newModel: any): void {
+    this.aiProvider = new AIProvider(newModel);
   }
 }
