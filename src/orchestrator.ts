@@ -72,7 +72,7 @@ export class Orchestrator {
           content: response.content ?? '',
         };
 
-        // Add toolCalls only if they exist
+        // Add toolCalls only if they exist and are arrays
         if (response.toolCalls && Array.isArray(response.toolCalls)) {
           assistantMessage.toolCalls = response.toolCalls;
         }
@@ -83,9 +83,10 @@ export class Orchestrator {
           data: { iteration: this.iterations, message: assistantMessage } 
         });
 
-        // Handle tool calls if any
-        if (response.toolCalls && Array.isArray(response.toolCalls) && response.toolCalls.length > 0) {
-          for (const toolCall of response.toolCalls) {
+        // Fix: Ensure toolCalls is awaited and properly checked before using array methods
+        const toolCalls = response.toolCalls;
+        if (toolCalls && Array.isArray(toolCalls) && toolCalls.length > 0) {
+          for (const toolCall of toolCalls) {
             await this.executeToolCall(toolCall);
           }
           continue; // Continue the loop for more iterations
@@ -169,15 +170,16 @@ export class Orchestrator {
       const finalChunk: StreamChunk = { delta: '', content, done: true };
       yield finalChunk;
 
-      // Fix: More explicit handling of optional toolCalls in streaming
+      // Fix: Properly await and check toolCalls before using array methods
       const finalMessage: Message = {
         role: 'assistant',
         content,
       };
 
-      // Add toolCalls only if they exist and are valid
-      if (result.toolCalls && Array.isArray(result.toolCalls) && result.toolCalls.length > 0) {
-        finalMessage.toolCalls = result.toolCalls.map((tc: any) => ({
+      // Fix: Await toolCalls if it's a Promise and check before using map
+      const streamToolCalls = await Promise.resolve(result.toolCalls);
+      if (streamToolCalls && Array.isArray(streamToolCalls) && streamToolCalls.length > 0) {
+        finalMessage.toolCalls = streamToolCalls.map((tc: any) => ({
           toolCallId: tc.toolCallId,
           toolName: tc.toolName,
           args: tc.args,
@@ -336,10 +338,12 @@ export class Orchestrator {
 
     const result = await generateText(generateConfig);
 
-    // Fix: More explicit handling of toolCalls result
+    // Fix: Properly await toolCalls if it's a Promise before using array methods
+    const toolCalls = await Promise.resolve(result.toolCalls);
+    
     return {
       content: result.text,
-      toolCalls: result.toolCalls && Array.isArray(result.toolCalls) ? result.toolCalls.map((tc: any) => ({
+      toolCalls: toolCalls && Array.isArray(toolCalls) ? toolCalls.map((tc: any) => ({
         toolCallId: tc.toolCallId,
         toolName: tc.toolName,
         args: tc.args,
