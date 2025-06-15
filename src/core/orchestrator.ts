@@ -4,7 +4,8 @@ import type {
   Tool, 
   Message, 
   ExecutionResult,
-  OrchestratorEvent 
+  OrchestratorEvent,
+  ToolContext 
 } from '../types';
 import { SimpleEventEmitter } from '../utils/simple-event-emitter';
 
@@ -39,7 +40,7 @@ export class Orchestrator {
     this.maxIterations = options.maxIterations || 10;
     this.customLogic = options.customLogic;
     
-    // Register tools
+    // Register tools with validation
     if (options.tools) {
       options.tools.forEach(tool => this.addTool(tool));
     }
@@ -170,8 +171,21 @@ export class Orchestrator {
     }
   }
 
-  // Tool management methods
+  // Tool management methods with validation
   public addTool(tool: Tool): void {
+    // Validate tool structure
+    if (!tool.name || !tool.description || !tool.execute) {
+      throw new Error(`Invalid tool: missing required properties`);
+    }
+    
+    if (!tool.parameters || tool.parameters.type !== 'object') {
+      throw new Error(`Invalid tool parameters for ${tool.name}`);
+    }
+    
+    if (this.tools.has(tool.name)) {
+      throw new Error(`Tool already exists: ${tool.name}`);
+    }
+    
     this.tools.set(tool.name, tool);
   }
 
@@ -185,6 +199,10 @@ export class Orchestrator {
 
   public getAllTools(): Tool[] {
     return Array.from(this.tools.values());
+  }
+
+  public getToolsByCategory(category: Tool['category']): Tool[] {
+    return this.getAllTools().filter(tool => tool.category === category);
   }
 
   // Model switching
@@ -348,6 +366,50 @@ export class Orchestrator {
     }
   }
 
+  private createToolContext(): ToolContext {
+    return {
+      getModel: async (providerName?: string) => {
+        if (providerName && providerName !== this.model.provider) {
+          // Create a provider for a different service
+          return await this.createProviderByName(providerName);
+        }
+        return await this.createProvider();
+      },
+      apiKeys: {
+        openai: process.env.OPENAI_API_KEY || '',
+        anthropic: process.env.ANTHROPIC_API_KEY || '',
+        google: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
+        perplexity: process.env.PERPLEXITY_API_KEY || '',
+        xai: process.env.XAI_API_KEY || '',
+      }
+    };
+  }
+
+  private async createProviderByName(providerName: string): Promise<any> {
+    switch (providerName) {
+      case 'openai': {
+        const { createOpenAI } = await import('@ai-sdk/openai');
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) throw new Error('OpenAI API key not found');
+        return createOpenAI({ apiKey });
+      }
+      case 'anthropic': {
+        const { createAnthropic } = await import('@ai-sdk/anthropic');
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) throw new Error('Anthropic API key not found');
+        return createAnthropic({ apiKey });
+      }
+      case 'google': {
+        const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
+        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        if (!apiKey) throw new Error('Google API key not found');
+        return createGoogleGenerativeAI({ apiKey });
+      }
+      default:
+        throw new Error(`Unsupported provider: ${providerName}`);
+    }
+  }
+
   private getToolDefinitions(): any[] {
     return Array.from(this.tools.values()).map(tool => ({
       type: 'function',
@@ -368,7 +430,10 @@ export class Orchestrator {
         tools[def.function.name] = {
           description: def.function.description,
           parameters: def.function.parameters,
-          execute: tool.execute,
+          execute: async (params: any) => {
+            const context = this.createToolContext();
+            return await tool.execute(params, context);
+          },
         };
       }
     });
@@ -391,7 +456,9 @@ export class Orchestrator {
         throw new Error(`Tool not found: ${toolCall.toolName}`);
       }
 
-      const result = await tool.execute(toolCall.args);
+      // Create tool context for AI-powered tools
+      const context = this.createToolContext();
+      const result = await tool.execute(toolCall.args, context);
 
       this.eventEmitter.emit({
         type: 'tool_result',

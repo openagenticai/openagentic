@@ -32,23 +32,38 @@ export const MessageSchema = z.object({
 
 export type Message = z.infer<typeof MessageSchema>;
 
-export const ToolParameterSchema = z.object({
-  type: z.enum(['string', 'number', 'boolean', 'object', 'array']),
-  description: z.string(),
-  required: z.boolean().default(false),
-  enum: z.array(z.string()).optional(),
-  properties: z.record(z.any()).optional(),
-  items: z.any().optional(),
-});
+// JSONSchema definition for tool parameters
+export interface JSONSchema {
+  type: 'object';
+  properties: Record<string, {
+    type: 'string' | 'number' | 'boolean' | 'object' | 'array';
+    description: string;
+    required?: boolean;
+    enum?: string[];
+    properties?: Record<string, any>;
+    items?: any;
+  }>;
+  required?: string[];
+}
 
-export const ToolSchema = z.object({
-  name: z.string(),
-  description: z.string(),
-  parameters: z.record(ToolParameterSchema),
-  execute: z.function(),
-});
+// Tool context for AI-powered tools
+export interface ToolContext {
+  getModel: (provider?: string) => Promise<any>;
+  apiKeys: Record<string, string>;
+}
 
-export type Tool = z.infer<typeof ToolSchema>;
+// Self-contained tool interface
+export interface Tool {
+  name: string;
+  description: string;
+  parameters: JSONSchema;
+  execute: (params: any, context?: ToolContext) => Promise<any>;
+  
+  // Optional metadata
+  category?: 'utility' | 'ai' | 'custom';
+  version?: string;
+  requiresAuth?: boolean;
+}
 
 export const ExecutionResultSchema = z.object({
   success: z.boolean(),
