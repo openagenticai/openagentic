@@ -23,12 +23,9 @@ export const MessageSchema = z.object({
   content: z.string(),
   toolCallId: z.string().optional(),
   toolCalls: z.array(z.object({
-    id: z.string(),
-    type: z.literal('function'),
-    function: z.object({
-      name: z.string(),
-      arguments: z.string(),
-    }),
+    toolCallId: z.string(),
+    toolName: z.string(),
+    args: z.record(z.any()),
   })).optional(),
 });
 
