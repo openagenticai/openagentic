@@ -18,9 +18,6 @@ export { fileReaderTool } from './custom/file-reader';
 import { httpTool } from './http';
 import { calculatorTool } from './calculator';
 import { timestampTool } from './timestamp';
-import { textGenerationTool } from './ai/text-generation';
-import { imageGenerationTool } from './ai/image-generation';
-import { codeGenerationTool } from './ai/code-generation';
 import type { Tool, ToolContext, JSONSchema } from '../types';
 
 // Categorized tool collections
@@ -31,9 +28,6 @@ export const allTools: Tool[] = [...utilityTools];
 export { httpTool as httpRequestTool };
 export { calculatorTool as mathTool };
 export { timestampTool as timeTool };
-export { textGenerationTool as aiTextTool };
-export { imageGenerationTool as aiImageTool };
-export { codeGenerationTool as aiCodeTool };
 
 // =============================================================================
 // TOOL CREATION UTILITIES
