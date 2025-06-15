@@ -66,11 +66,16 @@ export class Orchestrator {
 
         const response = await this.callModel(this.messages);
 
+        // Fix: More explicit handling of optional toolCalls
         const assistantMessage: Message = {
           role: 'assistant',
           content: response.content ?? '',
-          ...(response.toolCalls !== undefined && { toolCalls: response.toolCalls }),
         };
+
+        // Add toolCalls only if they exist
+        if (response.toolCalls && Array.isArray(response.toolCalls)) {
+          assistantMessage.toolCalls = response.toolCalls;
+        }
 
         this.messages.push(assistantMessage);
         this.emitEvent({ 
@@ -79,7 +84,7 @@ export class Orchestrator {
         });
 
         // Handle tool calls if any
-        if (response.toolCalls && response.toolCalls.length > 0) {
+        if (response.toolCalls && Array.isArray(response.toolCalls) && response.toolCalls.length > 0) {
           for (const toolCall of response.toolCalls) {
             await this.executeToolCall(toolCall);
           }
@@ -164,18 +169,21 @@ export class Orchestrator {
       const finalChunk: StreamChunk = { delta: '', content, done: true };
       yield finalChunk;
 
-      // Add final message - convert AI SDK toolCalls to our format
+      // Fix: More explicit handling of optional toolCalls in streaming
       const finalMessage: Message = {
         role: 'assistant',
         content,
-        ...(result.toolCalls && result.toolCalls.length > 0 && {
-          toolCalls: result.toolCalls.map((tc: any) => ({
-            toolCallId: tc.toolCallId,
-            toolName: tc.toolName,
-            args: tc.args,
-          }))
-        }),
       };
+
+      // Add toolCalls only if they exist and are valid
+      if (result.toolCalls && Array.isArray(result.toolCalls) && result.toolCalls.length > 0) {
+        finalMessage.toolCalls = result.toolCalls.map((tc: any) => ({
+          toolCallId: tc.toolCallId,
+          toolName: tc.toolName,
+          args: tc.args,
+        }));
+      }
+
       this.messages.push(finalMessage);
 
     } catch (error) {
@@ -328,9 +336,10 @@ export class Orchestrator {
 
     const result = await generateText(generateConfig);
 
+    // Fix: More explicit handling of toolCalls result
     return {
       content: result.text,
-      toolCalls: result.toolCalls ? result.toolCalls.map((tc: any) => ({
+      toolCalls: result.toolCalls && Array.isArray(result.toolCalls) ? result.toolCalls.map((tc: any) => ({
         toolCallId: tc.toolCallId,
         toolName: tc.toolName,
         args: tc.args,
@@ -450,7 +459,7 @@ export class Orchestrator {
           return { role: 'user' as const, content: m.content };
         } else if (m.role === 'assistant') {
           const assistantMsg: any = { role: 'assistant' as const, content: m.content };
-          if (m.toolCalls) {
+          if (m.toolCalls && Array.isArray(m.toolCalls)) {
             assistantMsg.toolCalls = m.toolCalls;
           }
           return assistantMsg;
