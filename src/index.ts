@@ -4,7 +4,7 @@
 
 // Core exports
 export { Orchestrator } from './orchestrator';
-export type { StreamChunk } from './orchestrator';
+export type { StreamChunk, OrchestratorConfig } from './types';
 
 // Tools - organized by category
 export * from './tools';
@@ -21,24 +21,10 @@ export { SimpleEventEmitter } from './utils/event-emitter';
 // =============================================================================
 
 import { Orchestrator } from './orchestrator';
-import type { Tool, AIModel } from './types';
+import type { Tool, AIModel, OrchestratorConfig } from './types';
 
-export function createOrchestrator(options: {
-  model: string | AIModel;
-  tools?: Tool[];
-  systemPrompt?: string;
-  streaming?: boolean;
-  maxIterations?: number;
-  customLogic?: (input: string, context: any) => Promise<any>;
-}) {
-  return new Orchestrator({
-    model: options.model,
-    tools: options.tools ?? [], // Fix: Use nullish coalescing
-    systemPrompt: options.systemPrompt,
-    streaming: options.streaming,
-    maxIterations: options.maxIterations,
-    customLogic: options.customLogic,
-  });
+export function createOrchestrator(options: OrchestratorConfig) {
+  return new Orchestrator(options);
 }
 
 // Convenience factories for common patterns

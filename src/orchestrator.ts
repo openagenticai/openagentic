@@ -5,16 +5,14 @@ import type {
   Message, 
   ExecutionResult,
   OrchestratorEvent,
-  ToolContext 
+  OrchestratorConfig,
+  ToolContext,
+  StreamChunk
 } from './types';
 import { SimpleEventEmitter } from './utils/event-emitter';
 import { ProviderManager } from './providers/manager';
 
-export interface StreamChunk {
-  delta: string;
-  content: string;
-  done: boolean;
-}
+export type { StreamChunk } from './types';
 
 export class Orchestrator {
   private model: AIModel;
@@ -25,14 +23,7 @@ export class Orchestrator {
   private maxIterations: number;
   private customLogic?: (input: string, context: any) => Promise<any>;
 
-  constructor(options: {
-    model: string | AIModel;
-    tools?: Tool[];
-    systemPrompt?: string;
-    streaming?: boolean;
-    maxIterations?: number;
-    customLogic?: (input: string, context: any) => Promise<any>;
-  }) {
+  constructor(options: OrchestratorConfig) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
     

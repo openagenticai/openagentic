@@ -35,6 +35,20 @@ export const MessageSchema = z.object({
 export type Message = z.infer<typeof MessageSchema>;
 
 // =============================================================================
+// ORCHESTRATOR CONFIGURATION
+// =============================================================================
+
+export interface OrchestratorConfig {
+  model: string | AIModel;
+  tools?: Tool[];
+  systemPrompt?: string;
+  streaming?: boolean;
+  maxIterations?: number;
+  debug?: boolean;
+  customLogic?: (input: string, context: any) => Promise<any>;
+}
+
+// =============================================================================
 // TOOL TYPES
 // =============================================================================
 
@@ -71,8 +85,19 @@ export interface Tool {
   requiresAuth?: boolean;
 }
 
+// Tool factory interface for creating tools
+export interface ToolFactory {
+  name: string;
+  description: string;
+  parameters: JSONSchema;
+  execute: (params: any, context?: ToolContext) => Promise<any>;
+  category?: 'utility' | 'ai' | 'custom';
+  version?: string;
+  requiresAuth?: boolean;
+}
+
 // =============================================================================
-// ORCHESTRATOR TYPES
+// EXECUTION RESULT TYPES
 // =============================================================================
 
 export const ExecutionResultSchema = z.object({
@@ -87,6 +112,16 @@ export const ExecutionResultSchema = z.object({
 export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;
 
 // =============================================================================
+// STREAMING TYPES
+// =============================================================================
+
+export interface StreamChunk {
+  delta: string;
+  content: string;
+  done: boolean;
+}
+
+// =============================================================================
 // EVENT TYPES
 // =============================================================================
 
@@ -96,11 +131,30 @@ export type OrchestratorEvent =
   | { type: 'iteration'; data: { iteration: number; message: Message } }
   | { type: 'tool_call'; data: { toolName: string; arguments: Record<string, any> } }
   | { type: 'tool_result'; data: { toolName: string; result: any; success: boolean } }
-  | { type: 'stream'; data: { delta: string; content: string } }
+  | { type: 'stream'; data: StreamChunk }
   | { type: 'complete'; data: ExecutionResult }
   | { type: 'error'; data: { error: string } };
 
 export type EventHandler = (event: OrchestratorEvent) => void;
+
+// =============================================================================
+// PROVIDER TYPES
+// =============================================================================
+
+export interface ProviderConfig {
+  baseURL: string;
+  models: Record<string, {
+    contextWindow: number;
+    cost: { input: number; output: number };
+    description: string;
+  }>;
+}
+
+export interface ModelInfo {
+  contextWindow: number;
+  cost: { input: number; output: number };
+  description: string;
+}
 
 // =============================================================================
 // ERROR TYPES
@@ -176,3 +230,47 @@ export interface Logger {
   info(message: string, ...args: any[]): void;
   debug(message: string, ...args: any[]): void;
 }
+
+// =============================================================================
+// LEGACY COMPATIBILITY TYPES
+// =============================================================================
+
+// For backward compatibility with existing code
+export const ToolParameterSchema = z.object({
+  type: z.enum(['string', 'number', 'boolean', 'object', 'array']),
+  description: z.string(),
+  required: z.boolean().default(false),
+  enum: z.array(z.string()).optional(),
+  properties: z.record(z.any()).optional(),
+  items: z.any().optional(),
+});
+
+export const ToolSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  parameters: z.record(ToolParameterSchema),
+  execute: z.function(),
+  category: z.enum(['utility', 'ai', 'custom']).optional(),
+  version: z.string().optional(),
+  requiresAuth: z.boolean().optional(),
+});
+
+export const CostTrackingSchema = z.object({
+  inputTokens: z.number().default(0),
+  outputTokens: z.number().default(0),
+  toolCalls: z.number().default(0),
+  estimatedCost: z.number().default(0),
+  actualCost: z.number().optional(),
+});
+
+export type CostTracking = z.infer<typeof CostTrackingSchema>;
+
+export const OrchestratorConfigSchema = z.object({
+  model: z.union([z.string(), AIModelSchema]),
+  tools: z.array(ToolSchema).optional(),
+  systemPrompt: z.string().optional(),
+  maxIterations: z.number().positive().default(10),
+  streaming: z.boolean().default(false),
+  debug: z.boolean().default(false),
+  customLogic: z.function().optional(),
+});
