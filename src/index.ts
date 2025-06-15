@@ -2,8 +2,9 @@
 // MAIN EXPORTS
 // =============================================================================
 
-// Core exports - simplified
+// Core exports - two distinct orchestrator classes
 export { Orchestrator } from './orchestrator';
+export { StreamingOrchestrator } from './streaming-orchestrator';
 
 // Tools
 export * from './tools';
@@ -19,7 +20,8 @@ export * from './types';
 // =============================================================================
 
 import { Orchestrator } from './orchestrator';
-import type { Tool, AIModel, OrchestratorConfig } from './types';
+import { StreamingOrchestrator } from './streaming-orchestrator';
+import type { Tool, AIModel } from './types';
 
 export function createAgent(options: {
   model: string | AIModel;
@@ -43,11 +45,10 @@ export function createStreamingAgent(options: {
   systemPrompt?: string;
   maxIterations?: number;
 }) {
-  return new Orchestrator({
+  return new StreamingOrchestrator({
     model: options.model,
     tools: options.tools || [],
     systemPrompt: options.systemPrompt,
     maxIterations: options.maxIterations || 10,
-    streaming: true,
   });
 }
