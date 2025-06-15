@@ -467,8 +467,10 @@ export class Orchestrator {
 
   private getUsedTools(): string[] {
     return this.messages
-      .filter(m => m.role === 'tool')
-      .map(m => m.toolCallId ?? 'unknown')
+      .filter((m): m is Message & { role: 'tool'; toolCallId: string } => 
+        m.role === 'tool' && typeof m.toolCallId === 'string'
+      )
+      .map(m => m.toolCallId)
       .filter((value, index, self) => self.indexOf(value) === index);
   }
 }
