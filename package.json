@@ -1,7 +1,7 @@
 {
   "name": "openagentic",
   "version": "0.1.0",
-  "description": "A TypeScript framework for building AI agents with tool orchestration capabilities",
+  "description": "A TypeScript framework for building AI agents with self-contained tool orchestration capabilities",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -11,25 +11,10 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./core": {
-      "types": "./dist/core/index.d.ts",
-      "import": "./dist/core/index.mjs",
-      "require": "./dist/core/index.js"
-    },
     "./tools": {
       "types": "./dist/tools/index.d.ts",
-      "import": "./dist/tools/index.mjs",
+      "import": "./dist/tools/index.mjs", 
       "require": "./dist/tools/index.js"
-    },
-    "./orchestrators": {
-      "types": "./dist/orchestrators/index.d.ts",
-      "import": "./dist/orchestrators/index.mjs",
-      "require": "./dist/orchestrators/index.js"
-    },
-    "./providers": {
-      "types": "./dist/providers/index.d.ts",
-      "import": "./dist/providers/index.mjs",
-      "require": "./dist/providers/index.js"
     }
   },
   "files": [
@@ -47,7 +32,8 @@
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",
     "prepublishOnly": "npm run build",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "example": "tsx examples/simple-usage.ts"
   },
   "keywords": [
     "ai",
@@ -59,7 +45,8 @@
     "anthropic",
     "gemini",
     "framework",
-    "typescript"
+    "typescript",
+    "self-contained"
   ],
   "author": "OpenAgentic Contributors",
   "license": "MIT",
@@ -81,6 +68,7 @@
     "rimraf": "^5.0.5",
     "ts-jest": "^29.1.1",
     "tsup": "^8.0.1",
+    "tsx": "^4.6.2",
     "typescript": "^5.3.2"
   },
   "dependencies": {

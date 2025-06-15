@@ -3,10 +3,7 @@ import { defineConfig } from 'tsup';
 export default defineConfig({
   entry: [
     'src/index.ts',
-    'src/core/index.ts',
-    'src/tools/index.ts',
-    'src/orchestrators/index.ts',
-    'src/providers/index.ts'
+    'src/tools/index.ts'
   ],
   format: ['cjs', 'esm'],
   dts: true,
@@ -15,7 +12,12 @@ export default defineConfig({
   clean: true,
   minify: false,
   external: [
-    'openai',
-    '@anthropic-ai/sdk'
+    'ai',
+    '@ai-sdk/openai',
+    '@ai-sdk/anthropic',
+    '@ai-sdk/google',
+    '@ai-sdk/google-vertex',
+    '@ai-sdk/perplexity',
+    '@ai-sdk/xai'
   ]
 });
