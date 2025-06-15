@@ -4,7 +4,7 @@ A TypeScript framework for building AI agents with tool orchestration capabiliti
 
 ## Overview
 
-OpenAgentic provides a comprehensive framework for creating AI-powered agents that can orchestrate multiple tools, manage costs, and handle complex workflows. Built with TypeScript-first design principles, it offers excellent developer experience with strong typing and modular architecture.
+OpenAgentic provides a comprehensive framework for creating AI-powered agents that can orchestrate multiple tools and handle complex workflows. Built with TypeScript-first design principles, it offers excellent developer experience with strong typing and modular architecture.
 
 ## Features
 
@@ -17,13 +17,6 @@ OpenAgentic provides a comprehensive framework for creating AI-powered agents th
 - Plugin-based tool system for extensibility
 - Built-in tools for common tasks (HTTP requests, calculations, timestamps)
 - Custom tool creation with type safety
-- Tool cost estimation and tracking
-
-### 💰 Cost Management
-- Real-time cost tracking for tokens and tool usage
-- Budget limits and alerts
-- Cost estimation before execution
-- Detailed usage analytics
 
 ### 🔄 Orchestration Patterns
 - Simple one-shot orchestration
