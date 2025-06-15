@@ -8,6 +8,7 @@ import type {
   ToolContext 
 } from '../types';
 import { SimpleEventEmitter } from '../utils/simple-event-emitter';
+import { ProviderManager } from '../providers';
 
 export interface StreamChunk {
   delta: string;
@@ -32,10 +33,8 @@ export class Orchestrator {
     maxIterations?: number;
     customLogic?: (input: string, context: any) => Promise<any>;
   }) {
-    // Auto-detect provider and create AIModel if string provided
-    this.model = typeof options.model === 'string' 
-      ? this.autoDetectModel(options.model)
-      : options.model;
+    // Use ProviderManager for centralized model creation
+    this.model = ProviderManager.createModel(options.model);
     
     this.maxIterations = options.maxIterations || 10;
     this.customLogic = options.customLogic;
@@ -134,7 +133,7 @@ export class Orchestrator {
         content: input,
       });
 
-      const provider = await this.createProvider();
+      const provider = await ProviderManager.createProvider(this.model);
       const toolDefinitions = this.getToolDefinitions();
 
       const result = await streamText({
@@ -205,11 +204,22 @@ export class Orchestrator {
     return this.getAllTools().filter(tool => tool.category === category);
   }
 
-  // Model switching
+  // Model switching using ProviderManager
   public switchModel(model: string | AIModel): void {
-    this.model = typeof model === 'string' 
-      ? this.autoDetectModel(model)
-      : model;
+    this.model = ProviderManager.createModel(model);
+  }
+
+  // Get model information
+  public getModelInfo(): any {
+    try {
+      return ProviderManager.getModelInfo(this.model.provider, this.model.model);
+    } catch (error) {
+      return {
+        provider: this.model.provider,
+        model: this.model.model,
+        error: 'Model info not available',
+      };
+    }
   }
 
   // Event handling
@@ -237,40 +247,6 @@ export class Orchestrator {
   }
 
   // Private methods
-  private autoDetectModel(modelString: string): AIModel {
-    // Auto-detect provider based on model name
-    let provider: AIModel['provider'];
-    let apiKey: string | undefined;
-
-    if (modelString.includes('gpt') || modelString.includes('o1') || modelString.includes('o3')) {
-      provider = 'openai';
-      apiKey = process.env.OPENAI_API_KEY;
-    } else if (modelString.includes('claude')) {
-      provider = 'anthropic';
-      apiKey = process.env.ANTHROPIC_API_KEY;
-    } else if (modelString.includes('gemini')) {
-      provider = 'google';
-      apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-    } else if (modelString.includes('grok')) {
-      provider = 'xai';
-      apiKey = process.env.XAI_API_KEY;
-    } else if (modelString.includes('llama') && modelString.includes('sonar')) {
-      provider = 'perplexity';
-      apiKey = process.env.PERPLEXITY_API_KEY;
-    } else {
-      // Default to OpenAI
-      provider = 'openai';
-      apiKey = process.env.OPENAI_API_KEY;
-    }
-
-    return {
-      provider,
-      model: modelString,
-      apiKey,
-      temperature: 0.7,
-    };
-  }
-
   private async executeWithCustomLogic(input: string): Promise<ExecutionResult> {
     try {
       const context = {
@@ -301,7 +277,7 @@ export class Orchestrator {
   }
 
   private async callModel(messages: Message[]): Promise<any> {
-    const provider = await this.createProvider();
+    const provider = await ProviderManager.createProvider(this.model);
     const toolDefinitions = this.getToolDefinitions();
 
     const result = await generateText({
@@ -319,61 +295,14 @@ export class Orchestrator {
     };
   }
 
-  private async createProvider(): Promise<any> {
-    const apiKey = this.model.apiKey || '';
-    
-    switch (this.model.provider) {
-      case 'openai': {
-        const { createOpenAI } = await import('@ai-sdk/openai');
-        const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
-        if (this.model.baseURL) config.baseURL = this.model.baseURL;
-        return createOpenAI(config);
-      }
-      case 'anthropic': {
-        const { createAnthropic } = await import('@ai-sdk/anthropic');
-        const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
-        return createAnthropic(config);
-      }
-      case 'google': {
-        const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-        const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
-        return createGoogleGenerativeAI(config);
-      }
-      case 'google-vertex': {
-        const { createVertex } = await import('@ai-sdk/google-vertex');
-        const config: any = {};
-        if (this.model.project) config.project = this.model.project;
-        if (this.model.location) config.location = this.model.location;
-        return createVertex(config);
-      }
-      case 'perplexity': {
-        const { createPerplexity } = await import('@ai-sdk/perplexity');
-        const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
-        return createPerplexity(config);
-      }
-      case 'xai': {
-        const { createXai } = await import('@ai-sdk/xai');
-        const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
-        return createXai(config);
-      }
-      default:
-        throw new Error(`Unsupported provider: ${this.model.provider}`);
-    }
-  }
-
   private createToolContext(): ToolContext {
     return {
       getModel: async (providerName?: string) => {
         if (providerName && providerName !== this.model.provider) {
-          // Create a provider for a different service
-          return await this.createProviderByName(providerName);
+          // Create a provider for a different service using ProviderManager
+          return await ProviderManager.createProviderByName(providerName);
         }
-        return await this.createProvider();
+        return await ProviderManager.createProvider(this.model);
       },
       apiKeys: {
         openai: process.env.OPENAI_API_KEY || '',
@@ -383,31 +312,6 @@ export class Orchestrator {
         xai: process.env.XAI_API_KEY || '',
       }
     };
-  }
-
-  private async createProviderByName(providerName: string): Promise<any> {
-    switch (providerName) {
-      case 'openai': {
-        const { createOpenAI } = await import('@ai-sdk/openai');
-        const apiKey = process.env.OPENAI_API_KEY;
-        if (!apiKey) throw new Error('OpenAI API key not found');
-        return createOpenAI({ apiKey });
-      }
-      case 'anthropic': {
-        const { createAnthropic } = await import('@ai-sdk/anthropic');
-        const apiKey = process.env.ANTHROPIC_API_KEY;
-        if (!apiKey) throw new Error('Anthropic API key not found');
-        return createAnthropic({ apiKey });
-      }
-      case 'google': {
-        const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
-        if (!apiKey) throw new Error('Google API key not found');
-        return createGoogleGenerativeAI({ apiKey });
-      }
-      default:
-        throw new Error(`Unsupported provider: ${providerName}`);
-    }
   }
 
   private getToolDefinitions(): any[] {

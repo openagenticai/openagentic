@@ -5,7 +5,8 @@ export type { StreamChunk } from './core/orchestrator';
 // Tools
 export * from './tools';
 
-// Providers
+// Providers - now with centralized ProviderManager
+export { ProviderManager } from './providers';
 export * from './providers';
 
 // Types
@@ -17,27 +18,25 @@ export * from './utils';
 // Errors
 export * from './core/errors';
 
-// Simplified factory functions
+// Simplified factory functions using ProviderManager
 export function createOrchestrator(options: {
-  model: string;
+  model: string | any;
   tools?: any[];
   systemPrompt?: string;
   streaming?: boolean;
   maxIterations?: number;
   customLogic?: (input: string, context: any) => Promise<any>;
 }) {
-  const { Orchestrator } = require('./core/orchestrator');
-  return new Orchestrator(options);
+  return new (require('./core/orchestrator').Orchestrator)(options);
 }
 
 // Convenience factories for common patterns
 export function createSimpleAgent(options: {
-  model: string;
+  model: string | any;
   tools?: any[];
   systemPrompt?: string;
 }) {
-  const { Orchestrator } = require('./core/orchestrator');
-  return new Orchestrator({
+  return new (require('./core/orchestrator').Orchestrator)({
     model: options.model,
     tools: options.tools,
     systemPrompt: options.systemPrompt,
@@ -46,12 +45,11 @@ export function createSimpleAgent(options: {
 }
 
 export function createConversationalAgent(options: {
-  model: string;
+  model: string | any;
   tools?: any[];
   systemPrompt?: string;
 }) {
-  const { Orchestrator } = require('./core/orchestrator');
-  return new Orchestrator({
+  return new (require('./core/orchestrator').Orchestrator)({
     model: options.model,
     tools: options.tools,
     systemPrompt: options.systemPrompt || 'You are a helpful assistant that can use tools to help users. Maintain context from previous messages in this conversation.',
@@ -60,12 +58,11 @@ export function createConversationalAgent(options: {
 }
 
 export function createStreamingAgent(options: {
-  model: string;
+  model: string | any;
   tools?: any[];
   systemPrompt?: string;
 }) {
-  const { Orchestrator } = require('./core/orchestrator');
-  return new Orchestrator({
+  return new (require('./core/orchestrator').Orchestrator)({
     model: options.model,
     tools: options.tools,
     systemPrompt: options.systemPrompt,
@@ -75,7 +72,7 @@ export function createStreamingAgent(options: {
 }
 
 // Multi-model orchestration helper
-export function createMultiModelAgent(models: string[], tools?: any[]) {
+export function createMultiModelAgent(models: (string | any)[], tools?: any[]) {
   const { Orchestrator } = require('./core/orchestrator');
   
   return {
@@ -90,7 +87,7 @@ export function createMultiModelAgent(models: string[], tools?: any[]) {
         orchestrators.map(async (orchestrator, index) => {
           const result = await orchestrator.execute(input);
           return {
-            model: models[index],
+            model: typeof models[index] === 'string' ? models[index] : models[index].model,
             result: result.result,
             success: result.success,
             error: result.error,
@@ -147,7 +144,7 @@ export function createPipeline() {
   }> = [];
 
   return {
-    addStep(model: string, transform?: (input: string, previousResult?: any) => string, tools?: any[]) {
+    addStep(model: string | any, transform?: (input: string, previousResult?: any) => string, tools?: any[]) {
       const { Orchestrator } = require('./core/orchestrator');
       const orchestrator = new Orchestrator({ model, tools, maxIterations: 5 });
       steps.push({ orchestrator, transform });
