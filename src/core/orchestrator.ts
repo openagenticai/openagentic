@@ -5,10 +5,8 @@ import type {
   Tool,
   OrchestratorEvent,
   EventHandler,
-  CostTracking,
 } from '../types';
 import { AIProvider } from './ai-provider';
-import { CostTracker } from './cost-tracker';
 import { ToolRegistry } from './tool-registry';
 import { OrchestratorError, BudgetExceededError, MaxIterationsError } from './errors';
 import { SimpleEventEmitter } from '../utils/simple-event-emitter';
@@ -21,7 +19,6 @@ export class Orchestrator {
   constructor(
     private config: OrchestratorConfig,
     private aiProvider: AIProvider = new AIProvider(config.model),
-    private costTracker: CostTracker = new CostTracker(config.budget),
     private toolRegistry: ToolRegistry = new ToolRegistry(config.tools)
   ) {
     if (config.systemPrompt) {
@@ -54,11 +51,6 @@ export class Orchestrator {
           this.config.streaming
         );
 
-        // Update cost tracking
-        this.costTracker.updateTokenUsage(
-          response.usage?.prompt_tokens || 0,
-          response.usage?.completion_tokens || 0
-        );
 
         const assistantMessage: Message = {
           role: 'assistant',
@@ -89,7 +81,6 @@ export class Orchestrator {
         success: true,
         result: this.messages[this.messages.length - 1]?.content,
         messages: this.messages,
-        costTracking: this.costTracker.getTracking(),
         iterations: this.iterations,
         toolCallsUsed: this.toolRegistry.getUsedTools(),
       };
@@ -102,7 +93,6 @@ export class Orchestrator {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         messages: this.messages,
-        costTracking: this.costTracker.getTracking(),
         iterations: this.iterations,
         toolCallsUsed: this.toolRegistry.getUsedTools(),
       };
@@ -134,8 +124,6 @@ export class Orchestrator {
         toolCall.function.name,
         JSON.parse(toolCall.function.arguments)
       );
-
-      this.costTracker.incrementToolCalls();
 
       this.eventEmitter.emit({
         type: 'tool_result',
@@ -172,28 +160,7 @@ export class Orchestrator {
     }
   }
 
-  private checkBudgetConstraints(): void {
-    const tracking = this.costTracker.getTracking();
-    const budget = this.config.budget;
-
-    if (!budget) return;
-
-    if (budget.maxCost && tracking.estimatedCost >= budget.maxCost) {
-      throw new BudgetExceededError('cost', tracking.estimatedCost, budget.maxCost);
-    }
-
-    if (budget.maxTokens && (tracking.inputTokens + tracking.outputTokens) >= budget.maxTokens) {
-      throw new BudgetExceededError('tokens', tracking.inputTokens + tracking.outputTokens, budget.maxTokens);
-    }
-
-    if (budget.maxToolCalls && tracking.toolCalls >= budget.maxToolCalls) {
-      throw new BudgetExceededError('tool_calls', tracking.toolCalls, budget.maxToolCalls);
-    }
-  }
-
-  public getCostTracking(): CostTracking {
-    return this.costTracker.getTracking();
-  }
+  
 
   public getMessages(): Message[] {
     return [...this.messages];
@@ -204,7 +171,6 @@ export class Orchestrator {
       ? [{ role: 'system', content: this.config.systemPrompt }]
       : [];
     this.iterations = 0;
-    this.costTracker.reset();
     this.toolRegistry.reset();
     this.eventEmitter.clear(); // Clear event listeners on reset
   }
