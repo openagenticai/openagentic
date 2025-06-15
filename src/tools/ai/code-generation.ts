@@ -84,7 +84,7 @@ export const codeGenerationTool: Tool = {
       const codeBlockRegex = new RegExp(`\`\`\`${language}?\\n([\\s\\S]*?)\`\`\``, 'i');
       const match = code.match(codeBlockRegex);
       if (match) {
-        code = match[1].trim();
+        code = match[1]?.trim();
       }
 
       return {
