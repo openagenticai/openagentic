@@ -45,7 +45,7 @@ export const codeGenerationTool: Tool = {
       } else {
         // Auto-detect provider (prefer OpenAI for code generation)
         const { createOpenAI } = await import('@ai-sdk/openai');
-        const apiKey = context?.apiKeys?.openai || process.env.OPENAI_API_KEY;
+        const apiKey = context?.apiKeys?.openai ?? process.env.OPENAI_API_KEY; // Fix: Use nullish coalescing
         if (!apiKey) throw new Error('OpenAI API key not found');
         provider = createOpenAI({ apiKey });
       }

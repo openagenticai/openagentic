@@ -31,7 +31,14 @@ export function createOrchestrator(options: {
   maxIterations?: number;
   customLogic?: (input: string, context: any) => Promise<any>;
 }) {
-  return new Orchestrator(options);
+  return new Orchestrator({
+    model: options.model,
+    tools: options.tools ?? [], // Fix: Use nullish coalescing
+    systemPrompt: options.systemPrompt,
+    streaming: options.streaming,
+    maxIterations: options.maxIterations,
+    customLogic: options.customLogic,
+  });
 }
 
 // Convenience factories for common patterns
@@ -42,7 +49,7 @@ export function createSimpleAgent(options: {
 }) {
   return new Orchestrator({
     model: options.model,
-    tools: options.tools,
+    tools: options.tools ?? [], // Fix: Use nullish coalescing
     systemPrompt: options.systemPrompt,
     maxIterations: 5,
   });
@@ -55,8 +62,8 @@ export function createConversationalAgent(options: {
 }) {
   return new Orchestrator({
     model: options.model,
-    tools: options.tools,
-    systemPrompt: options.systemPrompt || 'You are a helpful assistant that can use tools to help users. Maintain context from previous messages in this conversation.',
+    tools: options.tools ?? [], // Fix: Use nullish coalescing
+    systemPrompt: options.systemPrompt ?? 'You are a helpful assistant that can use tools to help users. Maintain context from previous messages in this conversation.', // Fix: Use nullish coalescing
     maxIterations: 10,
   });
 }
@@ -68,7 +75,7 @@ export function createStreamingAgent(options: {
 }) {
   return new Orchestrator({
     model: options.model,
-    tools: options.tools,
+    tools: options.tools ?? [], // Fix: Use nullish coalescing
     systemPrompt: options.systemPrompt,
     streaming: true,
     maxIterations: 10,
@@ -85,7 +92,7 @@ export function createMultiModelAgent(models: (string | AIModel)[], tools?: Tool
     async executeWithAllModels(input: string) {
       const orchestrators = models.map(model => new Orchestrator({
         model,
-        tools,
+        tools: tools ?? [], // Fix: Use nullish coalescing
         maxIterations: 5,
       }));
 
@@ -102,7 +109,8 @@ export function createMultiModelAgent(models: (string | AIModel)[], tools?: Tool
       );
 
       const successfulResults = results.filter(r => r.success);
-      const consensus = successfulResults.length > 0 
+      // Fix: Proper null checking and fallback
+      const consensus = successfulResults.length > 0 && successfulResults[0]?.result !== undefined
         ? `Consensus from ${successfulResults.length} models: ${successfulResults[0].result}`
         : undefined;
 
@@ -114,8 +122,16 @@ export function createMultiModelAgent(models: (string | AIModel)[], tools?: Tool
         throw new Error('Need at least 2 models for refinement');
       }
 
-      const firstOrchestrator = new Orchestrator({ model: models[0], tools, maxIterations: 5 });
-      const secondOrchestrator = new Orchestrator({ model: models[1], tools, maxIterations: 5 });
+      const firstOrchestrator = new Orchestrator({ 
+        model: models[0], 
+        tools: tools ?? [], // Fix: Use nullish coalescing
+        maxIterations: 5 
+      });
+      const secondOrchestrator = new Orchestrator({ 
+        model: models[1], 
+        tools: tools ?? [], // Fix: Use nullish coalescing
+        maxIterations: 5 
+      });
 
       const initialResult = await firstOrchestrator.execute(input);
       
@@ -125,7 +141,7 @@ export function createMultiModelAgent(models: (string | AIModel)[], tools?: Tool
 
       const refinementPrompt = `Please review and improve the following response to "${input}":
 
-${initialResult.result}
+${initialResult.result ?? ''} // Fix: Use nullish coalescing
 
 Provide an improved, more accurate, and comprehensive response.`;
 
@@ -151,8 +167,16 @@ export function createPipeline() {
 
   return {
     addStep(model: string | AIModel, transform?: (input: string, previousResult?: any) => string, tools?: Tool[]) {
-      const orchestrator = new Orchestrator({ model, tools, maxIterations: 5 });
-      steps.push({ orchestrator, transform });
+      const orchestrator = new Orchestrator({ 
+        model, 
+        tools: tools ?? [], // Fix: Use nullish coalescing
+        maxIterations: 5 
+      });
+      steps.push({ 
+        orchestrator, 
+        // Fix: Conditional spreading with explicit undefined check
+        ...(transform !== undefined && { transform })
+      });
       return this;
     },
 
@@ -185,7 +209,7 @@ export function createPipeline() {
             };
           }
 
-          currentInput = result.result || '';
+          currentInput = result.result ?? ''; // Fix: Use nullish coalescing
           previousResult = result;
         }
 

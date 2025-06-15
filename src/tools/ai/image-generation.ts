@@ -44,7 +44,7 @@ export const imageGenerationTool: Tool = {
         provider = await context.getModel('openai');
       } else {
         const { createOpenAI } = await import('@ai-sdk/openai');
-        const apiKey = context?.apiKeys?.openai || process.env.OPENAI_API_KEY;
+        const apiKey = context?.apiKeys?.openai ?? process.env.OPENAI_API_KEY; // Fix: Use nullish coalescing
         if (!apiKey) throw new Error('OpenAI API key not found');
         provider = createOpenAI({ apiKey });
       }
@@ -53,7 +53,7 @@ export const imageGenerationTool: Tool = {
       let generateImage;
       try {
         const ai = await import('ai');
-        generateImage = ai.generateImage || ai.experimental_generateImage;
+        generateImage = ai.generateImage ?? ai.experimental_generateImage; // Fix: Use nullish coalescing
       } catch {
         try {
           const openai = await import('@ai-sdk/openai');
@@ -71,12 +71,13 @@ export const imageGenerationTool: Tool = {
         model: provider.image ? provider.image(model) : provider(model),
         prompt,
         size,
-        ...(quality && { quality }),
+        // Fix: Conditional spreading with explicit undefined check
+        ...(quality !== undefined && { quality }),
       });
 
       return {
-        url: result.image?.url || result.url,
-        revisedPrompt: result.image?.revisedPrompt || result.revisedPrompt,
+        url: result.image?.url ?? result.url, // Fix: Use nullish coalescing
+        revisedPrompt: result.image?.revisedPrompt ?? result.revisedPrompt,
         model,
         size,
         quality,

@@ -44,17 +44,17 @@ export const textGenerationTool: Tool = {
         // Auto-detect provider based on model name
         if (model.includes('gpt') || model.includes('o1') || model.includes('o3')) {
           const { createOpenAI } = await import('@ai-sdk/openai');
-          const apiKey = context?.apiKeys?.openai || process.env.OPENAI_API_KEY;
+          const apiKey = context?.apiKeys?.openai ?? process.env.OPENAI_API_KEY; // Fix: Use nullish coalescing
           if (!apiKey) throw new Error('OpenAI API key not found');
           provider = createOpenAI({ apiKey });
         } else if (model.includes('claude')) {
           const { createAnthropic } = await import('@ai-sdk/anthropic');
-          const apiKey = context?.apiKeys?.anthropic || process.env.ANTHROPIC_API_KEY;
+          const apiKey = context?.apiKeys?.anthropic ?? process.env.ANTHROPIC_API_KEY;
           if (!apiKey) throw new Error('Anthropic API key not found');
           provider = createAnthropic({ apiKey });
         } else if (model.includes('gemini')) {
           const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-          const apiKey = context?.apiKeys?.google || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+          const apiKey = context?.apiKeys?.google ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY;
           if (!apiKey) throw new Error('Google API key not found');
           provider = createGoogleGenerativeAI({ apiKey });
         } else {

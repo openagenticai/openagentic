@@ -36,16 +36,15 @@ export class Orchestrator {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
     
-    this.maxIterations = options.maxIterations || 10;
+    this.maxIterations = options.maxIterations ?? 10; // Fix: Use nullish coalescing
     this.customLogic = options.customLogic;
     
-    // Register tools with validation
-    if (options.tools) {
-      options.tools.forEach(tool => this.addTool(tool));
-    }
+    // Register tools with validation - Fix: Handle undefined tools properly
+    const toolsToRegister = options.tools ?? []; // Fix: Use nullish coalescing
+    toolsToRegister.forEach(tool => this.addTool(tool));
     
-    // Add system prompt if provided
-    if (options.systemPrompt) {
+    // Add system prompt if provided - Fix: Handle undefined systemPrompt
+    if (options.systemPrompt !== undefined) { // Fix: Explicit undefined check
       this.messages.push({
         role: 'system',
         content: options.systemPrompt,
@@ -76,8 +75,9 @@ export class Orchestrator {
 
         const assistantMessage: Message = {
           role: 'assistant',
-          content: response.content || '',
-          toolCalls: response.toolCalls,
+          content: response.content ?? '', // Fix: Use nullish coalescing
+          // Fix: Conditional spreading for toolCalls
+          ...(response.toolCalls !== undefined && { toolCalls: response.toolCalls }),
         };
 
         this.messages.push(assistantMessage);
@@ -110,15 +110,16 @@ export class Orchestrator {
       return result;
 
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       const errorResult: ExecutionResult = {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: errorMessage, // Fix: Ensure string type
         messages: this.messages,
         iterations: this.iterations,
         toolCallsUsed: this.getUsedTools(),
       };
 
-      this.eventEmitter.emit({ type: 'error', data: { error: errorResult.error! } });
+      this.eventEmitter.emit({ type: 'error', data: { error: errorMessage } });
       return errorResult;
     }
   }
@@ -136,14 +137,28 @@ export class Orchestrator {
       const provider = await ProviderManager.createProvider(this.model);
       const toolDefinitions = this.getToolDefinitions();
 
-      const result = await streamText({
+      const streamConfig: any = {
         model: provider(this.model.model),
         messages: this.transformMessages(this.messages),
-        tools: toolDefinitions.length > 0 ? this.convertToAISDKTools(toolDefinitions) : undefined,
-        ...(this.model.temperature !== undefined && { temperature: this.model.temperature }),
-        ...(this.model.maxTokens !== undefined && { maxTokens: this.model.maxTokens }),
-        ...(this.model.topP !== undefined && { topP: this.model.topP }),
-      });
+      };
+
+      // Add tools if available
+      if (toolDefinitions.length > 0) {
+        streamConfig.tools = this.convertToAISDKTools(toolDefinitions);
+      }
+
+      // Add model parameters conditionally - Fix: Proper undefined checks
+      if (this.model.temperature !== undefined) {
+        streamConfig.temperature = this.model.temperature;
+      }
+      if (this.model.maxTokens !== undefined) {
+        streamConfig.maxTokens = this.model.maxTokens;
+      }
+      if (this.model.topP !== undefined) {
+        streamConfig.topP = this.model.topP;
+      }
+
+      const result = await streamText(streamConfig);
 
       let content = '';
       for await (const delta of result.textStream) {
@@ -158,11 +173,13 @@ export class Orchestrator {
       yield finalChunk;
 
       // Add final message
-      this.messages.push({
+      const finalMessage: Message = {
         role: 'assistant',
         content,
-        toolCalls: result.toolCalls,
-      });
+        // Fix: Conditional spreading for toolCalls
+        ...(result.toolCalls !== undefined && { toolCalls: result.toolCalls }),
+      };
+      this.messages.push(finalMessage);
 
     } catch (error) {
       this.eventEmitter.emit({ type: 'error', data: { error: error instanceof Error ? error.message : String(error) } });
@@ -260,7 +277,7 @@ export class Orchestrator {
       
       return {
         success: true,
-        result: result.content || result,
+        result: result.content ?? result, // Fix: Use nullish coalescing
         messages: this.messages,
         iterations: this.iterations,
         toolCallsUsed: this.getUsedTools(),
@@ -280,14 +297,28 @@ export class Orchestrator {
     const provider = await ProviderManager.createProvider(this.model);
     const toolDefinitions = this.getToolDefinitions();
 
-    const result = await generateText({
+    const generateConfig: any = {
       model: provider(this.model.model),
       messages: this.transformMessages(messages),
-      tools: toolDefinitions.length > 0 ? this.convertToAISDKTools(toolDefinitions) : undefined,
-      ...(this.model.temperature !== undefined && { temperature: this.model.temperature }),
-      ...(this.model.maxTokens !== undefined && { maxTokens: this.model.maxTokens }),
-      ...(this.model.topP !== undefined && { topP: this.model.topP }),
-    });
+    };
+
+    // Add tools if available
+    if (toolDefinitions.length > 0) {
+      generateConfig.tools = this.convertToAISDKTools(toolDefinitions);
+    }
+
+    // Add model parameters conditionally to avoid undefined values
+    if (this.model.temperature !== undefined) {
+      generateConfig.temperature = this.model.temperature;
+    }
+    if (this.model.maxTokens !== undefined) {
+      generateConfig.maxTokens = this.model.maxTokens;
+    }
+    if (this.model.topP !== undefined) {
+      generateConfig.topP = this.model.topP;
+    }
+
+    const result = await generateText(generateConfig);
 
     return {
       content: result.text,
@@ -305,11 +336,11 @@ export class Orchestrator {
         return await ProviderManager.createProvider(this.model);
       },
       apiKeys: {
-        openai: process.env.OPENAI_API_KEY || '',
-        anthropic: process.env.ANTHROPIC_API_KEY || '',
-        google: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
-        perplexity: process.env.PERPLEXITY_API_KEY || '',
-        xai: process.env.XAI_API_KEY || '',
+        openai: process.env.OPENAI_API_KEY ?? '', // Fix: Use nullish coalescing
+        anthropic: process.env.ANTHROPIC_API_KEY ?? '',
+        google: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? '',
+        perplexity: process.env.PERPLEXITY_API_KEY ?? '',
+        xai: process.env.XAI_API_KEY ?? '',
       }
     };
   }
@@ -373,11 +404,13 @@ export class Orchestrator {
         },
       });
 
-      this.messages.push({
+      const toolMessage: Message = {
         role: 'tool',
         content: JSON.stringify(result),
-        toolCallId: toolCall.toolCallId,
-      });
+        // Fix: Conditional spreading for toolCallId
+        ...(toolCall.toolCallId !== undefined && { toolCallId: toolCall.toolCallId }),
+      };
+      this.messages.push(toolMessage);
 
     } catch (error) {
       this.eventEmitter.emit({
@@ -389,11 +422,13 @@ export class Orchestrator {
         },
       });
 
-      this.messages.push({
+      const errorMessage: Message = {
         role: 'tool',
         content: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        toolCallId: toolCall.toolCallId,
-      });
+        // Fix: Conditional spreading for toolCallId
+        ...(toolCall.toolCallId !== undefined && { toolCallId: toolCall.toolCallId }),
+      };
+      this.messages.push(errorMessage);
     }
   }
 
@@ -410,7 +445,7 @@ export class Orchestrator {
             role: 'tool' as const, 
             content: [{ 
               type: 'tool-result' as const, 
-              toolCallId: m.toolCallId || '', 
+              toolCallId: m.toolCallId ?? '', // Fix: Use nullish coalescing
               toolName: 'unknown',
               result: m.content 
             }] 
@@ -423,7 +458,7 @@ export class Orchestrator {
   private getUsedTools(): string[] {
     return this.messages
       .filter(m => m.role === 'tool')
-      .map(m => m.toolCallId || 'unknown')
+      .map(m => m.toolCallId ?? 'unknown') // Fix: Use nullish coalescing
       .filter((value, index, self) => self.indexOf(value) === index);
   }
 }

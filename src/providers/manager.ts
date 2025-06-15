@@ -154,45 +154,45 @@ export class ProviderManager {
    * Create an AI SDK provider instance for the given model
    */
   static async createProvider(model: AIModel): Promise<any> {
-    const apiKey = model.apiKey || this.getDefaultApiKey(model.provider);
+    const apiKey = model.apiKey ?? this.getDefaultApiKey(model.provider); // Fix: Use nullish coalescing
     
     switch (model.provider) {
       case 'openai': {
         const { createOpenAI } = await import('@ai-sdk/openai');
         const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
-        if (model.baseURL) config.baseURL = model.baseURL;
+        if (apiKey !== undefined) config.apiKey = apiKey; // Fix: Explicit undefined check
+        if (model.baseURL !== undefined) config.baseURL = model.baseURL;
         return createOpenAI(config);
       }
       case 'anthropic': {
         const { createAnthropic } = await import('@ai-sdk/anthropic');
         const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
+        if (apiKey !== undefined) config.apiKey = apiKey;
         return createAnthropic(config);
       }
       case 'google': {
         const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
         const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
+        if (apiKey !== undefined) config.apiKey = apiKey;
         return createGoogleGenerativeAI(config);
       }
       case 'google-vertex': {
         const { createVertex } = await import('@ai-sdk/google-vertex');
         const config: any = {};
-        if (model.project) config.project = model.project;
-        if (model.location) config.location = model.location;
+        if (model.project !== undefined) config.project = model.project;
+        if (model.location !== undefined) config.location = model.location;
         return createVertex(config);
       }
       case 'perplexity': {
         const { createPerplexity } = await import('@ai-sdk/perplexity');
         const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
+        if (apiKey !== undefined) config.apiKey = apiKey;
         return createPerplexity(config);
       }
       case 'xai': {
         const { createXai } = await import('@ai-sdk/xai');
         const config: any = {};
-        if (apiKey) config.apiKey = apiKey;
+        if (apiKey !== undefined) config.apiKey = apiKey;
         return createXai(config);
       }
       case 'custom': {
@@ -203,7 +203,7 @@ export class ProviderManager {
         const config: any = {
           baseURL: model.baseURL,
         };
-        if (apiKey) config.apiKey = apiKey;
+        if (apiKey !== undefined) config.apiKey = apiKey;
         return createOpenAI(config);
       }
       default:
@@ -215,7 +215,7 @@ export class ProviderManager {
    * Create a provider for a specific provider name (for tool context)
    */
   static async createProviderByName(providerName: string, apiKey?: string): Promise<any> {
-    const key = apiKey || this.getDefaultApiKey(providerName as AIModel['provider']);
+    const key = apiKey ?? this.getDefaultApiKey(providerName as AIModel['provider']); // Fix: Use nullish coalescing
     
     switch (providerName) {
       case 'openai': {
@@ -347,17 +347,20 @@ export class ProviderManager {
       throw new Error('AIModel must have provider and model fields');
     }
 
+    // Create a normalized copy to avoid mutating the original
+    const normalizedModel: AIModel = { ...model };
+
     // Add default API key if not provided
-    if (!model.apiKey) {
-      model.apiKey = this.getDefaultApiKey(model.provider);
+    if (normalizedModel.apiKey === undefined) {
+      normalizedModel.apiKey = this.getDefaultApiKey(normalizedModel.provider);
     }
 
     // Add default temperature if not provided
-    if (model.temperature === undefined) {
-      model.temperature = 0.7;
+    if (normalizedModel.temperature === undefined) {
+      normalizedModel.temperature = 0.7;
     }
 
-    return model;
+    return normalizedModel;
   }
 
   private static getDefaultApiKey(provider: AIModel['provider']): string | undefined {
