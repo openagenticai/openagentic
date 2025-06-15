@@ -8,59 +8,94 @@ import type {
 } from '../types';
 import { SimpleEventEmitter } from '../utils/simple-event-emitter';
 
+export interface StreamChunk {
+  delta: string;
+  content: string;
+  done: boolean;
+}
+
 export class Orchestrator {
+  private model: AIModel;
+  private tools = new Map<string, Tool>();
   private messages: Message[] = [];
   private iterations = 0;
   private eventEmitter = new SimpleEventEmitter<OrchestratorEvent>();
-  private toolRegistry = new Map<string, Tool>();
+  private maxIterations: number;
+  private customLogic?: (input: string, context: any) => Promise<any>;
 
-  constructor(
-    private model: AIModel,
-    tools: Tool[] = [],
-    systemPrompt?: string,
-    private streaming = false
-  ) {
+  constructor(options: {
+    model: string | AIModel;
+    tools?: Tool[];
+    systemPrompt?: string;
+    streaming?: boolean;
+    maxIterations?: number;
+    customLogic?: (input: string, context: any) => Promise<any>;
+  }) {
+    // Auto-detect provider and create AIModel if string provided
+    this.model = typeof options.model === 'string' 
+      ? this.autoDetectModel(options.model)
+      : options.model;
+    
+    this.maxIterations = options.maxIterations || 10;
+    this.customLogic = options.customLogic;
+    
     // Register tools
-    tools.forEach(tool => this.toolRegistry.set(tool.name, tool));
+    if (options.tools) {
+      options.tools.forEach(tool => this.addTool(tool));
+    }
     
     // Add system prompt if provided
-    if (systemPrompt) {
+    if (options.systemPrompt) {
       this.messages.push({
         role: 'system',
-        content: systemPrompt,
+        content: options.systemPrompt,
       });
     }
   }
 
-  public async execute(userMessage: string): Promise<ExecutionResult> {
+  // Core execution method
+  public async execute(input: string): Promise<ExecutionResult> {
     this.eventEmitter.emit({ type: 'start', data: { model: this.model } });
     
     try {
+      // If custom logic is provided, use it
+      if (this.customLogic) {
+        return await this.executeWithCustomLogic(input);
+      }
+
       this.messages.push({
         role: 'user',
-        content: userMessage,
+        content: input,
       });
 
-      const response = await this.callModel(this.messages);
-      this.iterations++;
+      // Main orchestration loop
+      while (this.iterations < this.maxIterations) {
+        this.iterations++;
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: response.content || '',
-        toolCalls: response.toolCalls,
-      };
+        const response = await this.callModel(this.messages);
 
-      this.messages.push(assistantMessage);
-      this.eventEmitter.emit({ 
-        type: 'iteration', 
-        data: { iteration: this.iterations, message: assistantMessage } 
-      });
+        const assistantMessage: Message = {
+          role: 'assistant',
+          content: response.content || '',
+          toolCalls: response.toolCalls,
+        };
 
-      // Handle tool calls if any
-      if (response.toolCalls && response.toolCalls.length > 0) {
-        for (const toolCall of response.toolCalls) {
-          await this.executeToolCall(toolCall);
+        this.messages.push(assistantMessage);
+        this.eventEmitter.emit({ 
+          type: 'iteration', 
+          data: { iteration: this.iterations, message: assistantMessage } 
+        });
+
+        // Handle tool calls if any
+        if (response.toolCalls && response.toolCalls.length > 0) {
+          for (const toolCall of response.toolCalls) {
+            await this.executeToolCall(toolCall);
+          }
+          continue; // Continue the loop for more iterations
         }
+
+        // No tool calls, we're done
+        break;
       }
 
       const result: ExecutionResult = {
@@ -88,14 +123,22 @@ export class Orchestrator {
     }
   }
 
-  public async callModel(messages: Message[]): Promise<any> {
-    const provider = await this.createProvider();
-    const toolDefinitions = this.getToolDefinitions();
+  // Streaming execution method
+  public async *stream(input: string): AsyncGenerator<StreamChunk> {
+    this.eventEmitter.emit({ type: 'start', data: { model: this.model } });
+    
+    try {
+      this.messages.push({
+        role: 'user',
+        content: input,
+      });
 
-    if (this.streaming) {
+      const provider = await this.createProvider();
+      const toolDefinitions = this.getToolDefinitions();
+
       const result = await streamText({
         model: provider(this.model.model),
-        messages: this.transformMessages(messages),
+        messages: this.transformMessages(this.messages),
         tools: toolDefinitions.length > 0 ? this.convertToAISDKTools(toolDefinitions) : undefined,
         ...(this.model.temperature !== undefined && { temperature: this.model.temperature }),
         ...(this.model.maxTokens !== undefined && { maxTokens: this.model.maxTokens }),
@@ -105,28 +148,157 @@ export class Orchestrator {
       let content = '';
       for await (const delta of result.textStream) {
         content += delta;
-        this.eventEmitter.emit({ type: 'stream', data: { delta, content } });
+        const chunk: StreamChunk = { delta, content, done: false };
+        this.eventEmitter.emit({ type: 'stream', data: chunk });
+        yield chunk;
       }
 
-      return {
+      // Final chunk
+      const finalChunk: StreamChunk = { delta: '', content, done: true };
+      yield finalChunk;
+
+      // Add final message
+      this.messages.push({
+        role: 'assistant',
         content,
         toolCalls: result.toolCalls,
-      };
-    } else {
-      const result = await generateText({
-        model: provider(this.model.model),
-        messages: this.transformMessages(messages),
-        tools: toolDefinitions.length > 0 ? this.convertToAISDKTools(toolDefinitions) : undefined,
-        ...(this.model.temperature !== undefined && { temperature: this.model.temperature }),
-        ...(this.model.maxTokens !== undefined && { maxTokens: this.model.maxTokens }),
-        ...(this.model.topP !== undefined && { topP: this.model.topP }),
       });
 
+    } catch (error) {
+      this.eventEmitter.emit({ type: 'error', data: { error: error instanceof Error ? error.message : String(error) } });
+      throw error;
+    }
+  }
+
+  // Tool management methods
+  public addTool(tool: Tool): void {
+    this.tools.set(tool.name, tool);
+  }
+
+  public removeTool(toolName: string): void {
+    this.tools.delete(toolName);
+  }
+
+  public getTool(toolName: string): Tool | undefined {
+    return this.tools.get(toolName);
+  }
+
+  public getAllTools(): Tool[] {
+    return Array.from(this.tools.values());
+  }
+
+  // Model switching
+  public switchModel(model: string | AIModel): void {
+    this.model = typeof model === 'string' 
+      ? this.autoDetectModel(model)
+      : model;
+  }
+
+  // Event handling
+  public onEvent(handler: (event: OrchestratorEvent) => void): void {
+    this.eventEmitter.on(handler);
+  }
+
+  // Utility methods
+  public getMessages(): Message[] {
+    return [...this.messages];
+  }
+
+  public addMessage(message: Message): void {
+    this.messages.push(message);
+  }
+
+  public reset(): void {
+    this.messages = this.messages.filter(m => m.role === 'system');
+    this.iterations = 0;
+  }
+
+  public clear(): void {
+    this.messages = [];
+    this.iterations = 0;
+  }
+
+  // Private methods
+  private autoDetectModel(modelString: string): AIModel {
+    // Auto-detect provider based on model name
+    let provider: AIModel['provider'];
+    let apiKey: string | undefined;
+
+    if (modelString.includes('gpt') || modelString.includes('o1') || modelString.includes('o3')) {
+      provider = 'openai';
+      apiKey = process.env.OPENAI_API_KEY;
+    } else if (modelString.includes('claude')) {
+      provider = 'anthropic';
+      apiKey = process.env.ANTHROPIC_API_KEY;
+    } else if (modelString.includes('gemini')) {
+      provider = 'google';
+      apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    } else if (modelString.includes('grok')) {
+      provider = 'xai';
+      apiKey = process.env.XAI_API_KEY;
+    } else if (modelString.includes('llama') && modelString.includes('sonar')) {
+      provider = 'perplexity';
+      apiKey = process.env.PERPLEXITY_API_KEY;
+    } else {
+      // Default to OpenAI
+      provider = 'openai';
+      apiKey = process.env.OPENAI_API_KEY;
+    }
+
+    return {
+      provider,
+      model: modelString,
+      apiKey,
+      temperature: 0.7,
+    };
+  }
+
+  private async executeWithCustomLogic(input: string): Promise<ExecutionResult> {
+    try {
+      const context = {
+        messages: this.messages,
+        tools: this.getAllTools(),
+        model: this.model,
+        iterations: this.iterations,
+      };
+
+      const result = await this.customLogic!(input, context);
+      
       return {
-        content: result.text,
-        toolCalls: result.toolCalls,
+        success: true,
+        result: result.content || result,
+        messages: this.messages,
+        iterations: this.iterations,
+        toolCallsUsed: this.getUsedTools(),
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        messages: this.messages,
+        iterations: this.iterations,
+        toolCallsUsed: this.getUsedTools(),
       };
     }
+  }
+
+  private async callModel(messages: Message[]): Promise<any> {
+    const provider = await this.createProvider();
+    const toolDefinitions = this.getToolDefinitions();
+
+    const result = await generateText({
+      model: provider(this.model.model),
+      messages: this.transformMessages(messages),
+      tools: toolDefinitions.length > 0 ? this.convertToAISDKTools(toolDefinitions) : undefined,
+      ...(this.model.temperature !== undefined && { temperature: this.model.temperature }),
+      ...(this.model.maxTokens !== undefined && { maxTokens: this.model.maxTokens }),
+      ...(this.model.topP !== undefined && { topP: this.model.topP }),
+    });
+
+    return {
+      content: result.text,
+      toolCalls: result.toolCalls,
+    };
   }
 
   private async createProvider(): Promise<any> {
@@ -177,7 +349,7 @@ export class Orchestrator {
   }
 
   private getToolDefinitions(): any[] {
-    return Array.from(this.toolRegistry.values()).map(tool => ({
+    return Array.from(this.tools.values()).map(tool => ({
       type: 'function',
       function: {
         name: tool.name,
@@ -191,7 +363,7 @@ export class Orchestrator {
     const tools: Record<string, any> = {};
     
     definitions.forEach(def => {
-      const tool = this.toolRegistry.get(def.function.name);
+      const tool = this.tools.get(def.function.name);
       if (tool) {
         tools[def.function.name] = {
           description: def.function.description,
@@ -214,7 +386,7 @@ export class Orchestrator {
         },
       });
 
-      const tool = this.toolRegistry.get(toolCall.toolName);
+      const tool = this.tools.get(toolCall.toolName);
       if (!tool) {
         throw new Error(`Tool not found: ${toolCall.toolName}`);
       }
@@ -282,57 +454,5 @@ export class Orchestrator {
       .filter(m => m.role === 'tool')
       .map(m => m.toolCallId || 'unknown')
       .filter((value, index, self) => self.indexOf(value) === index);
-  }
-
-  public onEvent(handler: (event: OrchestratorEvent) => void): void {
-    this.eventEmitter.on(handler);
-  }
-
-  public getMessages(): Message[] {
-    return [...this.messages];
-  }
-
-  public addMessage(message: Message): void {
-    this.messages.push(message);
-  }
-
-  public switchModel(newModel: AIModel): void {
-    this.model = newModel;
-  }
-
-  public reset(): void {
-    this.messages = this.messages.filter(m => m.role === 'system');
-    this.iterations = 0;
-  }
-
-  // Custom orchestration support
-  public async executeWithCustomLogic(
-    userMessage: string,
-    customLogic: (orchestrator: Orchestrator, messages: Message[]) => Promise<any>
-  ): Promise<ExecutionResult> {
-    this.messages.push({
-      role: 'user',
-      content: userMessage,
-    });
-
-    try {
-      const result = await customLogic(this, this.messages);
-      
-      return {
-        success: true,
-        result: result.content || result,
-        messages: this.messages,
-        iterations: this.iterations,
-        toolCallsUsed: this.getUsedTools(),
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-        messages: this.messages,
-        iterations: this.iterations,
-        toolCallsUsed: this.getUsedTools(),
-      };
-    }
   }
 }

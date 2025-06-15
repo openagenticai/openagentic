@@ -8,27 +8,30 @@ OpenAgentic provides a comprehensive framework for creating AI-powered agents th
 
 ## Features
 
-### 🤖 AI Model Abstraction
-- Support for multiple AI providers (OpenAI, Anthropic, Google, Perplexity, xAI)
-- Unified interface powered by Vercel's AI SDK
-- Easy provider switching and configuration
+### 🤖 Unified Orchestrator Design
+- Single orchestrator class with flexible configuration
+- Auto-detection of AI providers from model names
+- Support for streaming and non-streaming execution
+- Custom orchestration logic support
+- Built-in tool management and model switching
 
-### 🛠️ Tool Orchestration
+### 🛠️ Self-Contained Tools
 - Plugin-based tool system for extensibility
-- Built-in tools for common tasks (HTTP requests, calculations, timestamps)
+- Built-in tools for common tasks (HTTP requests, calculations, timestamps, AI generation)
 - Custom tool creation with type safety
+- All tools use @ai-sdk providers when available
 
-### 🔄 Orchestration Patterns
-- Simple one-shot orchestration
-- Conversational agents with memory
-- Task-based multi-step orchestration
-- Pre-built templates for common use cases
+### 🔄 Multiple Orchestration Patterns
+- Simple one-shot execution
+- Streaming real-time responses
+- Multi-model consensus and refinement
+- Pipeline orchestration for sequential processing
+- Custom orchestration logic via callbacks
 
-### 📊 Monitoring & Debugging
+### 📊 Event-Driven Architecture
 - Comprehensive event system for real-time monitoring
-- Detailed execution logs and metrics
-- Error handling and recovery
-- Debug mode for development
+- Built-in event emitter for tool calls, iterations, and results
+- Debug and monitoring capabilities
 
 ## Quick Start
 
@@ -41,282 +44,262 @@ npm install openagentic
 ### Basic Usage
 
 ```typescript
-import { createSimpleAgent, httpRequestTool, calculatorTool } from 'openagentic';
+import { Orchestrator, mathTool, httpTool } from 'openagentic';
 
-// Create a simple agent
-const agent = createSimpleAgent({
-  provider: 'openai',
-  model: 'gpt-4o',
-  apiKey: 'your-api-key',
-  tools: [httpRequestTool, calculatorTool],
-  systemPrompt: 'You are a helpful assistant that can fetch data and perform calculations.'
+// Create an orchestrator with auto-detected provider
+const agent = new Orchestrator({
+  model: 'gpt-4o-mini', // Auto-detects OpenAI
+  tools: [mathTool, httpTool],
+  systemPrompt: 'You are a helpful assistant.',
 });
 
 // Execute a task
-const result = await agent.execute('What is the current price of Bitcoin in USD?');
+const result = await agent.execute('What is 15 * 24 and what is the current time?');
 console.log(result.result);
 ```
 
-### Conversational Agent
+### Streaming Responses
 
 ```typescript
-import { createConversationalAgent } from 'openagentic';
+import { createStreamingAgent } from 'openagentic';
 
-const agent = createConversationalAgent({
-  provider: 'anthropic',
-  model: 'claude-4-sonnet-20250514',
-  apiKey: 'your-api-key'
+const streamingAgent = createStreamingAgent({
+  model: 'claude-4-sonnet-20250514', // Auto-detects Anthropic
+  systemPrompt: 'You are a creative writer.',
 });
 
-// Have a conversation
-await agent.continueConversation('Hello, I need help with my project.');
-await agent.continueConversation('Can you help me plan a marketing strategy?');
-await agent.continueConversation('What about social media campaigns?');
+// Stream response in real-time
+for await (const chunk of streamingAgent.stream('Write a story about AI')) {
+  process.stdout.write(chunk.delta);
+  if (chunk.done) break;
+}
 ```
 
-### Task-Based Agent
+### Factory Functions
 
 ```typescript
-import { createTaskAgent } from 'openagentic';
+import { 
+  createSimpleAgent, 
+  createConversationalAgent,
+  createMultiModelAgent 
+} from 'openagentic';
 
-const agent = createTaskAgent({
-  provider: 'google',
-  model: 'gemini-2.5-pro-preview-06-05',
-  apiKey: 'your-api-key',
-  steps: [
-    { name: 'research', description: 'Research the topic thoroughly' },
-    { name: 'outline', description: 'Create a detailed outline' },
-    { name: 'write', description: 'Write the content' },
-    { name: 'review', description: 'Review and refine' }
-  ]
+// Simple agent for quick tasks
+const simpleAgent = createSimpleAgent({
+  model: 'gpt-4o-mini',
+  tools: [mathTool],
 });
 
-const result = await agent.executeTask('Write a blog post about AI agents');
+// Conversational agent with memory
+const chatAgent = createConversationalAgent({
+  model: 'claude-4-sonnet-20250514',
+  systemPrompt: 'You are a helpful tutor.',
+});
+
+// Multi-model consensus
+const multiAgent = createMultiModelAgent([
+  'gpt-4o-mini',
+  'claude-4-sonnet-20250514'
+]);
+
+const consensus = await multiAgent.executeWithAllModels('Explain quantum computing');
 ```
 
 ## Supported Providers
 
-OpenAgentic supports all major AI providers through Vercel's AI SDK:
+OpenAgentic auto-detects providers based on model names:
 
 ### OpenAI
-```typescript
-import { createOpenAIModel, openAIModels } from 'openagentic';
-
-// Individual model
-const model = createOpenAIModel({
-  model: 'gpt-4o',
-  apiKey: 'your-key'
-});
-
-// Pre-configured models
-const gpt4o = openAIModels.gpt4o('your-key');
-const o3 = openAIModels.o3('your-key');
-const o3Mini = openAIModels.o3Mini('your-key');
-```
+- **Models**: `gpt-4`, `gpt-4-turbo`, `gpt-4o`, `gpt-4o-mini`, `o3`, `o3-mini`
+- **Auto-detection**: Any model containing `gpt`, `o1`, or `o3`
+- **Environment**: `OPENAI_API_KEY`
 
 ### Anthropic
-```typescript
-import { createAnthropicModel, anthropicModels } from 'openagentic';
-
-// Latest Claude 4 models
-const claude4Opus = anthropicModels.claude4Opus('your-key');
-const claude4Sonnet = anthropicModels.claude4Sonnet('your-key');
-```
+- **Models**: `claude-4-opus-20250514`, `claude-4-sonnet-20250514`
+- **Auto-detection**: Any model containing `claude`
+- **Environment**: `ANTHROPIC_API_KEY`
 
 ### Google
-```typescript
-import { createGoogleModel, googleModels, createGoogleVertexModel } from 'openagentic';
-
-// Google AI Studio - Latest Gemini 2.5 models
-const gemini25Pro = googleModels.gemini25ProPreview('your-key');
-const gemini25Flash = googleModels.gemini25FlashPreview('your-key');
-
-// Google Vertex AI
-const vertexModel = createGoogleVertexModel({
-  model: 'gemini-2.5-pro-preview-06-05',
-  project: 'your-project-id',
-  location: 'us-central1'
-});
-```
+- **Models**: `gemini-2.5-pro-preview-06-05`, `gemini-2.5-flash-preview-05-20`, `gemini-1.5-pro`, `gemini-1.5-flash`
+- **Auto-detection**: Any model containing `gemini`
+- **Environment**: `GOOGLE_GENERATIVE_AI_API_KEY`
 
 ### Perplexity
-```typescript
-import { perplexityModels } from 'openagentic';
-
-const sonar = perplexityModels.sonar('your-key');
-```
+- **Models**: `llama-3.1-sonar-small-128k-online`, `llama-3.1-sonar-large-128k-online`, `llama-3.1-sonar-huge-128k-online`
+- **Auto-detection**: Models containing both `llama` and `sonar`
+- **Environment**: `PERPLEXITY_API_KEY`
 
 ### xAI
-```typescript
-import { xaiModels } from 'openagentic';
-
-const grok = xaiModels.grok('your-key');
-```
+- **Models**: `grok-beta`
+- **Auto-detection**: Any model containing `grok`
+- **Environment**: `XAI_API_KEY`
 
 ## Core Concepts
 
-### Orchestrators
+### Unified Orchestrator
 
-Orchestrators are the main execution engines that coordinate between AI models and tools:
+The `Orchestrator` class is the main execution engine:
 
-- **SimpleOrchestrator**: For single-task execution
-- **ConversationalOrchestrator**: For multi-turn conversations with memory
-- **TaskOrchestrator**: For multi-step task execution
+```typescript
+const agent = new Orchestrator({
+  model: 'gpt-4o-mini',           // String or AIModel object
+  tools: [httpTool, mathTool],    // Array of tools
+  systemPrompt: 'You are...',     // Optional system prompt
+  maxIterations: 10,              // Max iterations for tool loops
+  customLogic: async (input, context) => {
+    // Custom orchestration logic
+    return await customProcess(input, context);
+  }
+});
 
-### Tools
+// Core methods
+await agent.execute('Your prompt');           // Standard execution
+for await (const chunk of agent.stream('Your prompt')) { } // Streaming
 
-Tools extend agent capabilities:
+// Tool management
+agent.addTool(newTool);                      // Add tool
+agent.removeTool('toolName');                // Remove tool
+
+// Model switching
+agent.switchModel('claude-4-sonnet-20250514'); // Switch model
+```
+
+### Built-in Tools
+
+```typescript
+import { 
+  httpTool,        // HTTP requests
+  mathTool,        // Mathematical calculations
+  timeTool,        // Timestamp operations
+  aiTextTool,      // AI text generation
+  aiImageTool,     // AI image generation
+  aiCodeTool       // AI code generation
+} from 'openagentic';
+
+// All tools are self-contained and use @ai-sdk providers
+const agent = new Orchestrator({
+  model: 'gpt-4o',
+  tools: [httpTool, mathTool, aiTextTool],
+});
+```
+
+### Custom Tools
 
 ```typescript
 import { createTool } from 'openagentic';
 
-const weatherTool = createTool({
-  name: 'get_weather',
-  description: 'Get current weather for a location',
+const customTool = createTool({
+  name: 'weather',
+  description: 'Get weather information',
   parameters: {
     location: {
       type: 'string',
-      description: 'City name or coordinates',
-      required: true
-    }
+      description: 'City name',
+      required: true,
+    },
   },
   execute: async ({ location }) => {
-    // Fetch weather data
+    // Tool implementation
     return { temperature: 72, condition: 'sunny' };
   },
-  costEstimate: 0.001
 });
 ```
 
-### Cost Tracking
-
-Monitor and control costs:
+### Advanced Orchestration
 
 ```typescript
-const agent = createSimpleAgent({
-  // ... configuration
-  budget: {
-    maxCost: 0.50,        // Maximum $0.50
-    maxTokens: 10000,     // Maximum 10K tokens
-    maxToolCalls: 20      // Maximum 20 tool calls
+// Multi-model orchestration
+const multiAgent = createMultiModelAgent(['gpt-4o', 'claude-4-sonnet-20250514']);
+const consensus = await multiAgent.executeWithAllModels('Complex question');
+const refined = await multiAgent.executeWithRefinement('Initial prompt');
+
+// Pipeline orchestration
+const pipeline = createPipeline()
+  .addStep('gpt-4o-mini', input => `Brainstorm: ${input}`)
+  .addStep('claude-4-sonnet-20250514', (input, prev) => `Refine: ${prev.result}`)
+  .addStep('gpt-4o', (input, prev) => `Finalize: ${prev.result}`);
+
+const result = await pipeline.execute('Create a business plan');
+
+// Custom orchestration logic
+const customAgent = new Orchestrator({
+  model: 'gpt-4o',
+  customLogic: async (input, context) => {
+    // Your custom orchestration logic
+    const step1 = await firstModel.execute(input);
+    const step2 = await secondModel.execute(step1.result);
+    return combineResults(step1, step2);
   }
 });
-
-// Get cost information
-const cost = agent.getCostTracking();
-console.log(`Estimated cost: $${cost.estimatedCost.toFixed(4)}`);
 ```
 
 ### Event Monitoring
 
-Monitor execution in real-time:
-
 ```typescript
 agent.onEvent((event) => {
   switch (event.type) {
-    case 'tool_call':
-      console.log(`Calling tool: ${event.data.toolName}`);
+    case 'start':
+      console.log(`Started with ${event.data.model.model}`);
       break;
-    case 'cost_update':
-      console.log(`Cost: $${event.data.estimatedCost.toFixed(4)}`);
+    case 'tool_call':
+      console.log(`Calling ${event.data.toolName}`);
+      break;
+    case 'stream':
+      console.log(`Delta: ${event.data.delta}`);
       break;
     case 'complete':
-      console.log('Execution completed');
+      console.log(`Completed in ${event.data.iterations} iterations`);
       break;
   }
 });
-```
-
-## Built-in Templates
-
-Pre-configured agents for common use cases:
-
-```typescript
-import {
-  createResearchAssistant,
-  createDataAnalyst,
-  createCustomerService,
-  createContentCreator,
-  createProjectManager
-} from 'openagentic';
-
-// Research assistant with web access
-const researcher = createResearchAssistant({
-  provider: 'openai',
-  model: 'gpt-4o',
-  apiKey: 'your-key'
-});
-
-// Data analyst with calculation tools
-const analyst = createDataAnalyst({
-  provider: 'anthropic',
-  model: 'claude-4-sonnet-20250514',
-  apiKey: 'your-key'
-});
-```
-
-## Advanced Configuration
-
-### Custom AI Provider
-
-```typescript
-import { createCustomModel, Orchestrator } from 'openagentic';
-
-const customModel = createCustomModel({
-  model: 'my-custom-model',
-  baseURL: 'https://api.example.com/v1',
-  apiKey: 'custom-key'
-});
-
-const orchestrator = new Orchestrator({
-  model: customModel,
-  tools: [],
-  maxIterations: 10,
-  streaming: true,
-  debug: true
-});
-```
-
-### Tool Development
-
-```typescript
-import { createAsyncTool } from 'openagentic';
-
-const databaseTool = createAsyncTool(
-  'database_query',
-  'Execute database queries',
-  {
-    query: { type: 'string', required: true },
-    database: { type: 'string', required: false }
-  },
-  async ({ query, database = 'default' }) => {
-    // Execute database query
-    return { rows: [], count: 0 };
-  },
-  0.002 // Cost estimate
-);
 ```
 
 ## Architecture
 
 ```
 openagentic/
-├── core/              # Core orchestration logic
-│   ├── orchestrator   # Main orchestration engine
-│   ├── ai-provider    # AI model abstraction (AI SDK)
-│   ├── cost-tracker   # Cost management
-│   └── tool-registry  # Tool management
-├── tools/             # Tool system
-│   ├── built-in       # Pre-built tools
-│   └── factory        # Tool creation utilities
-├── orchestrators/     # Orchestrator variants
-│   ├── simple         # Simple orchestration
-│   ├── conversational # Conversational agents
-│   ├── task           # Task-based execution
-│   └── templates      # Pre-configured templates
-├── providers/         # AI provider integrations
-└── utils/             # Utility functions
+├── core/
+│   ├── orchestrator.ts    # Main unified orchestrator
+│   ├── ai-provider.ts     # AI provider abstraction
+│   ├── tool-registry.ts   # Tool management
+│   └── errors.ts          # Error definitions
+├── tools/
+│   └── index.ts           # Self-contained tools with @ai-sdk
+├── providers/
+│   └── index.ts           # Provider configurations and metadata
+├── utils/
+│   ├── simple-event-emitter.ts # Event system
+│   ├── helpers.ts         # Utility functions
+│   └── validators.ts      # Validation utilities
+└── types/
+    └── index.ts           # TypeScript definitions
 ```
+
+## Key Improvements
+
+### 🎯 Simplified Design
+- **Single orchestrator class** instead of multiple variants
+- **Auto-detection** of providers from model strings
+- **Unified interface** for all orchestration patterns
+- **Self-contained tools** with minimal dependencies
+
+### 🔧 Enhanced Flexibility
+- **Model switching** at runtime
+- **Dynamic tool management** (add/remove tools)
+- **Custom orchestration logic** via callbacks
+- **Streaming support** built-in
+
+### 🚀 Better Developer Experience
+- **Factory functions** for common patterns
+- **Type-safe** tool and model configuration
+- **Event-driven** monitoring and debugging
+- **Minimal configuration** required
+
+### 📦 Modular Architecture
+- **No cost tracking complexity** (removed)
+- **No configuration object sprawl** (simplified)
+- **No orchestrator variants** (unified)
+- **Tools are self-contained** (not spread across files)
 
 ## Requirements
 
@@ -341,4 +324,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**OpenAgentic** - Building the future of AI agent orchestration 🤖✨
+**OpenAgentic** - Simplified AI agent orchestration 🤖✨
