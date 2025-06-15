@@ -44,22 +44,22 @@ export const imageGenerationTool: Tool = {
         provider = await context.getModel('openai');
       } else {
         const { createOpenAI } = await import('@ai-sdk/openai');
-        const apiKey = context?.apiKeys?.openai ?? process.env.OPENAI_API_KEY; // Fix: Use nullish coalescing
+        const apiKey = context?.apiKeys?.openai ?? process.env.OPENAI_API_KEY;
         if (!apiKey) throw new Error('OpenAI API key not found');
         provider = createOpenAI({ apiKey });
       }
 
-      // Try different import paths for image generation
+      // Fix: Improved generateImage import handling
       let generateImage;
       try {
-        const ai = await import('ai');
-        generateImage = ai.generateImage ?? ai.experimental_generateImage; // Fix: Use nullish coalescing
+        const { experimental_generateImage } = await import('ai');
+        generateImage = experimental_generateImage;
       } catch {
         try {
-          const openai = await import('@ai-sdk/openai');
-          generateImage = openai.generateImage;
+          const aiModule = await import('ai');
+          generateImage = (aiModule as any).generateImage;
         } catch {
-          throw new Error('Image generation not available in current AI SDK version');
+          throw new Error('Image generation not available. Please update your AI SDK version.');
         }
       }
 
@@ -76,7 +76,7 @@ export const imageGenerationTool: Tool = {
       });
 
       return {
-        url: result.image?.url ?? result.url, // Fix: Use nullish coalescing
+        url: result.image?.url ?? result.url,
         revisedPrompt: result.image?.revisedPrompt ?? result.revisedPrompt,
         model,
         size,
