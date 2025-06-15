@@ -7,11 +7,6 @@ export { httpTool } from './http';
 export { calculatorTool } from './calculator';
 export { timestampTool } from './timestamp';
 
-// AI-powered tools
-export { textGenerationTool } from './ai/text-generation';
-export { imageGenerationTool } from './ai/image-generation';
-export { codeGenerationTool } from './ai/code-generation';
-
 // Custom tool examples
 export { weatherTool } from './custom/weather-tool';
 export { fileReaderTool } from './custom/file-reader';
