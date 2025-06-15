@@ -1,42 +1,46 @@
-// Core exports
-export { Orchestrator } from './core/orchestrator';
-export type { StreamChunk } from './core/orchestrator';
+// =============================================================================
+// MAIN EXPORTS
+// =============================================================================
 
-// Tools
+// Core exports
+export { Orchestrator } from './orchestrator';
+export type { StreamChunk } from './orchestrator';
+
+// Tools - organized by category
 export * from './tools';
 
-// Providers - now with centralized ProviderManager
-export { ProviderManager } from './providers';
-export * from './providers';
+// Provider management
+export { ProviderManager } from './providers/manager';
 
-// Types
+// Types and utilities
 export * from './types';
+export { SimpleEventEmitter } from './utils/event-emitter';
 
-// Utils
-export * from './utils';
+// =============================================================================
+// SIMPLIFIED FACTORY FUNCTIONS
+// =============================================================================
 
-// Errors
-export * from './core/errors';
+import { Orchestrator } from './orchestrator';
+import type { Tool, AIModel } from './types';
 
-// Simplified factory functions using ProviderManager
 export function createOrchestrator(options: {
-  model: string | any;
-  tools?: any[];
+  model: string | AIModel;
+  tools?: Tool[];
   systemPrompt?: string;
   streaming?: boolean;
   maxIterations?: number;
   customLogic?: (input: string, context: any) => Promise<any>;
 }) {
-  return new (require('./core/orchestrator').Orchestrator)(options);
+  return new Orchestrator(options);
 }
 
 // Convenience factories for common patterns
 export function createSimpleAgent(options: {
-  model: string | any;
-  tools?: any[];
+  model: string | AIModel;
+  tools?: Tool[];
   systemPrompt?: string;
 }) {
-  return new (require('./core/orchestrator').Orchestrator)({
+  return new Orchestrator({
     model: options.model,
     tools: options.tools,
     systemPrompt: options.systemPrompt,
@@ -45,11 +49,11 @@ export function createSimpleAgent(options: {
 }
 
 export function createConversationalAgent(options: {
-  model: string | any;
-  tools?: any[];
+  model: string | AIModel;
+  tools?: Tool[];
   systemPrompt?: string;
 }) {
-  return new (require('./core/orchestrator').Orchestrator)({
+  return new Orchestrator({
     model: options.model,
     tools: options.tools,
     systemPrompt: options.systemPrompt || 'You are a helpful assistant that can use tools to help users. Maintain context from previous messages in this conversation.',
@@ -58,11 +62,11 @@ export function createConversationalAgent(options: {
 }
 
 export function createStreamingAgent(options: {
-  model: string | any;
-  tools?: any[];
+  model: string | AIModel;
+  tools?: Tool[];
   systemPrompt?: string;
 }) {
-  return new (require('./core/orchestrator').Orchestrator)({
+  return new Orchestrator({
     model: options.model,
     tools: options.tools,
     systemPrompt: options.systemPrompt,
@@ -71,10 +75,12 @@ export function createStreamingAgent(options: {
   });
 }
 
+// =============================================================================
+// ADVANCED ORCHESTRATION PATTERNS
+// =============================================================================
+
 // Multi-model orchestration helper
-export function createMultiModelAgent(models: (string | any)[], tools?: any[]) {
-  const { Orchestrator } = require('./core/orchestrator');
-  
+export function createMultiModelAgent(models: (string | AIModel)[], tools?: Tool[]) {
   return {
     async executeWithAllModels(input: string) {
       const orchestrators = models.map(model => new Orchestrator({
@@ -87,7 +93,7 @@ export function createMultiModelAgent(models: (string | any)[], tools?: any[]) {
         orchestrators.map(async (orchestrator, index) => {
           const result = await orchestrator.execute(input);
           return {
-            model: typeof models[index] === 'string' ? models[index] : models[index].model,
+            model: typeof models[index] === 'string' ? models[index] : (models[index] as AIModel).model,
             result: result.result,
             success: result.success,
             error: result.error,
@@ -139,13 +145,12 @@ Provide an improved, more accurate, and comprehensive response.`;
 // Pipeline orchestration helper
 export function createPipeline() {
   const steps: Array<{
-    orchestrator: any;
+    orchestrator: Orchestrator;
     transform?: (input: string, previousResult?: any) => string;
   }> = [];
 
   return {
-    addStep(model: string | any, transform?: (input: string, previousResult?: any) => string, tools?: any[]) {
-      const { Orchestrator } = require('./core/orchestrator');
+    addStep(model: string | AIModel, transform?: (input: string, previousResult?: any) => string, tools?: Tool[]) {
       const orchestrator = new Orchestrator({ model, tools, maxIterations: 5 });
       steps.push({ orchestrator, transform });
       return this;

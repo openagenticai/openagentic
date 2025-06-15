@@ -6,9 +6,9 @@ import type {
   ExecutionResult,
   OrchestratorEvent,
   ToolContext 
-} from '../types';
-import { SimpleEventEmitter } from '../utils/simple-event-emitter';
-import { ProviderManager } from '../providers';
+} from './types';
+import { SimpleEventEmitter } from './utils/event-emitter';
+import { ProviderManager } from './providers/manager';
 
 export interface StreamChunk {
   delta: string;
