@@ -50,17 +50,6 @@ export const ToolSchema = z.object({
 
 export type Tool = z.infer<typeof ToolSchema>;
 
-export const OrchestratorConfigSchema = z.object({
-  model: AIModelSchema,
-  tools: z.array(ToolSchema),
-  systemPrompt: z.string().optional(),
-  maxIterations: z.number().positive().default(10),
-  streaming: z.boolean().default(false),
-  debug: z.boolean().default(false),
-});
-
-export type OrchestratorConfig = z.infer<typeof OrchestratorConfigSchema>;
-
 export const ExecutionResultSchema = z.object({
   success: z.boolean(),
   result: z.any().optional(),
@@ -74,11 +63,12 @@ export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;
 
 // Event types for streaming and real-time updates
 export type OrchestratorEvent = 
-  | { type: 'start'; data: { config: OrchestratorConfig } }
+  | { type: 'start'; data: { model: AIModel } }
   | { type: 'iteration'; data: { iteration: number; message: Message } }
   | { type: 'tool_call'; data: { toolName: string; arguments: Record<string, any> } }
   | { type: 'tool_result'; data: { toolName: string; result: any; success: boolean } }
+  | { type: 'stream'; data: { delta: string; content: string } }
   | { type: 'complete'; data: ExecutionResult }
-  | { type: 'error'; data: { error: string; iteration?: number } };
+  | { type: 'error'; data: { error: string } };
 
 export type EventHandler = (event: OrchestratorEvent) => void;

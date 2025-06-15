@@ -1,33 +1,14 @@
 import { Orchestrator } from '../core/orchestrator';
-import { AIProvider } from '../core/ai-provider';
-import { CostTracker } from '../core/cost-tracker';
-import { ToolRegistry } from '../core/tool-registry';
-import type { AIModel, Tool, OrchestratorConfig } from '../types';
+import type { AIModel, Tool } from '../types';
 
 export class SimpleOrchestrator extends Orchestrator {
   constructor(
-    model: AIModel, 
-    tools: Tool[] = [], 
+    model: AIModel,
+    tools: Tool[] = [],
     systemPrompt?: string,
-    aiProvider?: AIProvider,
-    costTracker?: CostTracker,
-    toolRegistry?: ToolRegistry
+    streaming = false
   ) {
-    const config: OrchestratorConfig = {
-      model,
-      tools,
-      systemPrompt,
-      maxIterations: 5,
-      streaming: false,
-      debug: false,
-    };
-    
-    super(
-      config,
-      aiProvider || new AIProvider(model),
-      costTracker || new CostTracker(),
-      toolRegistry || new ToolRegistry(tools)
-    );
+    super(model, tools, systemPrompt, streaming);
   }
 
   public static create(options: {
@@ -39,6 +20,7 @@ export class SimpleOrchestrator extends Orchestrator {
     location?: string;
     tools?: Tool[];
     systemPrompt?: string;
+    streaming?: boolean;
   }): SimpleOrchestrator {
     const model: AIModel = {
       provider: options.provider,
@@ -53,7 +35,8 @@ export class SimpleOrchestrator extends Orchestrator {
     return new SimpleOrchestrator(
       model,
       options.tools || [],
-      options.systemPrompt
+      options.systemPrompt,
+      options.streaming || false
     );
   }
 }
