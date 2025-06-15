@@ -1,8 +1,8 @@
 // =============================================================================
-// MAIN EXPORTS
+// CORE EXPORTS - SIMPLIFIED
 // =============================================================================
 
-// Core exports - two distinct orchestrator classes
+// Core orchestrator classes
 export { Orchestrator } from './orchestrator';
 export { StreamingOrchestrator } from './streaming-orchestrator';
 
@@ -16,7 +16,7 @@ export { ProviderManager } from './providers/manager';
 export * from './types';
 
 // =============================================================================
-// SIMPLIFIED FACTORY FUNCTIONS - ONLY TWO MAIN AGENT TYPES
+// MAIN API - TWO SIMPLIFIED FACTORY FUNCTIONS
 // =============================================================================
 
 import { Orchestrator } from './orchestrator';
