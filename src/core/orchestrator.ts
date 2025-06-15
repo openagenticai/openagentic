@@ -97,9 +97,9 @@ export class Orchestrator {
         model: provider(this.model.model),
         messages: this.transformMessages(messages),
         tools: toolDefinitions.length > 0 ? this.convertToAISDKTools(toolDefinitions) : undefined,
-        temperature: this.model.temperature,
-        maxTokens: this.model.maxTokens,
-        topP: this.model.topP,
+        ...(this.model.temperature !== undefined && { temperature: this.model.temperature }),
+        ...(this.model.maxTokens !== undefined && { maxTokens: this.model.maxTokens }),
+        ...(this.model.topP !== undefined && { topP: this.model.topP }),
       });
 
       let content = '';
@@ -117,9 +117,9 @@ export class Orchestrator {
         model: provider(this.model.model),
         messages: this.transformMessages(messages),
         tools: toolDefinitions.length > 0 ? this.convertToAISDKTools(toolDefinitions) : undefined,
-        temperature: this.model.temperature,
-        maxTokens: this.model.maxTokens,
-        topP: this.model.topP,
+        ...(this.model.temperature !== undefined && { temperature: this.model.temperature }),
+        ...(this.model.maxTokens !== undefined && { maxTokens: this.model.maxTokens }),
+        ...(this.model.topP !== undefined && { topP: this.model.topP }),
       });
 
       return {
@@ -135,33 +135,41 @@ export class Orchestrator {
     switch (this.model.provider) {
       case 'openai': {
         const { createOpenAI } = await import('@ai-sdk/openai');
-        return createOpenAI({
-          baseURL: this.model.baseURL,
-          apiKey,
-        });
+        const config: any = {};
+        if (apiKey) config.apiKey = apiKey;
+        if (this.model.baseURL) config.baseURL = this.model.baseURL;
+        return createOpenAI(config);
       }
       case 'anthropic': {
         const { createAnthropic } = await import('@ai-sdk/anthropic');
-        return createAnthropic({ apiKey });
+        const config: any = {};
+        if (apiKey) config.apiKey = apiKey;
+        return createAnthropic(config);
       }
       case 'google': {
         const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-        return createGoogleGenerativeAI({ apiKey });
+        const config: any = {};
+        if (apiKey) config.apiKey = apiKey;
+        return createGoogleGenerativeAI(config);
       }
       case 'google-vertex': {
         const { createVertex } = await import('@ai-sdk/google-vertex');
-        return createVertex({
-          project: this.model.project || '',
-          location: this.model.location || '',
-        });
+        const config: any = {};
+        if (this.model.project) config.project = this.model.project;
+        if (this.model.location) config.location = this.model.location;
+        return createVertex(config);
       }
       case 'perplexity': {
         const { createPerplexity } = await import('@ai-sdk/perplexity');
-        return createPerplexity({ apiKey });
+        const config: any = {};
+        if (apiKey) config.apiKey = apiKey;
+        return createPerplexity(config);
       }
       case 'xai': {
         const { createXai } = await import('@ai-sdk/xai');
-        return createXai({ apiKey });
+        const config: any = {};
+        if (apiKey) config.apiKey = apiKey;
+        return createXai(config);
       }
       default:
         throw new Error(`Unsupported provider: ${this.model.provider}`);

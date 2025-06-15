@@ -134,7 +134,7 @@ export const providerConfigs = {
   },
 };
 
-// Factory functions for creating AI models
+// Factory functions for creating AI models with proper optional property handling
 export function createOpenAIModel(options: {
   model: string;
   apiKey?: string;
@@ -143,15 +143,24 @@ export function createOpenAIModel(options: {
   maxTokens?: number;
   topP?: number;
 }): AIModel {
-  return {
+  const model: AIModel = {
     provider: 'openai',
     model: options.model,
-    apiKey: options.apiKey || process.env.OPENAI_API_KEY,
-    baseURL: options.baseURL,
     temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP,
   };
+  
+  // Only add optional properties if they are defined
+  if (options.apiKey !== undefined) model.apiKey = options.apiKey;
+  if (options.baseURL !== undefined) model.baseURL = options.baseURL;
+  if (options.maxTokens !== undefined) model.maxTokens = options.maxTokens;
+  if (options.topP !== undefined) model.topP = options.topP;
+
+  // Fallback to environment variable if no apiKey provided
+  if (!model.apiKey && process.env.OPENAI_API_KEY) {
+    model.apiKey = process.env.OPENAI_API_KEY;
+  }
+  
+  return model;
 }
 
 export function createAnthropicModel(options: {
@@ -161,14 +170,21 @@ export function createAnthropicModel(options: {
   maxTokens?: number;
   topP?: number;
 }): AIModel {
-  return {
+  const model: AIModel = {
     provider: 'anthropic',
     model: options.model,
-    apiKey: options.apiKey || process.env.ANTHROPIC_API_KEY,
     temperature: options.temperature ?? 0.7,
     maxTokens: options.maxTokens ?? 1024,
-    topP: options.topP,
   };
+  
+  if (options.apiKey !== undefined) model.apiKey = options.apiKey;
+  if (options.topP !== undefined) model.topP = options.topP;
+
+  if (!model.apiKey && process.env.ANTHROPIC_API_KEY) {
+    model.apiKey = process.env.ANTHROPIC_API_KEY;
+  }
+  
+  return model;
 }
 
 export function createGoogleModel(options: {
@@ -178,14 +194,21 @@ export function createGoogleModel(options: {
   maxTokens?: number;
   topP?: number;
 }): AIModel {
-  return {
+  const model: AIModel = {
     provider: 'google',
     model: options.model,
-    apiKey: options.apiKey || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP,
   };
+  
+  if (options.apiKey !== undefined) model.apiKey = options.apiKey;
+  if (options.maxTokens !== undefined) model.maxTokens = options.maxTokens;
+  if (options.topP !== undefined) model.topP = options.topP;
+
+  if (!model.apiKey && process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    model.apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  }
+  
+  return model;
 }
 
 export function createGoogleVertexModel(options: {
@@ -196,15 +219,18 @@ export function createGoogleVertexModel(options: {
   maxTokens?: number;
   topP?: number;
 }): AIModel {
-  return {
+  const model: AIModel = {
     provider: 'google-vertex',
     model: options.model,
     project: options.project,
     location: options.location || 'us-central1',
     temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP,
   };
+  
+  if (options.maxTokens !== undefined) model.maxTokens = options.maxTokens;
+  if (options.topP !== undefined) model.topP = options.topP;
+  
+  return model;
 }
 
 export function createPerplexityModel(options: {
@@ -214,14 +240,21 @@ export function createPerplexityModel(options: {
   maxTokens?: number;
   topP?: number;
 }): AIModel {
-  return {
+  const model: AIModel = {
     provider: 'perplexity',
     model: options.model,
-    apiKey: options.apiKey || process.env.PERPLEXITY_API_KEY,
     temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP,
   };
+  
+  if (options.apiKey !== undefined) model.apiKey = options.apiKey;
+  if (options.maxTokens !== undefined) model.maxTokens = options.maxTokens;
+  if (options.topP !== undefined) model.topP = options.topP;
+
+  if (!model.apiKey && process.env.PERPLEXITY_API_KEY) {
+    model.apiKey = process.env.PERPLEXITY_API_KEY;
+  }
+  
+  return model;
 }
 
 export function createXAIModel(options: {
@@ -231,14 +264,21 @@ export function createXAIModel(options: {
   maxTokens?: number;
   topP?: number;
 }): AIModel {
-  return {
+  const model: AIModel = {
     provider: 'xai',
     model: options.model,
-    apiKey: options.apiKey || process.env.XAI_API_KEY,
     temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP,
   };
+  
+  if (options.apiKey !== undefined) model.apiKey = options.apiKey;
+  if (options.maxTokens !== undefined) model.maxTokens = options.maxTokens;
+  if (options.topP !== undefined) model.topP = options.topP;
+
+  if (!model.apiKey && process.env.XAI_API_KEY) {
+    model.apiKey = process.env.XAI_API_KEY;
+  }
+  
+  return model;
 }
 
 export function createCustomModel(options: {
@@ -249,15 +289,18 @@ export function createCustomModel(options: {
   maxTokens?: number;
   topP?: number;
 }): AIModel {
-  return {
+  const model: AIModel = {
     provider: 'custom',
     model: options.model,
-    apiKey: options.apiKey,
     baseURL: options.baseURL,
     temperature: options.temperature ?? 0.7,
-    maxTokens: options.maxTokens,
-    topP: options.topP,
   };
+  
+  if (options.apiKey !== undefined) model.apiKey = options.apiKey;
+  if (options.maxTokens !== undefined) model.maxTokens = options.maxTokens;
+  if (options.topP !== undefined) model.topP = options.topP;
+  
+  return model;
 }
 
 // Pre-configured model instances

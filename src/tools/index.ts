@@ -163,19 +163,19 @@ export const textGenerationTool: Tool = {
       let provider;
       if (model.includes('gpt') || model.includes('o1') || model.includes('o3')) {
         const { createOpenAI } = await import('@ai-sdk/openai');
-        provider = createOpenAI({
-          apiKey: process.env.OPENAI_API_KEY,
-        });
+        const config: any = {};
+        if (process.env.OPENAI_API_KEY) config.apiKey = process.env.OPENAI_API_KEY;
+        provider = createOpenAI(config);
       } else if (model.includes('claude')) {
         const { createAnthropic } = await import('@ai-sdk/anthropic');
-        provider = createAnthropic({
-          apiKey: process.env.ANTHROPIC_API_KEY,
-        });
+        const config: any = {};
+        if (process.env.ANTHROPIC_API_KEY) config.apiKey = process.env.ANTHROPIC_API_KEY;
+        provider = createAnthropic(config);
       } else if (model.includes('gemini')) {
         const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
-        provider = createGoogleGenerativeAI({
-          apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-        });
+        const config: any = {};
+        if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) config.apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        provider = createGoogleGenerativeAI(config);
       } else {
         throw new Error(`Unsupported model: ${model}`);
       }
@@ -197,7 +197,7 @@ export const textGenerationTool: Tool = {
   },
 };
 
-// Self-contained image generation tool using @ai-sdk
+// Self-contained image generation tool using @ai-sdk (updated for new API)
 export const imageGenerationTool: Tool = {
   name: 'image_generation',
   description: 'Generate images using AI models via @ai-sdk',
@@ -223,23 +223,35 @@ export const imageGenerationTool: Tool = {
     const { prompt, model = 'dall-e-3', size = '1024x1024' } = params;
     
     try {
-      // Dynamic import to avoid dependency issues
-      const { generateImage } = await import('ai');
+      // Try the new API first, fall back to legacy if needed
+      let generateImage;
+      try {
+        const ai = await import('ai');
+        generateImage = ai.generateImage || ai.experimental_generateImage;
+      } catch {
+        // Fallback for different AI SDK versions
+        const openai = await import('@ai-sdk/openai');
+        generateImage = openai.generateImage;
+      }
+
+      if (!generateImage) {
+        throw new Error('Image generation not available in this AI SDK version');
+      }
+
       const { createOpenAI } = await import('@ai-sdk/openai');
-      
-      const provider = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
+      const config: any = {};
+      if (process.env.OPENAI_API_KEY) config.apiKey = process.env.OPENAI_API_KEY;
+      const provider = createOpenAI(config);
 
       const result = await generateImage({
-        model: provider.image(model),
+        model: provider.image ? provider.image(model) : provider(model),
         prompt,
         size,
       });
 
       return {
-        url: result.image.url,
-        revisedPrompt: result.image.revisedPrompt,
+        url: result.image?.url || result.url,
+        revisedPrompt: result.image?.revisedPrompt || result.revisedPrompt,
         model,
         size,
       };
@@ -277,9 +289,9 @@ export const codeGenerationTool: Tool = {
       const { generateText } = await import('ai');
       const { createOpenAI } = await import('@ai-sdk/openai');
       
-      const provider = createOpenAI({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
+      const config: any = {};
+      if (process.env.OPENAI_API_KEY) config.apiKey = process.env.OPENAI_API_KEY;
+      const provider = createOpenAI(config);
 
       const prompt = `Generate ${language} code for the following task: ${task}
 

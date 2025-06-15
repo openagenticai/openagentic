@@ -50,6 +50,16 @@ export const ToolSchema = z.object({
 
 export type Tool = z.infer<typeof ToolSchema>;
 
+// Add missing OrchestratorConfig interface
+export interface OrchestratorConfig {
+  model: AIModel;
+  tools?: Tool[];
+  systemPrompt?: string;
+  maxIterations?: number;
+  streaming?: boolean;
+  debug?: boolean;
+}
+
 export const ExecutionResultSchema = z.object({
   success: z.boolean(),
   result: z.any().optional(),
