@@ -25,8 +25,7 @@ import type { Tool, ToolContext, JSONSchema } from '../types';
 
 // Categorized tool collections
 export const utilityTools: Tool[] = [httpTool, calculatorTool, timestampTool];
-export const aiTools: Tool[] = [textGenerationTool, imageGenerationTool, codeGenerationTool];
-export const allTools: Tool[] = [...utilityTools, ...aiTools];
+export const allTools: Tool[] = [...utilityTools];
 
 // Legacy exports for backward compatibility
 export { httpTool as httpRequestTool };
