@@ -4,12 +4,10 @@ import type {
   Tool, 
   Message, 
   ExecutionResult,
-  OrchestratorEvent,
   OrchestratorConfig,
   ToolContext,
   StreamChunk
 } from './types';
-import { SimpleEventEmitter } from './utils/event-emitter';
 import { ProviderManager } from './providers/manager';
 
 export type { StreamChunk } from './types';
@@ -19,23 +17,27 @@ export class Orchestrator {
   private tools = new Map<string, Tool>();
   private messages: Message[] = [];
   private iterations = 0;
-  private eventEmitter = new SimpleEventEmitter<OrchestratorEvent>();
   private maxIterations: number;
   private customLogic?: (input: string, context: any) => Promise<any>;
+  private streaming: boolean;
+
+  // Simple event handling without custom event emitter
+  private eventHandlers: Array<(event: any) => void> = [];
 
   constructor(options: OrchestratorConfig) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
     
-    this.maxIterations = options.maxIterations ?? 10; // Fix: Use nullish coalescing
+    this.maxIterations = options.maxIterations ?? 10;
     this.customLogic = options.customLogic;
+    this.streaming = options.streaming ?? false;
     
-    // Register tools with validation - Fix: Handle undefined tools properly
-    const toolsToRegister = options.tools ?? []; // Fix: Use nullish coalescing
+    // Register tools with validation
+    const toolsToRegister = options.tools ?? [];
     toolsToRegister.forEach(tool => this.addTool(tool));
     
-    // Add system prompt if provided - Fix: Handle undefined systemPrompt
-    if (options.systemPrompt !== undefined) { // Fix: Explicit undefined check
+    // Add system prompt if provided
+    if (options.systemPrompt !== undefined) {
       this.messages.push({
         role: 'system',
         content: options.systemPrompt,
@@ -45,7 +47,7 @@ export class Orchestrator {
 
   // Core execution method
   public async execute(input: string): Promise<ExecutionResult> {
-    this.eventEmitter.emit({ type: 'start', data: { model: this.model } });
+    this.emitEvent({ type: 'start', data: { model: this.model } });
     
     try {
       // If custom logic is provided, use it
@@ -66,13 +68,12 @@ export class Orchestrator {
 
         const assistantMessage: Message = {
           role: 'assistant',
-          content: response.content ?? '', // Fix: Use nullish coalescing
-          // Fix: Conditional spreading for toolCalls
+          content: response.content ?? '',
           ...(response.toolCalls !== undefined && { toolCalls: response.toolCalls }),
         };
 
         this.messages.push(assistantMessage);
-        this.eventEmitter.emit({ 
+        this.emitEvent({ 
           type: 'iteration', 
           data: { iteration: this.iterations, message: assistantMessage } 
         });
@@ -97,27 +98,27 @@ export class Orchestrator {
         toolCallsUsed: this.getUsedTools(),
       };
 
-      this.eventEmitter.emit({ type: 'complete', data: result });
+      this.emitEvent({ type: 'complete', data: result });
       return result;
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorResult: ExecutionResult = {
         success: false,
-        error: errorMessage, // Fix: Ensure string type
+        error: errorMessage,
         messages: this.messages,
         iterations: this.iterations,
         toolCallsUsed: this.getUsedTools(),
       };
 
-      this.eventEmitter.emit({ type: 'error', data: { error: errorMessage } });
+      this.emitEvent({ type: 'error', data: { error: errorMessage } });
       return errorResult;
     }
   }
 
-  // Streaming execution method
+  // Streaming execution method using AI SDK's streamText
   public async *stream(input: string): AsyncGenerator<StreamChunk> {
-    this.eventEmitter.emit({ type: 'start', data: { model: this.model } });
+    this.emitEvent({ type: 'start', data: { model: this.model } });
     
     try {
       this.messages.push({
@@ -138,7 +139,7 @@ export class Orchestrator {
         streamConfig.tools = this.convertToAISDKTools(toolDefinitions);
       }
 
-      // Add model parameters conditionally - Fix: Proper undefined checks
+      // Add model parameters conditionally
       if (this.model.temperature !== undefined) {
         streamConfig.temperature = this.model.temperature;
       }
@@ -155,7 +156,7 @@ export class Orchestrator {
       for await (const delta of result.textStream) {
         content += delta;
         const chunk: StreamChunk = { delta, content, done: false };
-        this.eventEmitter.emit({ type: 'stream', data: chunk });
+        this.emitEvent({ type: 'stream', data: chunk });
         yield chunk;
       }
 
@@ -167,13 +168,12 @@ export class Orchestrator {
       const finalMessage: Message = {
         role: 'assistant',
         content,
-        // Fix: Conditional spreading for toolCalls
         ...(result.toolCalls !== undefined && { toolCalls: result.toolCalls }),
       };
       this.messages.push(finalMessage);
 
     } catch (error) {
-      this.eventEmitter.emit({ type: 'error', data: { error: error instanceof Error ? error.message : String(error) } });
+      this.emitEvent({ type: 'error', data: { error: error instanceof Error ? error.message : String(error) } });
       throw error;
     }
   }
@@ -230,9 +230,16 @@ export class Orchestrator {
     }
   }
 
-  // Event handling
-  public onEvent(handler: (event: OrchestratorEvent) => void): void {
-    this.eventEmitter.on(handler);
+  // Simple event handling without custom event emitter
+  public onEvent(handler: (event: any) => void): void {
+    this.eventHandlers.push(handler);
+  }
+
+  public removeEventHandler(handler: (event: any) => void): void {
+    const index = this.eventHandlers.indexOf(handler);
+    if (index > -1) {
+      this.eventHandlers.splice(index, 1);
+    }
   }
 
   // Utility methods
@@ -255,6 +262,10 @@ export class Orchestrator {
   }
 
   // Private methods
+  private emitEvent(event: any): void {
+    this.eventHandlers.forEach(handler => handler(event));
+  }
+
   private async executeWithCustomLogic(input: string): Promise<ExecutionResult> {
     try {
       const context = {
@@ -268,7 +279,7 @@ export class Orchestrator {
       
       return {
         success: true,
-        result: result.content ?? result, // Fix: Use nullish coalescing
+        result: result.content ?? result,
         messages: this.messages,
         iterations: this.iterations,
         toolCallsUsed: this.getUsedTools(),
@@ -327,7 +338,7 @@ export class Orchestrator {
         return await ProviderManager.createProvider(this.model);
       },
       apiKeys: {
-        openai: process.env.OPENAI_API_KEY ?? '', // Fix: Use nullish coalescing
+        openai: process.env.OPENAI_API_KEY ?? '',
         anthropic: process.env.ANTHROPIC_API_KEY ?? '',
         google: process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? '',
         perplexity: process.env.PERPLEXITY_API_KEY ?? '',
@@ -369,7 +380,7 @@ export class Orchestrator {
 
   private async executeToolCall(toolCall: any): Promise<void> {
     try {
-      this.eventEmitter.emit({
+      this.emitEvent({
         type: 'tool_call',
         data: {
           toolName: toolCall.toolName,
@@ -386,7 +397,7 @@ export class Orchestrator {
       const context = this.createToolContext();
       const result = await tool.execute(toolCall.args, context);
 
-      this.eventEmitter.emit({
+      this.emitEvent({
         type: 'tool_result',
         data: {
           toolName: toolCall.toolName,
@@ -398,13 +409,12 @@ export class Orchestrator {
       const toolMessage: Message = {
         role: 'tool',
         content: JSON.stringify(result),
-        // Fix: Conditional spreading for toolCallId
         ...(toolCall.toolCallId !== undefined && { toolCallId: toolCall.toolCallId }),
       };
       this.messages.push(toolMessage);
 
     } catch (error) {
-      this.eventEmitter.emit({
+      this.emitEvent({
         type: 'tool_result',
         data: {
           toolName: toolCall.toolName,
@@ -416,7 +426,6 @@ export class Orchestrator {
       const errorMessage: Message = {
         role: 'tool',
         content: `Error: ${error instanceof Error ? error.message : String(error)}`,
-        // Fix: Conditional spreading for toolCallId
         ...(toolCall.toolCallId !== undefined && { toolCallId: toolCall.toolCallId }),
       };
       this.messages.push(errorMessage);
@@ -436,7 +445,7 @@ export class Orchestrator {
             role: 'tool' as const, 
             content: [{ 
               type: 'tool-result' as const, 
-              toolCallId: m.toolCallId ?? '', // Fix: Use nullish coalescing
+              toolCallId: m.toolCallId ?? '',
               toolName: 'unknown',
               result: m.content 
             }] 
@@ -449,7 +458,7 @@ export class Orchestrator {
   private getUsedTools(): string[] {
     return this.messages
       .filter(m => m.role === 'tool')
-      .map(m => m.toolCallId ?? 'unknown') // Fix: Use nullish coalescing
+      .map(m => m.toolCallId ?? 'unknown')
       .filter((value, index, self) => self.indexOf(value) === index);
   }
 }

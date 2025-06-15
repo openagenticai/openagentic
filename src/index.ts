@@ -2,55 +2,38 @@
 // MAIN EXPORTS
 // =============================================================================
 
-// Core exports
+// Core exports - simplified
 export { Orchestrator } from './orchestrator';
-export type { StreamChunk, OrchestratorConfig } from './types';
 
-// Tools - organized by category
+// Tools
 export * from './tools';
 
 // Provider management
 export { ProviderManager } from './providers/manager';
 
-// Types and utilities
+// Types
 export * from './types';
-export { SimpleEventEmitter } from './utils/event-emitter';
 
 // =============================================================================
-// SIMPLIFIED FACTORY FUNCTIONS
+// SIMPLIFIED FACTORY FUNCTIONS - ONLY 2 MAIN AGENT TYPES
 // =============================================================================
 
 import { Orchestrator } from './orchestrator';
 import type { Tool, AIModel, OrchestratorConfig } from './types';
 
-export function createOrchestrator(options: OrchestratorConfig) {
-  return new Orchestrator(options);
-}
-
-// Convenience factories for common patterns
-export function createSimpleAgent(options: {
+export function createAgent(options: {
   model: string | AIModel;
   tools?: Tool[];
   systemPrompt?: string;
+  maxIterations?: number;
+  customLogic?: (input: string, context: any) => Promise<any>;
 }) {
   return new Orchestrator({
     model: options.model,
-    tools: options.tools ?? [], // Fix: Use nullish coalescing
+    tools: options.tools || [],
     systemPrompt: options.systemPrompt,
-    maxIterations: 5,
-  });
-}
-
-export function createConversationalAgent(options: {
-  model: string | AIModel;
-  tools?: Tool[];
-  systemPrompt?: string;
-}) {
-  return new Orchestrator({
-    model: options.model,
-    tools: options.tools ?? [], // Fix: Use nullish coalescing
-    systemPrompt: options.systemPrompt ?? 'You are a helpful assistant that can use tools to help users. Maintain context from previous messages in this conversation.', // Fix: Use nullish coalescing
-    maxIterations: 10,
+    maxIterations: options.maxIterations || 10,
+    customLogic: options.customLogic,
   });
 }
 
@@ -58,159 +41,13 @@ export function createStreamingAgent(options: {
   model: string | AIModel;
   tools?: Tool[];
   systemPrompt?: string;
+  maxIterations?: number;
 }) {
   return new Orchestrator({
     model: options.model,
-    tools: options.tools ?? [], // Fix: Use nullish coalescing
+    tools: options.tools || [],
     systemPrompt: options.systemPrompt,
+    maxIterations: options.maxIterations || 10,
     streaming: true,
-    maxIterations: 10,
   });
-}
-
-// =============================================================================
-// ADVANCED ORCHESTRATION PATTERNS
-// =============================================================================
-
-// Multi-model orchestration helper
-export function createMultiModelAgent(models: (string | AIModel)[], tools?: Tool[]) {
-  return {
-    async executeWithAllModels(input: string) {
-      const orchestrators = models.map(model => new Orchestrator({
-        model,
-        tools: tools ?? [], // Fix: Use nullish coalescing
-        maxIterations: 5,
-      }));
-
-      const results = await Promise.all(
-        orchestrators.map(async (orchestrator, index) => {
-          const result = await orchestrator.execute(input);
-          return {
-            model: typeof models[index] === 'string' ? models[index] : (models[index] as AIModel).model,
-            result: result.result,
-            success: result.success,
-            error: result.error,
-          };
-        })
-      );
-
-      const successfulResults = results.filter(r => r.success);
-      // Fix: Proper null checking and fallback
-      const consensus = successfulResults.length > 0 && successfulResults[0]?.result !== undefined
-        ? `Consensus from ${successfulResults.length} models: ${successfulResults[0].result}`
-        : undefined;
-
-      return { results, consensus };
-    },
-
-    async executeWithRefinement(input: string) {
-      if (models.length < 2) {
-        throw new Error('Need at least 2 models for refinement');
-      }
-
-      const firstOrchestrator = new Orchestrator({ 
-        model: models[0], 
-        tools: tools ?? [], // Fix: Use nullish coalescing
-        maxIterations: 5 
-      });
-      const secondOrchestrator = new Orchestrator({ 
-        model: models[1], 
-        tools: tools ?? [], // Fix: Use nullish coalescing
-        maxIterations: 5 
-      });
-
-      const initialResult = await firstOrchestrator.execute(input);
-      
-      if (!initialResult.success) {
-        return initialResult;
-      }
-
-      const refinementPrompt = `Please review and improve the following response to "${input}":
-
-${initialResult.result ?? ''} // Fix: Use nullish coalescing
-
-Provide an improved, more accurate, and comprehensive response.`;
-
-      const refinedResult = await secondOrchestrator.execute(refinementPrompt);
-      
-      return {
-        success: true,
-        result: refinedResult.result,
-        original: initialResult.result,
-        refined: refinedResult.result,
-        models: [models[0], models[1]],
-      };
-    }
-  };
-}
-
-// Pipeline orchestration helper
-export function createPipeline() {
-  const steps: Array<{
-    orchestrator: Orchestrator;
-    transform?: (input: string, previousResult?: any) => string;
-  }> = [];
-
-  return {
-    addStep(model: string | AIModel, transform?: (input: string, previousResult?: any) => string, tools?: Tool[]) {
-      const orchestrator = new Orchestrator({ 
-        model, 
-        tools: tools ?? [], // Fix: Use nullish coalescing
-        maxIterations: 5 
-      });
-      steps.push({ 
-        orchestrator, 
-        // Fix: Conditional spreading with explicit undefined check
-        ...(transform !== undefined && { transform })
-      });
-      return this;
-    },
-
-    async execute(initialInput: string) {
-      const stepResults: any[] = [];
-      let currentInput = initialInput;
-      let previousResult: any = null;
-
-      try {
-        for (const [index, step] of steps.entries()) {
-          const input = step.transform 
-            ? step.transform(currentInput, previousResult)
-            : currentInput;
-
-          const result = await step.orchestrator.execute(input);
-          
-          stepResults.push({
-            stepIndex: index,
-            input,
-            result: result.result,
-            success: result.success,
-            error: result.error,
-          });
-
-          if (!result.success) {
-            return {
-              success: false,
-              steps: stepResults,
-              error: `Pipeline failed at step ${index}: ${result.error}`,
-            };
-          }
-
-          currentInput = result.result ?? ''; // Fix: Use nullish coalescing
-          previousResult = result;
-        }
-
-        return {
-          success: true,
-          steps: stepResults,
-          finalResult: stepResults[stepResults.length - 1]?.result,
-        };
-      } catch (error) {
-        return {
-          success: false,
-          steps: stepResults,
-          error: error instanceof Error ? error.message : String(error),
-        };
-      }
-    }
-  };
 }
