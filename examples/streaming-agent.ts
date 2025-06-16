@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { createStreamingAgent, calculatorTool, timestampTool } from '../src';
 
 async function streamingAgentExample() {
