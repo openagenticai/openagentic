@@ -37,16 +37,22 @@ export class StreamingOrchestrator {
     this.messages.push({ role: 'user', content: input });
     
     const provider = await ProviderManager.createProvider(this.model);
-    const toolDefinitions = this.getToolDefinitions();
 
     const streamConfig: any = {
       model: provider(this.model.model),
       messages: this.transformMessages(this.messages),
+      maxSteps: this.maxIterations,
     };
 
-    // Add tools if available
-    if (toolDefinitions.length > 0) {
-      streamConfig.tools = this.convertToAISDKTools(toolDefinitions);
+    // Add system message if it exists
+    const systemMessage = this.messages.find(m => m.role === 'system');
+    if (systemMessage) {
+      streamConfig.system = systemMessage.content;
+    }
+
+    // Add tools if available - convert to AI SDK format
+    if (this.tools.size > 0) {
+      streamConfig.tools = this.convertToAISDKTools();
     }
 
     // Add model parameters conditionally
@@ -68,10 +74,6 @@ export class StreamingOrchestrator {
     // Validate tool structure
     if (!tool.toolId || !tool.description || !tool.execute) {
       throw new Error(`Invalid tool: missing required properties`);
-    }
-    
-    if (!tool.parameters || tool.parameters.type !== 'object') {
-      throw new Error(`Invalid tool parameters for ${tool.name}`);
     }
     
     if (this.tools.has(tool.toolId)) {
@@ -136,24 +138,6 @@ export class StreamingOrchestrator {
   }
 
   // Helper methods
-  private createToolContext(): ToolContext {
-    return {
-      getModel: async (providerName?: string) => {
-        if (providerName && providerName !== this.model.provider) {
-          return await ProviderManager.createProviderByName(providerName);
-        }
-        return await ProviderManager.createProvider(this.model);
-      },
-      apiKeys: {
-        openai: process.env.OPENAI_API_KEY || '',
-        anthropic: process.env.ANTHROPIC_API_KEY || '',
-        google: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
-        perplexity: process.env.PERPLEXITY_API_KEY || '',
-        xai: process.env.XAI_API_KEY || '',
-      }
-    };
-  }
-
   private convertToAISDKTools(): Record<string, any> {
     const tools: Record<string, any> = {};
     
