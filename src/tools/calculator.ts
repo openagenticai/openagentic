@@ -72,6 +72,6 @@ const toolDetails: ToolDetails = {
     useCases: [],
     parameters: {},
     logo: '',
-  };
+};
 
 export const timestampTool = toOpenAgenticTool(rawCalculatorTool, toolDetails);
