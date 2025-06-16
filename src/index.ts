@@ -47,10 +47,5 @@ export function createStreamingAgent(options: {
   systemPrompt?: string;
   maxIterations?: number;
 }) {
-  return new StreamingOrchestrator({
-    model: options.model,
-    tools: options.tools || [],
-    systemPrompt: options.systemPrompt,
-    maxIterations: options.maxIterations || 10,
-  });
+  return new StreamingOrchestrator(options);
 }
