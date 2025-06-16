@@ -150,6 +150,18 @@ export class Orchestrator {
 
   // Execute with message array (new behavior)
   private async executeWithMessages(inputMessages: CoreMessage[]): Promise<ExecutionResult> {
+    // Handle empty message arrays
+    if (inputMessages.length === 0) {
+      const errorResult: ExecutionResult = {
+        success: false,
+        error: 'Empty message array provided. At least one message is required.',
+        messages: this.messages,
+        iterations: this.iterations,
+        toolCallsUsed: [],
+      };
+      return errorResult;
+    }
+    
     const provider = await ProviderManager.createProvider(this.model);
 
     // Convert CoreMessage[] to AI SDK compatible format
