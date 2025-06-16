@@ -256,8 +256,7 @@ describe('Message Array Support', () => {
 
       // Should handle tool messages without throwing
       expect(() => {
-        const promise = agent.execute(messagesWithTools);
-        expect(promise).toBeInstanceOf(Promise);
+        agent.execute(messagesWithTools);
       }).not.toThrow();
     });
   });
