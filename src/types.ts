@@ -48,6 +48,40 @@ export interface CoreMessage {
 }
 
 // =============================================================================
+// LOGGING AND DEBUG TYPES
+// =============================================================================
+
+export type LogLevel = 'none' | 'basic' | 'detailed';
+
+export interface LoggingConfig {
+  enableDebugLogging?: boolean;
+  logLevel?: LogLevel;
+  enableStepLogging?: boolean;
+  enableToolLogging?: boolean;
+  enableTimingLogging?: boolean;
+  enableStatisticsLogging?: boolean;
+}
+
+export interface ExecutionStats {
+  totalDuration: number;
+  stepsExecuted: number;
+  toolCallsExecuted: number;
+  tokensUsed?: number;
+  averageStepDuration: number;
+  averageToolCallDuration: number;
+}
+
+export interface StepInfo {
+  stepIndex: number;
+  stepType: string;
+  duration: number;
+  toolCalls: string[];
+  errors: string[];
+  startTime: number;
+  endTime: number;
+}
+
+// =============================================================================
 // OPENAGENTIC TOOL TYPES
 // =============================================================================
 
@@ -72,6 +106,14 @@ export const ExecutionResultSchema = z.object({
   messages: z.array(MessageSchema),
   iterations: z.number(),
   toolCallsUsed: z.array(z.string()),
+  executionStats: z.object({
+    totalDuration: z.number(),
+    stepsExecuted: z.number(),
+    toolCallsExecuted: z.number(),
+    tokensUsed: z.number().optional(),
+    averageStepDuration: z.number(),
+    averageToolCallDuration: z.number(),
+  }).optional(),
 });
 
 export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;

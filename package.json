@@ -40,7 +40,8 @@
     "example:s3": "tsx examples/s3-upload-example.ts",
     "example:openai": "tsx examples/openai-tool-example.ts",
     "example:tools": "tsx examples/tool-creation.ts",
-    "example:messages": "tsx examples/message-array-example.ts"
+    "example:messages": "tsx examples/message-array-example.ts",
+    "example:logging": "tsx examples/logging-example.ts"
   },
   "keywords": [
     "ai",
