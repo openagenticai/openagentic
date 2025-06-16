@@ -84,7 +84,6 @@
     "dotenv": "^16.5.0",
     "zod": "^3.25.64"
   },
-  "peerDependencies": {},
   "peerDependenciesMeta": {},
   "engines": {
     "node": ">=18.0.0"
