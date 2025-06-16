@@ -147,13 +147,13 @@ describe('Message Array Support', () => {
       });
 
       // Test invalid input types
-      try {
-        await agent.stream(123 as any);
-        throw new Error('Should have thrown an error for invalid input type');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Input must be either a string or an array of messages');
-      }
+      const result1 = await agent.execute(123 as any);
+      expect(result1.success).toBe(false);
+      expect(result1.error).toContain('Input must be either a string or an array of messages');
+
+      const result2 = await agent.execute(null as any);
+      expect(result2.success).toBe(false);
+      expect(result2.error).toContain('Input must be either a string or an array of messages');
     });
 
     it('should handle complex message structures', () => {
