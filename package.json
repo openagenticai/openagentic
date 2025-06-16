@@ -33,7 +33,12 @@
     "type-check": "tsc --noEmit",
     "prepublishOnly": "npm run build",
     "clean": "rimraf dist",
-    "example": "tsx examples/simple-usage.ts"
+    "example": "tsx examples/simple-usage.ts",
+    "example:basic": "tsx examples/basic-agent.ts",
+    "example:streaming": "tsx examples/streaming-agent.ts",
+    "example:s3": "tsx examples/s3-upload-example.ts",
+    "example:openai": "tsx examples/openai-tool-example.ts",
+    "example:tools": "tsx examples/tool-creation.ts"
   },
   "keywords": [
     "ai",

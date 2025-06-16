@@ -6,6 +6,7 @@
 export { httpTool } from './http';
 export { calculatorTool } from './calculator';
 export { timestampTool } from './timestamp';
+export { openaiTool } from './openai';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -17,7 +18,9 @@ export { toOpenAgenticTool } from './utils';
 import { httpTool } from './http';
 import { calculatorTool } from './calculator';
 import { timestampTool } from './timestamp';
+import { openaiTool } from './openai';
 
 // Categorized tool collections
 export const utilityTools = [httpTool, calculatorTool, timestampTool];
-export const allTools = [...utilityTools];
+export const aiTools = [openaiTool];
+export const allTools = [...utilityTools, ...aiTools];
