@@ -105,9 +105,9 @@ async function toolCreationExample() {
   console.log('\n' + '='.repeat(80) + '\n');
 
   // =============================================================================
-  // EXAMPLE 4: Tool Validation and Error Handling
+  // EXAMPLE 3: Tool Validation and Error Handling
   // =============================================================================
-  console.log('📝 Example 4: Tool Validation and Error Handling');
+  console.log('📝 Example 3: Tool Validation and Error Handling');
   
   const configAgent = createAgent({
     model: 'gpt-4o-mini',
@@ -127,9 +127,9 @@ async function toolCreationExample() {
   console.log('\n' + '='.repeat(80) + '\n');
 
   // =============================================================================
-  // EXAMPLE 5: Tool Categories and Organization
+  // EXAMPLE 4: Tool Categories and Organization
   // =============================================================================
-  console.log('📝 Example 5: Tool Categories and Organization');
+  console.log('📝 Example 4: Tool Categories and Organization');
   
   const organizedAgent = createAgent({
     model: 'gpt-4o-mini',
