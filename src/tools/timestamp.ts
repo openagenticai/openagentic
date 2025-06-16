@@ -3,30 +3,12 @@ import type { Tool } from '../types';
 export const timestampTool: Tool = {
   name: 'timestamp',
   description: 'Get current timestamp and date information with timezone support',
-  category: 'utility',
-  version: '1.0.0',
-  parameters: {
-    type: 'object',
-    properties: {
-      format: {
-        type: 'string',
-        description: 'Format for the timestamp (iso, unix, human, custom)',
-        required: false,
-        enum: ['iso', 'unix', 'human', 'custom'],
-      },
-      timezone: {
-        type: 'string',
-        description: 'Timezone for the timestamp (e.g., "UTC", "America/New_York", "Europe/London")',
-        required: false,
-      },
-      customFormat: {
-        type: 'string',
-        description: 'Custom date format string (used when format is "custom")',
-        required: false,
-      },
-    },
-  },
-  execute: async (params: any) => {
+  parameters: z.object({
+    format: z.enum(['iso', 'unix', 'human', 'custom']).optional().default('iso').describe('Format for the timestamp'),
+    timezone: z.string().optional().describe('Timezone for the timestamp (e.g., "UTC", "America/New_York", "Europe/London")'),
+    customFormat: z.string().optional().describe('Custom date format string (used when format is "custom")'),
+  }),
+  execute: async ({ format = 'iso', timezone, customFormat }) => {
     const { format = 'iso', timezone, customFormat } = params;
     const now = new Date();
     
