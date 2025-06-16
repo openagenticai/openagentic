@@ -46,22 +46,8 @@ export interface OrchestratorConfig {
 }
 
 // =============================================================================
-// TOOL TYPES
+// OPENAGENTIC TOOL TYPES
 // =============================================================================
-
-// JSONSchema definition for tool parameters
-export interface JSONSchema {
-  type: 'object';
-  properties: Record<string, {
-    type: 'string' | 'number' | 'boolean' | 'object' | 'array';
-    description: string;
-    required?: boolean;
-    enum?: string[];
-    properties?: Record<string, any>;
-    items?: any;
-  }>;
-  required?: string[];
-}
 
 export interface ToolDetails {
   toolId: string;
