@@ -25,7 +25,6 @@ import type { AIModel } from './types';
 
 /**
  * Create a standard agent for non-streaming execution
- * This is the main agent type for most use cases
  */
 export function createAgent(options: {
   model: string | AIModel;
@@ -39,7 +38,6 @@ export function createAgent(options: {
 
 /**
  * Create a streaming agent for real-time response streaming
- * Uses AI SDK's streamText for optimal streaming performance
  */
 export function createStreamingAgent(options: {
   model: string | AIModel;
