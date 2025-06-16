@@ -36,7 +36,7 @@ export type Message = z.infer<typeof MessageSchema>;
 // OPENAGENTIC TOOL TYPES
 // =============================================================================
 
-export interface ToolDetails {
+export type ToolDetails {
   toolId: string;
   name: string;
   useCases: string[];
@@ -45,7 +45,7 @@ export interface ToolDetails {
   internal?: boolean;
 }
 
-export interface OpenAgenticTool = Tool & ToolDetails;
+export type OpenAgenticTool = Tool & ToolDetails;
 
 // =============================================================================
 // EXECUTION RESULT TYPES
