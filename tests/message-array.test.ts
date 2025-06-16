@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, fail } from '@jest/globals';
 import { createAgent, createStreamingAgent, calculatorTool } from '../src';
 import type { CoreMessage } from '../src/types';
 
