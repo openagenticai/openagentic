@@ -159,10 +159,6 @@ export class Orchestrator {
     return Object.values(this.tools);
   }
 
-  public getToolsByCategory(category: string): OpenAgenticTool[] {
-    return this.getAllTools();
-  }
-
   // Model switching using ProviderManager
   public switchModel(model: string | AIModel): void {
     this.model = ProviderManager.createModel(model);
