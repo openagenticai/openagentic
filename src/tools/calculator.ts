@@ -1,7 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import type { ToolDetails } from '../types';
+import { toOpenAgenticTool } from './utils';
 
-export const calculatorTool = tool({
+const rawCalculatorTool = tool({
   description: 'Perform mathematical calculations and evaluations',
   parameters: z.object({
     expression: z.string().describe('Mathematical expression to evaluate (e.g., "2 + 2", "Math.sqrt(16)", "Math.PI * 2")'),
@@ -63,3 +65,13 @@ export const calculatorTool = tool({
     }
   },
 });
+
+const toolDetails: ToolDetails = {
+    toolId: 'calculator',
+    name: 'Calculator',
+    useCases: [],
+    parameters: {},
+    logo: '',
+  };
+
+export const timestampTool = toOpenAgenticTool(rawCalculatorTool, toolDetails);
