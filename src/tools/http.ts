@@ -1,38 +1,16 @@
-import type { Tool } from '../types';
+import { tool } from 'ai';
+import { z } from 'zod';
 
-export const httpTool: Tool = {
+export const httpTool = tool({
   name: 'http_request',
   description: 'Make HTTP requests to external APIs and services',
-  category: 'utility',
-  version: '1.0.0',
-  parameters: {
-    type: 'object',
-    properties: {
-      url: {
-        type: 'string',
-        description: 'The URL to make the request to',
-        required: true,
-      },
-      method: {
-        type: 'string',
-        description: 'HTTP method (GET, POST, PUT, DELETE, etc.)',
-        required: false,
-        enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
-      },
-      headers: {
-        type: 'object',
-        description: 'HTTP headers to include in the request',
-        required: false,
-      },
-      body: {
-        type: 'string',
-        description: 'Request body (for POST, PUT, PATCH requests)',
-        required: false,
-      },
-    },
-    required: ['url'],
-  },
-  execute: async (params: any) => {
+  parameters: z.object({
+    url: z.string().describe('The URL to make the request to'),
+    method: z.enum(['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']).optional().default('GET').describe('HTTP method'),
+    headers: z.record(z.string()).optional().describe('HTTP headers to include in the request'),
+    body: z.string().optional().describe('Request body (for POST, PUT, PATCH requests)'),
+  }),
+  execute: async ({ url, method = 'GET', headers = {}, body }) => {
     const { url, method = 'GET', headers = {}, body } = params;
     
     // Validate URL
@@ -80,4 +58,4 @@ export const httpTool: Tool = {
       throw new Error(`HTTP request failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   },
-};
+});
