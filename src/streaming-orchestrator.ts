@@ -75,7 +75,7 @@ export class StreamingOrchestrator {
     }
     
     if (this.tools.has(tool.toolId)) {
-      throw new Error(`Tool already exists: ${tool.id}`);
+      throw new Error(`Tool already exists: ${tool.toolId}`);
     }
     
     this.tools.set(tool.toolId, tool);
