@@ -1,7 +1,9 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import type { ToolDetails } from '../types';
+import { toOpenAgenticTool } from './utils';
 
-export const timestampTool = tool({
+const rawTimestampTool = tool({
   description: 'Get current timestamp and date information with timezone support',
   parameters: z.object({
     format: z.enum(['iso', 'unix', 'human', 'custom']).optional().default('iso').describe('Format for the timestamp'),
@@ -76,3 +78,14 @@ export const timestampTool = tool({
     }
   },
 });
+
+const toolDetails: ToolDetails = {
+    toolId: 'timestamp',
+    name: 'Timestamp',
+    useCases: [],
+    parameters: {},
+    logo: '',
+};
+
+export const httpTool = toOpenAgenticTool(rawTimestampTool, toolDetails);
+
