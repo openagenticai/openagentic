@@ -145,7 +145,24 @@ export class StreamingOrchestrator {
         tools[tool.toolId] = {
             description: tool.description,
             parameters: tool.parameters,
-            execute: tool.execute,
+            execute: async (args: any, context?: any) => {
+              console.log(`🔧 StreamingOrchestrator executing tool: ${tool.toolId}`, args);
+              try {
+                if (!tool.execute) {
+                  throw new Error(`Tool ${tool.toolId} has no execute function`);
+                }
+                const result = await tool.execute(args, context);
+                console.log(`✅ StreamingOrchestrator tool success: ${tool.toolId}`, { 
+                  resultType: typeof result,
+                  resultPreview: typeof result === 'string' ? result.substring(0, 100) + '...' : JSON.stringify(result).substring(0, 100) + '...'
+                });
+                return result;
+              } catch (error) {
+                console.error(`❌ StreamingOrchestrator tool error: ${tool.toolId}`, error);
+                throw error;
+              }
+            },
+          };
           }
         });
     
