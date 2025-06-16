@@ -2,7 +2,6 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 export const calculatorTool = tool({
-  name: 'calculator',
   description: 'Perform mathematical calculations and evaluations',
   parameters: z.object({
     expression: z.string().describe('Mathematical expression to evaluate (e.g., "2 + 2", "Math.sqrt(16)", "Math.PI * 2")'),
