@@ -2,7 +2,6 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 export const fileReaderTool = tool({
-  name: 'read_file',
   description: 'Read the contents of a text file',
   parameters: z.object({
     filepath: z.string().describe('Path to the file to read'),
