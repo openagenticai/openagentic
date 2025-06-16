@@ -63,7 +63,7 @@ describe('Message Array Support', () => {
 
       try {
         await agent.execute(null as any);
-        fail('Should have thrown an error for null input');
+        throw new Error('Should have thrown an error for null input');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toContain('Input must be either a string or an array of messages');
@@ -149,7 +149,7 @@ describe('Message Array Support', () => {
       // Test invalid input types
       try {
         await agent.stream(123 as any);
-        fail('Should have thrown an error for invalid input type');
+        throw new Error('Should have thrown an error for invalid input type');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toContain('Input must be either a string or an array of messages');
