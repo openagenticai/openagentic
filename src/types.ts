@@ -63,7 +63,6 @@ export interface JSONSchema {
   required?: string[];
 }
 
-// Tool context for AI-powered tools
 export interface ToolDetails {
   toolId: string;
   name: string;
@@ -73,7 +72,6 @@ export interface ToolDetails {
   internal: boolean;
 }
 
-// Self-contained tool interface
 export interface OpenAgenticTool = Tool & ToolDetails;
 
 // =============================================================================
