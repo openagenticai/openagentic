@@ -70,7 +70,6 @@ const toolDetails: ToolDetails = {
     toolId: 'calculator',
     name: 'Calculator',
     useCases: [],
-    parameters: {},
     logo: '',
 };
 

@@ -33,6 +33,21 @@ export const MessageSchema = z.object({
 export type Message = z.infer<typeof MessageSchema>;
 
 // =============================================================================
+// CORE MESSAGE TYPES (AI SDK COMPATIBLE)
+// =============================================================================
+
+export interface CoreMessage {
+  role: 'system' | 'user' | 'assistant' | 'tool';
+  content: string | Array<any>;
+  toolCallId?: string;
+  toolCalls?: Array<{
+    toolCallId: string;
+    toolName: string;
+    args: Record<string, any>;
+  }>;
+}
+
+// =============================================================================
 // OPENAGENTIC TOOL TYPES
 // =============================================================================
 
@@ -40,7 +55,6 @@ export type ToolDetails = {
   toolId: string;
   name: string;
   useCases: string[];
-  parameters: Record<string, string>;
   logo: string;
   internal?: boolean;
 }

@@ -219,15 +219,6 @@ const toolDetails: ToolDetails = {
     'Generate product descriptions',
     'Write emails and communications',
   ],
-  parameters: {
-    prompt: 'Text prompt for generation',
-    model: 'OpenAI model identifier (gpt-4o, gpt-4o-mini, etc.)',
-    maxTokens: 'Maximum response length (1-4096)',
-    temperature: 'Creativity/randomness control (0-2)',
-    topP: 'Nucleus sampling parameter (0-1)',
-    presencePenalty: 'Repetition penalty (-2 to 2)',
-    frequencyPenalty: 'Frequency penalty (-2 to 2)',
-  },
   logo: 'https://openai.com/favicon.ico',
 };
 

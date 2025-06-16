@@ -1,6 +1,6 @@
 {
   "name": "openagentic",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A TypeScript framework for building AI agents with self-contained tool orchestration capabilities",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -39,7 +39,8 @@
     "example:streaming": "tsx examples/streaming-agent.ts",
     "example:s3": "tsx examples/s3-upload-example.ts",
     "example:openai": "tsx examples/openai-tool-example.ts",
-    "example:tools": "tsx examples/tool-creation.ts"
+    "example:tools": "tsx examples/tool-creation.ts",
+    "example:messages": "tsx examples/message-array-example.ts"
   },
   "keywords": [
     "ai",

@@ -63,7 +63,6 @@ const toolDetails: ToolDetails = {
     toolId: 'http',
     name: 'Http Requests',
     useCases: [],
-    parameters: {},
     logo: '',
 };
 
