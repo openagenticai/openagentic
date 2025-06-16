@@ -74,9 +74,16 @@ export class StreamingOrchestrator {
     this.resetExecutionStats();
     
     try {
+      const inputType = typeof input === 'string' ? 'string' : 
+                       Array.isArray(input) ? 'message_array' : 
+                       'invalid';
+      const inputLength = typeof input === 'string' ? input.length : 
+                         Array.isArray(input) ? input.length : 
+                         'unknown';
+      
       this.log('🚀', 'Streaming execution starting', {
-        inputType: typeof input === 'string' ? 'string' : 'message_array',
-        inputLength: typeof input === 'string' ? input.length : input.length,
+        inputType,
+        inputLength,
         modelInfo: `${this.model.provider}/${this.model.model}`,
         toolsAvailable: this.tools.size,
         maxSteps: this.maxIterations,
