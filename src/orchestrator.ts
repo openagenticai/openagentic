@@ -84,9 +84,17 @@ export class Orchestrator {
     this.resetExecutionStats();
     
     try {
+      // Validate input before logging to prevent errors
+      const inputType = typeof input === 'string' ? 'string' : 
+                       Array.isArray(input) ? 'message_array' : 
+                       'invalid';
+      const inputLength = typeof input === 'string' ? input.length : 
+                         Array.isArray(input) ? input.length : 
+                         'unknown';
+      
       this.log('🚀', 'Execution starting', {
-        inputType: typeof input === 'string' ? 'string' : 'message_array',
-        inputLength: typeof input === 'string' ? input.length : input.length,
+        inputType,
+        inputLength,
         modelInfo: `${this.model.provider}/${this.model.model}`,
         toolsAvailable: Object.keys(this.tools).length,
         maxSteps: this.maxIterations,
