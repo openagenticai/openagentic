@@ -66,7 +66,7 @@ export class StreamingOrchestrator {
   // Tool management methods
   public addTool(tool: OpenAgenticTool): void {
     // Validate tool structure
-    if (!tool.id || !tool.description || !tool.execute) {
+    if (!tool.toolId || !tool.description || !tool.execute) {
       throw new Error(`Invalid tool: missing required properties`);
     }
     
@@ -74,11 +74,11 @@ export class StreamingOrchestrator {
       throw new Error(`Invalid tool parameters for ${tool.name}`);
     }
     
-    if (this.tools.has(tool.id)) {
+    if (this.tools.has(tool.toolId)) {
       throw new Error(`Tool already exists: ${tool.id}`);
     }
     
-    this.tools.set(tool.id, tool);
+    this.tools.set(tool.toolId, tool);
   }
 
   public removeTool(toolName: string): void {
