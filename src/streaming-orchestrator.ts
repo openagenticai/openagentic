@@ -64,7 +64,7 @@ export class StreamingOrchestrator {
   }
 
   // Tool management methods
-  public addTool(tool: Tool): void {
+  public addTool(tool: OpenAgenticTool): void {
     // Validate tool structure
     if (!tool.id || !tool.description || !tool.execute) {
       throw new Error(`Invalid tool: missing required properties`);
@@ -91,10 +91,6 @@ export class StreamingOrchestrator {
 
   public getAllTools(): OpenAgenticTool[] {
     return Array.from(this.tools.values());
-  }
-
-  public getToolsByCategory(category: OpenAgenticTool['category']): OpenAgenticTool[] {
-    return this.getAllTools().filter(tool => tool.category === category);
   }
 
   // Model switching using ProviderManager
