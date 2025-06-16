@@ -56,62 +56,6 @@ const greetingToolDetails: ToolDetails = {
 
 const greetingTool = toOpenAgenticTool(rawGreetingTool, greetingToolDetails);
 
-// Example 2: Data processing tool
-const textAnalysisTool = createTool({
-  name: 'text_analyzer',
-  description: 'Analyze text for various metrics',
-  category: 'utility',
-  parameters: {
-    type: 'object',
-    properties: {
-      text: {
-        type: 'string',
-        description: 'Text to analyze',
-        required: true,
-      },
-      metrics: {
-        type: 'array',
-        description: 'Metrics to calculate',
-        required: false,
-        items: {
-          type: 'string',
-          enum: ['word_count', 'char_count', 'sentence_count', 'readability'],
-        },
-      },
-    },
-    required: ['text'],
-  },
-  execute: async (params) => {
-    const { text, metrics = ['word_count', 'char_count'] } = params;
-    
-    const results: any = { text_length: text.length };
-    
-    if (metrics.includes('word_count')) {
-      results.word_count = text.trim().split(/\s+/).length;
-    }
-    
-    if (metrics.includes('char_count')) {
-      results.char_count = text.length;
-      results.char_count_no_spaces = text.replace(/\s/g, '').length;
-    }
-    
-    if (metrics.includes('sentence_count')) {
-      results.sentence_count = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-    }
-    
-    if (metrics.includes('readability')) {
-      const words = results.word_count || text.trim().split(/\s+/).length;
-      const sentences = results.sentence_count || text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-      results.avg_words_per_sentence = Math.round((words / sentences) * 100) / 100;
-    }
-    
-    return {
-      ...results,
-      analyzed_at: new Date().toISOString(),
-    };
-  },
-});
-
 async function toolCreationExample() {
   console.log('🛠️ OpenAgentic - Custom Tool Creation Example\n');
 
