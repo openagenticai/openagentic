@@ -148,6 +148,8 @@ export class StreamingOrchestrator {
             execute: tool.execute,
           }
         });
+    
+    return tools;
   }
 
   private transformMessages(messages: Message[]): any[] {
