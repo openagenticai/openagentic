@@ -2,7 +2,6 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 export const httpTool = tool({
-  name: 'http_request',
   description: 'Make HTTP requests to external APIs and services',
   parameters: z.object({
     url: z.string().describe('The URL to make the request to'),
