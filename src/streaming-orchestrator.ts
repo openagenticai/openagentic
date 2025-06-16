@@ -85,15 +85,15 @@ export class StreamingOrchestrator {
     this.tools.delete(toolName);
   }
 
-  public getTool(toolName: string): Tool | undefined {
+  public getTool(toolName: string): OpenAgenticTool | undefined {
     return this.tools.get(toolName);
   }
 
-  public getAllTools(): Tool[] {
+  public getAllTools(): OpenAgenticTool[] {
     return Array.from(this.tools.values());
   }
 
-  public getToolsByCategory(category: Tool['category']): Tool[] {
+  public getToolsByCategory(category: OpenAgenticTool['category']): OpenAgenticTool[] {
     return this.getAllTools().filter(tool => tool.category === category);
   }
 
@@ -105,7 +105,14 @@ export class StreamingOrchestrator {
   // Get model information
   public getModelInfo(): any {
     try {
-      return ProviderManager.getModelInfo(this.model.provider, this.model.model);
+      const modelInfo = ProviderManager.getModelInfo(this.model.provider, this.model.model) as any;
+      return {
+        provider: this.model.provider,
+        model: this.model.model,
+        contextWindow: modelInfo?.contextWindow,
+        cost: modelInfo?.cost,
+        description: modelInfo?.description,
+      };
     } catch (error) {
       return {
         provider: this.model.provider,
