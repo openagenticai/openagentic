@@ -21,8 +21,8 @@ import { timestampTool } from './timestamp';
 import type { Tool, ToolContext, JSONSchema } from '../types';
 
 // Categorized tool collections
-export const utilityTools: Tool[] = [httpTool, calculatorTool, timestampTool];
-export const allTools: Tool[] = [...utilityTools];
+export const utilityTools = [httpTool, calculatorTool, timestampTool];
+export const allTools = [...utilityTools];
 
 // Legacy exports for backward compatibility
 export { httpTool as httpRequestTool };
@@ -30,86 +30,34 @@ export { calculatorTool as mathTool };
 export { timestampTool as timeTool };
 
 // =============================================================================
-// TOOL CREATION UTILITIES
-// =============================================================================
-
-export function createTool(config: {
-  name: string;
-  description: string;
-  parameters: JSONSchema;
-  execute: (params: any, context?: ToolContext) => Promise<any>;
-  category?: 'utility' | 'ai' | 'custom';
-  version?: string;
-  requiresAuth?: boolean;
-}): Tool {
-  return {
-    name: config.name,
-    description: config.description,
-    parameters: config.parameters,
-    execute: config.execute,
-    category: config.category || 'custom',
-    version: config.version || '1.0.0',
-    requiresAuth: config.requiresAuth || false,
-  };
-}
-
-export function validateTool(tool: Tool): boolean {
-  try {
-    if (!tool.name || !tool.description || !tool.execute) {
-      return false;
-    }
-    
-    if (!tool.parameters || tool.parameters.type !== 'object') {
-      return false;
-    }
-    
-    if (tool.parameters.required) {
-      for (const required of tool.parameters.required) {
-        if (!tool.parameters.properties[required]) {
-          return false;
-        }
-      }
-    }
-    
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-// =============================================================================
 // TOOL REGISTRY
 // =============================================================================
 
 export class ToolRegistry {
-  private tools = new Map<string, Tool>();
+  private tools = new Map<string, any>();
   
-  register(tool: Tool): void {
-    if (!validateTool(tool)) {
-      throw new Error(`Invalid tool: ${tool.name}`);
+  register(name: string, tool: any): void {
+    if (this.tools.has(name)) {
+      throw new Error(`Tool already registered: ${name}`);
     }
     
-    if (this.tools.has(tool.name)) {
-      throw new Error(`Tool already registered: ${tool.name}`);
-    }
-    
-    this.tools.set(tool.name, tool);
+    this.tools.set(name, tool);
   }
   
   unregister(name: string): boolean {
     return this.tools.delete(name);
   }
   
-  get(name: string): Tool | undefined {
+  get(name: string): any {
     return this.tools.get(name);
   }
   
-  getAll(): Tool[] {
+  getAll(): any[] {
     return Array.from(this.tools.values());
   }
   
-  getByCategory(category: Tool['category']): Tool[] {
-    return this.getAll().filter(tool => tool.category === category);
+  getAllAsObject(): Record<string, any> {
+    return Object.fromEntries(this.tools.entries());
   }
   
   clear(): void {
@@ -118,5 +66,9 @@ export class ToolRegistry {
   
   has(name: string): boolean {
     return this.tools.has(name);
+  }
+
+  getNames(): string[] {
+    return Array.from(this.tools.keys());
   }
 }
