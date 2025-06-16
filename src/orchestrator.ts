@@ -97,6 +97,18 @@ export class Orchestrator {
         { role: 'assistant', content: result.text || '' }
       ];
 
+      // Extract tool calls from steps if available
+      const toolCallsUsed: string[] = [];
+      if (result.steps) {
+        result.steps.forEach(step => {
+          if (step.toolCalls) {
+            step.toolCalls.forEach(toolCall => {
+              toolCallsUsed.push(toolCall.toolName || toolCall.toolCallId || 'unknown');
+            });
+          }
+        });
+      }
+
       const executionResult: ExecutionResult = {
         success: true,
         result: result.text,
