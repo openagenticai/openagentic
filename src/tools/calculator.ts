@@ -7,8 +7,6 @@ export const calculatorTool = tool({
     expression: z.string().describe('Mathematical expression to evaluate (e.g., "2 + 2", "Math.sqrt(16)", "Math.PI * 2")'),
   }),
   execute: async ({ expression }) => {
-    const { expression } = params;
-    
     // Enhanced safety check - allow more mathematical operations
     const safeExpression = expression.replace(
       /[^0-9+\-*/.()Math.sqrtpowabsfloorceilminmaxsincostandelogPIE ]/g, 
