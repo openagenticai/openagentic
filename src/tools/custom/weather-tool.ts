@@ -2,7 +2,6 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 export const weatherTool = tool({
-  name: 'weather_lookup',
   description: 'Get weather information for a location',
   parameters: z.object({
     location: z.string().describe('City name or coordinates'),
