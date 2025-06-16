@@ -10,7 +10,6 @@ export const timestampTool = tool({
     customFormat: z.string().optional().describe('Custom date format string (used when format is "custom")'),
   }),
   execute: async ({ format = 'iso', timezone, customFormat }) => {
-    const { format = 'iso', timezone, customFormat } = params;
     const now = new Date();
     
     try {
