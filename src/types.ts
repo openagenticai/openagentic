@@ -55,7 +55,6 @@ export type ToolDetails = {
   toolId: string;
   name: string;
   useCases: string[];
-  parameters: Record<string, string>;
   logo: string;
   internal?: boolean;
 }
