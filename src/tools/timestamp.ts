@@ -83,7 +83,6 @@ const toolDetails: ToolDetails = {
     toolId: 'timestamp',
     name: 'Timestamp',
     useCases: [],
-    parameters: {},
     logo: '',
 };
 
