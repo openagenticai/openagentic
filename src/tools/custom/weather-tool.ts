@@ -1,29 +1,14 @@
-import type { Tool } from '../../types';
+import { tool } from 'ai';
+import { z } from 'zod';
 
-export const weatherTool: Tool = {
+export const weatherTool = tool({
   name: 'weather_lookup',
   description: 'Get weather information for a location',
-  category: 'custom',
-  version: '1.0.0',
-  requiresAuth: false,
-  parameters: {
-    type: 'object',
-    properties: {
-      location: {
-        type: 'string',
-        description: 'City name or coordinates',
-        required: true,
-      },
-      units: {
-        type: 'string',
-        description: 'Temperature units',
-        required: false,
-        enum: ['celsius', 'fahrenheit'],
-      },
-    },
-    required: ['location'],
-  },
-  execute: async (params: any) => {
+  parameters: z.object({
+    location: z.string().describe('City name or coordinates'),
+    units: z.enum(['celsius', 'fahrenheit']).optional().default('celsius').describe('Temperature units'),
+  }),
+  execute: async ({ location, units = 'celsius' }) => {
     const { location, units = 'celsius' } = params;
     
     // Simulate weather API call (self-contained)
@@ -40,4 +25,4 @@ export const weatherTool: Tool = {
     
     return weatherData;
   },
-};
+});
