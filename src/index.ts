@@ -34,6 +34,13 @@ export function createAgent(options: {
   systemPrompt?: string;
   maxIterations?: number;
   customLogic?: (input: string, context: any) => Promise<any>;
+  enableDebugLogging?: boolean;
+  logLevel?: 'none' | 'basic' | 'detailed';
+  enableStepLogging?: boolean;
+  enableToolLogging?: boolean;
+  enableTimingLogging?: boolean;
+  enableStatisticsLogging?: boolean;
+  enableStreamingLogging?: boolean;
 }): Orchestrator {
   return new Orchestrator(options);
 }
@@ -46,6 +53,13 @@ export function createStreamingAgent(options: {
   tools?: any[];
   systemPrompt?: string;
   maxIterations?: number;
+  enableDebugLogging?: boolean;
+  logLevel?: 'none' | 'basic' | 'detailed';
+  enableStepLogging?: boolean;
+  enableToolLogging?: boolean;
+  enableTimingLogging?: boolean;
+  enableStatisticsLogging?: boolean;
+  enableStreamingLogging?: boolean;
 }) {
   return new StreamingOrchestrator(options);
 }
