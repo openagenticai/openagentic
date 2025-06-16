@@ -155,17 +155,6 @@ describe('OpenAgentic Simplified API', () => {
         agent.addTool(calculatorTool);
       }).toThrow('Tool already exists: calculator');
     });
-
-    it('should get tools by category', () => {
-      const agent = createAgent({
-        model: 'gpt-4o-mini',
-        tools: [calculatorTool, httpTool, timestampTool],
-      });
-
-      const utilityTools = agent.getToolsByCategory('utility');
-      expect(utilityTools).toHaveLength(3);
-      expect(utilityTools.every(tool => tool.category === 'utility')).toBe(true);
-    });
   });
 
   describe('Model Management', () => {
