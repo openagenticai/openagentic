@@ -154,16 +154,16 @@ export class StreamingOrchestrator {
     };
   }
 
-  private getToolDefinitions(): any[] {
-    return Array.from(this.tools.values()).map(tool => ({
-      type: 'function',
-      function: {
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-        execute: tool.execute,
-      }
-    }));
+  private convertToAISDKTools(): Record<string, any> {
+    const tools: Record<string, any> = {};
+    
+      this.tools.forEach((tool) => {
+        tools[tool.toolId] = {
+            description: tool.description,
+            parameters: tool.parameters,
+            execute: tool.execute,
+          }
+        });
   }
 
   private transformMessages(messages: Message[]): any[] {
