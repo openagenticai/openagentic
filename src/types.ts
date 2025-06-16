@@ -64,9 +64,12 @@ export interface JSONSchema {
 }
 
 // Tool context for AI-powered tools
-export interface ToolContext {
-  getModel: (provider?: string) => Promise<any>;
-  apiKeys: Record<string, string>;
+export interface ToolDetails {
+  toolId: string;
+  name: string;
+  useCases: string[];
+  parameters: Record<string, string>;
+  internal: boolean;
 }
 
 // Self-contained tool interface
