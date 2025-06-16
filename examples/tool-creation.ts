@@ -105,38 +105,16 @@ async function toolCreationExample() {
   console.log('\n' + '='.repeat(80) + '\n');
 
   // =============================================================================
-  // EXAMPLE 3: Tool Validation and Error Handling
+  // EXAMPLE 3: Tool Categories and Organization
   // =============================================================================
-  console.log('📝 Example 3: Tool Validation and Error Handling');
-  
-  const configAgent = createAgent({
-    model: 'gpt-4o-mini',
-    tools: [configManagerTool],
-    systemPrompt: 'You are a configuration management assistant.',
-  });
-
-  try {
-    const result = await configAgent.execute(
-      'Get the theme setting, then set the language to "fr", and finally list all configurations'
-    );
-    console.log('✅ Result:', result.result);
-  } catch (error) {
-    console.error('❌ Error:', error);
-  }
-
-  console.log('\n' + '='.repeat(80) + '\n');
-
-  // =============================================================================
-  // EXAMPLE 4: Tool Categories and Organization
-  // =============================================================================
-  console.log('📝 Example 4: Tool Categories and Organization');
+  console.log('📝 Example 3: Tool Categories and Organization');
   
   const organizedAgent = createAgent({
     model: 'gpt-4o-mini',
     tools: [calculatorTool, greetingTool],
   });
 
-  console.log('🔧 All tools:', organizedAgent.getAllTools().map(t => `${t.name} (${t.category})`));
+  console.log('🔧 All tools:', organizedAgent.getAllTools().map(t => `${t.name} (${t.toolId})`));
 
   // Demonstrate tool management
   console.log('\n🔧 Tool Management:');
