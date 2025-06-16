@@ -1,16 +1,16 @@
 import { streamText } from 'ai';
-import type { AIModel, Tool, Message, ToolContext } from './types';
+import type { AIModel, OpenAgenticTool, Message } from './types';
 import { ProviderManager } from './providers/manager';
 
 export class StreamingOrchestrator {
   private model: AIModel;
-  private tools = new Map<string, Tool>();
+  private tools = new Map<string, OpenAgenticTool>();
   private messages: Message[] = [];
   private maxIterations: number;
 
   constructor(options: {
     model: string | AIModel;
-    tools?: Tool[];
+    tools?: OpenAgenticTool[];
     systemPrompt?: string;
     maxIterations?: number;
   }) {
@@ -66,7 +66,7 @@ export class StreamingOrchestrator {
   // Tool management methods
   public addTool(tool: Tool): void {
     // Validate tool structure
-    if (!tool.name || !tool.description || !tool.execute) {
+    if (!tool.id || !tool.description || !tool.execute) {
       throw new Error(`Invalid tool: missing required properties`);
     }
     
@@ -74,11 +74,11 @@ export class StreamingOrchestrator {
       throw new Error(`Invalid tool parameters for ${tool.name}`);
     }
     
-    if (this.tools.has(tool.name)) {
-      throw new Error(`Tool already exists: ${tool.name}`);
+    if (this.tools.has(tool.id)) {
+      throw new Error(`Tool already exists: ${tool.id}`);
     }
     
-    this.tools.set(tool.name, tool);
+    this.tools.set(tool.id, tool);
   }
 
   public removeTool(toolName: string): void {
