@@ -162,7 +162,6 @@ export class StreamingOrchestrator {
                 throw error;
               }
             },
-          };
           }
         });
     
