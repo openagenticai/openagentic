@@ -12,7 +12,7 @@ export class Orchestrator {
 
   constructor(options: {
     model: string | AIModel;
-    tools?: Tool[];
+    tools?: any[];
     systemPrompt?: string;
     maxIterations?: number;
     customLogic?: (input: string, context: any) => Promise<any>;
@@ -24,7 +24,10 @@ export class Orchestrator {
     
     // Register tools with validation
     if (options.tools) {
-      options.tools.forEach(tool => this.addTool(tool));
+      options.tools.forEach((tool, index) => {
+        const toolName = `tool_${index}`;
+        this.tools[toolName] = tool;
+      });
     }
     
     // Add system prompt if provided
@@ -44,59 +47,70 @@ export class Orchestrator {
         return await this.executeWithCustomLogic(input);
       }
 
-      this.messages.push({
-        role: 'user',
-        content: input,
-      });
+      const provider = await ProviderManager.createProvider(this.model);
 
-      // Main orchestration loop
-      while (this.iterations < this.maxIterations) {
-        this.iterations++;
-
-        const response = await this.callModel(this.messages);
-
-        const assistantMessage: Message = {
-          role: 'assistant',
-          content: response.content || '',
-        };
-
-        // Add toolCalls only if they exist
-        if (response.toolCalls && Array.isArray(response.toolCalls)) {
-          assistantMessage.toolCalls = response.toolCalls;
-        }
-
-        this.messages.push(assistantMessage);
-
-        // Handle tool calls if any
-        if (response.toolCalls && Array.isArray(response.toolCalls) && response.toolCalls.length > 0) {
-          for (const toolCall of response.toolCalls) {
-            await this.executeToolCall(toolCall);
-          }
-          continue; // Continue the loop for more iterations
-        }
-
-        // No tool calls, we're done
-        break;
-      }
-
-      const result: ExecutionResult = {
-        success: true,
-        result: this.messages[this.messages.length - 1]?.content,
-        messages: this.messages,
-        iterations: this.iterations,
-        toolCallsUsed: this.getUsedTools(),
+      const generateConfig: any = {
+        model: provider(this.model.model),
+        prompt: input,
+        maxSteps: this.maxIterations,
       };
 
-      return result;
+      // Add system message if it exists
+      const systemMessage = this.messages.find(m => m.role === 'system');
+      if (systemMessage) {
+        generateConfig.system = systemMessage.content;
+      }
+
+      // Add tools if available
+      if (Object.keys(this.tools).length > 0) {
+        generateConfig.tools = this.tools;
+      }
+
+      // Add model parameters conditionally
+      if (this.model.temperature !== undefined) {
+        generateConfig.temperature = this.model.temperature;
+      }
+
+      if (this.model.maxTokens !== undefined) {
+        generateConfig.maxTokens = this.model.maxTokens;
+      }
+
+      if (this.model.topP !== undefined) {
+        generateConfig.topP = this.model.topP;
+      }
+      
+      const result = await generateText(generateConfig);
+
+      // Update our internal state
+      this.iterations = result.steps?.length || 1;
+      
+      // Store the conversation in our messages for future reference
+      this.messages = [
+        ...this.messages.filter(m => m.role === 'system'),
+        { role: 'user', content: input },
+        { role: 'assistant', content: result.text || '' }
+      ];
+
+      const executionResult: ExecutionResult = {
+        success: true,
+        result: result.text,
+        messages: this.messages,
+        iterations: this.iterations,
+        toolCallsUsed: result.toolCalls?.map(tc => tc.toolCallId) || [],
+      };
+
+      return executionResult;
 
     } catch (error) {
+      console.error('Error in Orchestrator.execute:', error);
+      
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorResult: ExecutionResult = {
         success: false,
         error: errorMessage,
         messages: this.messages,
         iterations: this.iterations,
-        toolCallsUsed: this.getUsedTools(),
+        toolCallsUsed: [],
       };
 
       return errorResult;
