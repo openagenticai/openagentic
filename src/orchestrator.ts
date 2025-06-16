@@ -114,7 +114,7 @@ export class Orchestrator {
         result: result.text,
         messages: this.messages,
         iterations: this.iterations,
-        toolCallsUsed: result.toolCalls?.map(tc => tc.toolCallId) || [],
+        toolCallsUsed,
       };
 
       return executionResult;
