@@ -32,20 +32,6 @@ export const MessageSchema = z.object({
 export type Message = z.infer<typeof MessageSchema>;
 
 // =============================================================================
-// ORCHESTRATOR CONFIGURATION
-// =============================================================================
-
-export interface OrchestratorConfig {
-  model: string | AIModel;
-  tools?: Tool[];
-  systemPrompt?: string;
-  streaming?: boolean;
-  maxIterations?: number;
-  debug?: boolean;
-  customLogic?: (input: string, context: any) => Promise<any>;
-}
-
-// =============================================================================
 // OPENAGENTIC TOOL TYPES
 // =============================================================================
 
