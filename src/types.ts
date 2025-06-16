@@ -82,17 +82,6 @@ export interface Tool {
   requiresAuth?: boolean;
 }
 
-// Tool factory interface for creating tools
-export interface ToolFactory {
-  name: string;
-  description: string;
-  parameters: JSONSchema;
-  execute: (params: any, context?: ToolContext) => Promise<any>;
-  category?: 'utility' | 'ai' | 'custom';
-  version?: string;
-  requiresAuth?: boolean;
-}
-
 // =============================================================================
 // EXECUTION RESULT TYPES
 // =============================================================================
