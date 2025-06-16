@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, fail } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { createAgent, createStreamingAgent, calculatorTool } from '../src';
 import type { CoreMessage } from '../src/types';
 
@@ -55,7 +55,7 @@ describe('Message Array Support', () => {
       // Test invalid input types
       try {
         await agent.execute(123 as any);
-        fail('Should have thrown an error for invalid input type');
+        throw new Error('Should have thrown an error for invalid input type');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         expect((error as Error).message).toContain('Input must be either a string or an array of messages');
