@@ -33,14 +33,8 @@ export function createAgent(options: {
   systemPrompt?: string;
   maxIterations?: number;
   customLogic?: (input: string, context: any) => Promise<any>;
-}) {
-  return new Orchestrator({
-    model: options.model,
-    tools: options.tools || [],
-    systemPrompt: options.systemPrompt,
-    maxIterations: options.maxIterations || 10,
-    customLogic: options.customLogic,
-  });
+}): Orchestrator {
+  return new Orchestrator(options);
 }
 
 /**
