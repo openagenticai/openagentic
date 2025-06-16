@@ -1,29 +1,14 @@
-import type { Tool } from '../../types';
+import { tool } from 'ai';
+import { z } from 'zod';
 
-export const fileReaderTool: Tool = {
+export const fileReaderTool = tool({
   name: 'read_file',
   description: 'Read the contents of a text file',
-  category: 'custom',
-  version: '1.0.0',
-  requiresAuth: false,
-  parameters: {
-    type: 'object',
-    properties: {
-      filepath: {
-        type: 'string',
-        description: 'Path to the file to read',
-        required: true,
-      },
-      encoding: {
-        type: 'string',
-        description: 'File encoding (default: utf8)',
-        required: false,
-        enum: ['utf8', 'ascii', 'base64'],
-      },
-    },
-    required: ['filepath'],
-  },
-  execute: async (params: any) => {
+  parameters: z.object({
+    filepath: z.string().describe('Path to the file to read'),
+    encoding: z.enum(['utf8', 'ascii', 'base64']).optional().default('utf8').describe('File encoding'),
+  }),
+  execute: async ({ filepath, encoding = 'utf8' }) => {
     const { filepath, encoding = 'utf8' } = params;
     
     try {
@@ -47,4 +32,4 @@ export const fileReaderTool: Tool = {
       };
     }
   },
-};
+});
