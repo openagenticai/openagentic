@@ -39,10 +39,10 @@ export class StreamingOrchestrator {
     this.loggingConfig = {
       enableDebugLogging: options.enableDebugLogging ?? false,
       logLevel: options.logLevel ?? 'basic',
-      enableStepLogging: options.enableStepLogging ?? true,
-      enableToolLogging: options.enableToolLogging ?? true,
-      enableTimingLogging: options.enableTimingLogging ?? true,
-      enableStatisticsLogging: options.enableStatisticsLogging ?? true,
+      enableStepLogging: options.enableStepLogging ?? false,
+      enableToolLogging: options.enableToolLogging ?? false,
+      enableTimingLogging: options.enableTimingLogging ?? false,
+      enableStatisticsLogging: options.enableStatisticsLogging ?? false,
     };
     
     // Register tools with validation
