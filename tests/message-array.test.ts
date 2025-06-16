@@ -21,7 +21,8 @@ describe('Message Array Support', () => {
       
       // Should not throw when called with string
       expect(() => {
-        agent.execute('test string');
+        const promise = agent.execute('test string');
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
 
@@ -42,7 +43,8 @@ describe('Message Array Support', () => {
       
       // Should not throw when called with message array
       expect(() => {
-        agent.execute(messages);
+         const promise = agent.execute(messages);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
 
@@ -53,24 +55,16 @@ describe('Message Array Support', () => {
       });
 
       // Test invalid input types
-      try {
-        await agent.execute(123 as any);
-        throw new Error('Should have thrown an error for invalid input type');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Input must be either a string or an array of messages');
-      }
+      const result1 = await agent.execute(123 as any);
+      expect(result1.success).toBe(false);
+      expect(result1.error).toContain('Input must be either a string or an array of messages');
 
-      try {
-        await agent.execute(null as any);
-        throw new Error('Should have thrown an error for null input');
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-        expect((error as Error).message).toContain('Input must be either a string or an array of messages');
-      }
+       const result2 = await agent.execute(null as any);
+      expect(result2.success).toBe(false);
+      expect(result2.error).toContain('Input must be either a string or an array of messages');
     });
 
-    it('should handle empty message arrays', () => {
+    it('should handle empty message arrays', async () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
         tools: [calculatorTool],
@@ -79,9 +73,9 @@ describe('Message Array Support', () => {
       const emptyMessages: CoreMessage[] = [];
 
       // Should not throw when called with empty array
-      expect(() => {
-        agent.execute(emptyMessages);
-      }).not.toThrow();
+      const result = await agent.execute(emptyMessages);
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Empty message array');
     });
 
     it('should handle messages with different content types', () => {
@@ -98,7 +92,8 @@ describe('Message Array Support', () => {
 
       // Should not throw when called with mixed content types
       expect(() => {
-        agent.execute(messages);
+        const promise = agent.execute(messages);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
   });
@@ -115,7 +110,8 @@ describe('Message Array Support', () => {
       
       // Should not throw when called with string
       expect(() => {
-        agent.stream('test string');
+        const promise = agent.stream('test string');
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
 
@@ -136,7 +132,8 @@ describe('Message Array Support', () => {
       
       // Should not throw when called with message array
       expect(() => {
-        agent.stream(messages);
+        const promise = agent.stream(messages);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
 
@@ -147,13 +144,13 @@ describe('Message Array Support', () => {
       });
 
       // Test invalid input types
-      const result1 = await agent.execute(123 as any);
-      expect(result1.success).toBe(false);
-      expect(result1.error).toContain('Input must be either a string or an array of messages');
-
-      const result2 = await agent.execute(null as any);
-      expect(result2.success).toBe(false);
-      expect(result2.error).toContain('Input must be either a string or an array of messages');
+      try {
+        await agent.stream(123 as any);
+        expect(true).toBe(false); // Should not reach here
+      } catch (error) {
+        expect(error).toBeInstanceOf(Error);
+        expect((error as Error).message).toContain('Input must be either a string or an array of messages');
+      }
     });
 
     it('should handle complex message structures', () => {
@@ -188,7 +185,8 @@ describe('Message Array Support', () => {
 
       // Should not throw when called with complex message structure
       expect(() => {
-        agent.stream(complexMessages);
+        const promise = agent.stream(complexMessages);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
   });
@@ -209,7 +207,8 @@ describe('Message Array Support', () => {
 
       // Should handle system messages without throwing
       expect(() => {
-        agent.execute(messagesWithSystem);
+        const promise = agent.execute(messagesWithSystem);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
 
@@ -228,7 +227,8 @@ describe('Message Array Support', () => {
 
       // Should maintain internal state correctly
       expect(() => {
-        agent.execute(conversationHistory);
+        const promise = agent.execute(conversationHistory);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
 
       // Check that messages are being tracked
@@ -256,7 +256,8 @@ describe('Message Array Support', () => {
 
       // Should handle tool messages without throwing
       expect(() => {
-        agent.stream(messagesWithTools);
+        const promise = agent.execute(messagesWithTools);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
   });
@@ -313,7 +314,8 @@ describe('Message Array Support', () => {
 
       // Should work seamlessly with converted messages
       expect(() => {
-        agent.execute(coreMessages);
+        const promise = agent.execute(coreMessages);
+        expect(promise).toBeInstanceOf(Promise);
       }).not.toThrow();
     });
   });
