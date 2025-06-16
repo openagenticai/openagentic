@@ -37,7 +37,7 @@ export class StreamingOrchestrator {
     
     // Configure logging
     this.loggingConfig = {
-      enableDebugLogging: options.enableDebugLogging ?? true,
+      enableDebugLogging: options.enableDebugLogging ?? false,
       logLevel: options.logLevel ?? 'basic',
       enableStepLogging: options.enableStepLogging ?? true,
       enableToolLogging: options.enableToolLogging ?? true,
