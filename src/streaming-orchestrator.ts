@@ -304,18 +304,23 @@ export class StreamingOrchestrator {
 
   // Create streaming-specific callbacks
   private createStepFinishCallback() {
-    return (step: any, stepIndex: number) => {
+    return (result: any) => {
       const stepDuration = Date.now() - this.executionStartTime;
       this.stepTimings.push(stepDuration);
+
+      // Increment step count
+      this.stepsExecuted++;
       
-      const toolCallsInStep = step.toolCalls?.map((tc: any) => tc.toolName || tc.toolCallId || 'unknown') || [];
+      const toolCallsInStep = result.toolCalls?.map((tc: any) => tc.toolName || tc.toolCallId || 'unknown') || [];
       
-      this.log('📝', `Step ${stepIndex + 1} completed`, {
-        stepType: step.type || 'unknown',
+      this.log('📝', `Step ${this.stepsExecuted} completed`, {
+        stepType: result.stepType || 'unknown',
+        finishReason: result.finishReason || 'unknown',
         duration: `${stepDuration}ms`,
         toolCalls: toolCallsInStep,
-        stepResult: step.result ? 'has_result' : 'no_result',
-        reasoning: step.reasoning ? 'has_reasoning' : 'no_reasoning',
+        text: result.text ? `${result.text.length} chars` : 'no_text',
+        reasoning: result.reasoning ? 'has_reasoning' : 'no_reasoning',
+        tokensUsed: result.usage?.totalTokens || 'unknown',
       });
 
       // Track step completion
