@@ -101,17 +101,20 @@ async function basicAgentExample() {
   toolAgent.addTool(calculatorTool);
   toolAgent.addTool(timestampTool);
 
-  console.log('🔧 Available tools:', toolAgent.getAllTools().map(t => t.name));
-  console.log('🔢 Utility tools:', toolAgent.getToolsByCategory('utility').map(t => t.name));
+  console.log('🔧 Available tools count:', toolAgent.getAllTools().length);
+  console.log('🔢 All tools count:', toolAgent.getToolsByCategory('utility').length);
 
   try {
     const result = await toolAgent.execute('What is 100 / 5 and what time is it?');
     console.log('✅ Result:', result.result);
     
     // Remove a tool
-    toolAgent.removeTool('timestamp');
-    console.log('🗑️ Removed timestamp tool');
-    console.log('🔧 Remaining tools:', toolAgent.getAllTools().map(t => t.name));
+    const toolNames = Object.keys(toolAgent.getAllTools());
+    if (toolNames.length > 0) {
+      toolAgent.removeTool(toolNames[0]);
+      console.log('🗑️ Removed first tool');
+      console.log('🔧 Remaining tools count:', toolAgent.getAllTools().length);
+    }
   } catch (error) {
     console.error('❌ Error:', error);
   }
