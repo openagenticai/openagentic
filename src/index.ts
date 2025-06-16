@@ -21,7 +21,7 @@ export * from './types';
 
 import { Orchestrator } from './orchestrator';
 import { StreamingOrchestrator } from './streaming-orchestrator';
-import type { Tool, AIModel } from './types';
+import type { AIModel } from './types';
 
 /**
  * Create a standard agent for non-streaming execution
@@ -29,7 +29,7 @@ import type { Tool, AIModel } from './types';
  */
 export function createAgent(options: {
   model: string | AIModel;
-  tools?: Tool[];
+  tools?: any[];
   systemPrompt?: string;
   maxIterations?: number;
   customLogic?: (input: string, context: any) => Promise<any>;
@@ -49,7 +49,7 @@ export function createAgent(options: {
  */
 export function createStreamingAgent(options: {
   model: string | AIModel;
-  tools?: Tool[];
+  tools?: any[];
   systemPrompt?: string;
   maxIterations?: number;
 }) {
