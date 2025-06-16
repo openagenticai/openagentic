@@ -81,32 +81,9 @@ async function toolCreationExample() {
   console.log('\n' + '='.repeat(80) + '\n');
 
   // =============================================================================
-  // EXAMPLE 2: Text Analysis Agent
+  // EXAMPLE 2: Multi-Tool Agent with Custom Tools
   // =============================================================================
-  console.log('📝 Example 2: Text Analysis Agent');
-  
-  const analysisAgent = createAgent({
-    model: 'claude-4-sonnet-20250514',
-    tools: [textAnalysisTool],
-    systemPrompt: 'You are a text analysis expert. Analyze text and provide insights.',
-  });
-
-  try {
-    const result = await analysisAgent.execute(
-      'Analyze this text: "The quick brown fox jumps over the lazy dog. This is a sample sentence for testing." Include word count, character count, and readability metrics.'
-    );
-    console.log('✅ Result:', result.result);
-    console.log('🔧 Tools used:', result.toolCallsUsed);
-  } catch (error) {
-    console.error('❌ Error:', error);
-  }
-
-  console.log('\n' + '='.repeat(80) + '\n');
-
-  // =============================================================================
-  // EXAMPLE 3: Multi-Tool Agent with Custom Tools
-  // =============================================================================
-  console.log('📝 Example 3: Multi-Tool Agent with Custom Tools');
+  console.log('📝 Example 2: Multi-Tool Agent with Custom Tools');
   
   const multiToolAgent = createAgent({
     model: 'gpt-4o-mini',
