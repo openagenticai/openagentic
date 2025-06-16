@@ -42,7 +42,7 @@ export interface ToolDetails {
   useCases: string[];
   parameters: Record<string, string>;
   logo: string;
-  internal: boolean;
+  internal?: boolean;
 }
 
 export interface OpenAgenticTool = Tool & ToolDetails;
