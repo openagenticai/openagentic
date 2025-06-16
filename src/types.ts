@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { type Tool } from 'ai';
 
 // =============================================================================
 // CORE TYPES FOR OPENAGENTIC FRAMEWORK
