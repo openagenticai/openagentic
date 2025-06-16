@@ -87,5 +87,5 @@ const toolDetails: ToolDetails = {
     logo: '',
 };
 
-export const httpTool = toOpenAgenticTool(rawTimestampTool, toolDetails);
+export const timestampTool = toOpenAgenticTool(rawTimestampTool, toolDetails);
 
