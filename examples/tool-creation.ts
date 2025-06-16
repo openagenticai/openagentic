@@ -137,8 +137,6 @@ async function toolCreationExample() {
   });
 
   console.log('🔧 All tools:', organizedAgent.getAllTools().map(t => `${t.name} (${t.category})`));
-  console.log('🔢 Utility tools:', organizedAgent.getToolsByCategory('utility').map(t => t.name));
-  console.log('🎨 Custom tools:', organizedAgent.getToolsByCategory('custom').map(t => t.name));
 
   // Demonstrate tool management
   console.log('\n🔧 Tool Management:');
