@@ -74,4 +74,4 @@ const toolDetails: ToolDetails = {
     logo: '',
 };
 
-export const timestampTool = toOpenAgenticTool(rawCalculatorTool, toolDetails);
+export const calculatorTool = toOpenAgenticTool(rawCalculatorTool, toolDetails);
