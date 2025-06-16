@@ -25,7 +25,7 @@ export class Orchestrator {
     // Register tools with validation
     if (options.tools) {
       options.tools.forEach((tool, index) => {
-        let toolName = tool.toolId;
+        const toolName = tool.toolId;
       
         // Ensure toolId uniqueness
         if (this.tools[toolName]) {
@@ -136,8 +136,14 @@ export class Orchestrator {
   }
 
   // Tool management methods
-  public addTool(tool: any): void {
-    const toolName = `tool_${Object.keys(this.tools).length}`;
+  public addTool(tool: OpenAgenticTool): void {
+    const toolName = tool.toolId;
+    
+    // Ensure uniqueness
+    if (this.tools[toolName]) {
+      throw new Error(`Tool with name ${toolName} already exists`);
+    }
+    
     this.tools[toolName] = tool;
   }
 
@@ -149,11 +155,11 @@ export class Orchestrator {
     return this.tools[toolName];
   }
 
-  public getAllTools(): any[] {
+  public getAllTools(): OpenAgenticTool[] {
     return Object.values(this.tools);
   }
 
-  public getToolsByCategory(category: string): any[] {
+  public getToolsByCategory(category: string): OpenAgenticTool[] {
     return this.getAllTools();
   }
 
@@ -165,7 +171,14 @@ export class Orchestrator {
   // Get model information
   public getModelInfo(): any {
     try {
-      return ProviderManager.getModelInfo(this.model.provider, this.model.model);
+      const modelInfo = ProviderManager.getModelInfo(this.model.provider, this.model.model) as any;
+      return {
+        provider: this.model.provider,
+        model: this.model.model,
+        contextWindow: modelInfo?.contextWindow,
+        cost: modelInfo?.cost,
+        description: modelInfo?.description,
+      };
     } catch (error) {
       return {
         provider: this.model.provider,
