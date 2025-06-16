@@ -1,42 +1,23 @@
 import 'dotenv/config';
 
-import { createAgent, createTool, calculatorTool } from '../src';
+import { createAgent, calculatorTool } from '../src';
+import { tool } from 'ai';
+import { z } from 'zod';
+import { toOpenAgenticTool } from '../src/tools/utils';
+import type { ToolDetails } from '../src/types';
 
 // =============================================================================
 // CUSTOM TOOL EXAMPLES
 // =============================================================================
 
 // Example 1: Simple utility tool
-const greetingTool = createTool({
-  name: 'greeting_generator',
-  description: 'Generate personalized greetings',
-  category: 'custom',
-  parameters: {
-    type: 'object',
-    properties: {
-      name: {
-        type: 'string',
-        description: 'Name of the person to greet',
-        required: true,
-      },
-      style: {
-        type: 'string',
-        description: 'Style of greeting',
-        required: false,
-        enum: ['formal', 'casual', 'funny'],
-      },
-      timeOfDay: {
-        type: 'string',
-        description: 'Time of day',
-        required: false,
-        enum: ['morning', 'afternoon', 'evening'],
-      },
-    },
-    required: ['name'],
-  },
-  execute: async (params) => {
-    const { name, style = 'casual', timeOfDay = 'morning' } = params;
-    
+const rawGreetingTool = tool({
+  parameters: z.object({
+      name: z.string().describe('Name of the person to greet'),
+      style: z.enum(['formal', 'casual', 'funny']).optional().default('casual').describe('Style of greeting'),
+      timeOfDay: z.enum(['morning', 'afternoon', 'evening']).optional().default('morning').describe('Time of day'),
+  }),
+  execute: async ({ name, style = 'casual', timeOfDay = 'morning' }) => {
     const greetings = {
       formal: {
         morning: `Good morning, ${name}. I hope you have a productive day ahead.`,
@@ -64,6 +45,16 @@ const greetingTool = createTool({
     };
   },
 });
+
+const greetingToolDetails: ToolDetails = {
+  toolId: 'greeting',
+  name: 'Greeting',
+  useCases: [],
+  parameters: {},
+  logo: '',
+};
+
+const greetingTool = toOpenAgenticTool(rawGreetingTool, greetingToolDetails);
 
 // Example 2: Data processing tool
 const textAnalysisTool = createTool({
@@ -121,93 +112,6 @@ const textAnalysisTool = createTool({
   },
 });
 
-// Example 3: Configuration tool
-const configManagerTool = createTool({
-  name: 'config_manager',
-  description: 'Manage configuration settings',
-  category: 'custom',
-  requiresAuth: false,
-  parameters: {
-    type: 'object',
-    properties: {
-      action: {
-        type: 'string',
-        description: 'Action to perform',
-        required: true,
-        enum: ['get', 'set', 'list', 'delete'],
-      },
-      key: {
-        type: 'string',
-        description: 'Configuration key',
-        required: false,
-      },
-      value: {
-        type: 'string',
-        description: 'Configuration value (for set action)',
-        required: false,
-      },
-    },
-    required: ['action'],
-  },
-  execute: async (params) => {
-    const { action, key, value } = params;
-    
-    // Simulate in-memory configuration store
-    const config = new Map([
-      ['theme', 'dark'],
-      ['language', 'en'],
-      ['debug', 'false'],
-      ['max_retries', '3'],
-    ]);
-    
-    switch (action) {
-      case 'get':
-        if (!key) throw new Error('Key required for get action');
-        return {
-          action: 'get',
-          key,
-          value: config.get(key) || null,
-          exists: config.has(key),
-        };
-        
-      case 'set':
-        if (!key || value === undefined) throw new Error('Key and value required for set action');
-        const oldValue = config.get(key);
-        config.set(key, value);
-        return {
-          action: 'set',
-          key,
-          value,
-          old_value: oldValue || null,
-          success: true,
-        };
-        
-      case 'list':
-        return {
-          action: 'list',
-          configs: Object.fromEntries(config),
-          count: config.size,
-        };
-        
-      case 'delete':
-        if (!key) throw new Error('Key required for delete action');
-        const existed = config.has(key);
-        const deletedValue = config.get(key);
-        config.delete(key);
-        return {
-          action: 'delete',
-          key,
-          deleted_value: deletedValue || null,
-          existed,
-          success: true,
-        };
-        
-      default:
-        throw new Error(`Unknown action: ${action}`);
-    }
-  },
-});
-
 async function toolCreationExample() {
   console.log('🛠️ OpenAgentic - Custom Tool Creation Example\n');
 
@@ -262,8 +166,8 @@ async function toolCreationExample() {
   
   const multiToolAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, greetingTool, textAnalysisTool, configManagerTool],
-    systemPrompt: 'You are a versatile assistant with access to calculation, greeting, text analysis, and configuration tools.',
+    tools: [calculatorTool, greetingTool, textAnalysisTool],
+    systemPrompt: 'You are a versatile assistant with access to calculation, greeting, and text analysis tools.',
   });
 
   try {
