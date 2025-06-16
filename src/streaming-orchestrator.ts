@@ -161,28 +161,9 @@ export class StreamingOrchestrator {
         name: tool.name,
         description: tool.description,
         parameters: tool.parameters,
+        execute: tool.execute,
       }
     }));
-  }
-
-  private convertToAISDKTools(definitions: any[]): Record<string, any> {
-    const tools: Record<string, any> = {};
-    
-    definitions.forEach(def => {
-      const tool = this.tools.get(def.function.name);
-      if (tool) {
-        tools[def.function.name] = {
-          description: def.function.description,
-          parameters: def.function.parameters,
-          execute: async (params: any) => {
-            const context = this.createToolContext();
-            return await tool.execute(params, context);
-          },
-        };
-      }
-    });
-    
-    return tools;
   }
 
   private transformMessages(messages: Message[]): any[] {
