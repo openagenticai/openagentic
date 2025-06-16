@@ -39,7 +39,8 @@
     "example:streaming": "tsx examples/streaming-agent.ts",
     "example:s3": "tsx examples/s3-upload-example.ts",
     "example:openai": "tsx examples/openai-tool-example.ts",
-    "example:tools": "tsx examples/tool-creation.ts"
+    "example:tools": "tsx examples/tool-creation.ts",
+    "example:messages": "tsx examples/message-array-example.ts"
   },
   "keywords": [
     "ai",

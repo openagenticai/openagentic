@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import type { AIModel, Message, ExecutionResult, OpenAgenticTool } from './types';
+import type { AIModel, Message, CoreMessage, ExecutionResult, OpenAgenticTool } from './types';
 import { ProviderManager } from './providers/manager';
 
 export class Orchestrator {
@@ -45,80 +45,19 @@ export class Orchestrator {
     }
   }
 
-  // Core execution method - non-streaming only
-  public async execute(input: string): Promise<ExecutionResult> {
+  // Core execution method - supports both string and message array inputs
+  public async execute(input: string): Promise<ExecutionResult>;
+  public async execute(messages: CoreMessage[]): Promise<ExecutionResult>;
+  public async execute(input: string | CoreMessage[]): Promise<ExecutionResult> {
     try {
-      // If custom logic is provided, use it
-      if (this.customLogic) {
-        return await this.executeWithCustomLogic(input);
+      // Handle different input types
+      if (typeof input === 'string') {
+        return await this.executeWithString(input);
+      } else if (Array.isArray(input)) {
+        return await this.executeWithMessages(input);
+      } else {
+        throw new Error('Input must be either a string or an array of messages');
       }
-
-      const provider = await ProviderManager.createProvider(this.model);
-
-      const generateConfig: any = {
-        model: provider(this.model.model),
-        prompt: input,
-        maxSteps: this.maxIterations,
-      };
-
-      // Add system message if it exists
-      const systemMessage = this.messages.find(m => m.role === 'system');
-      if (systemMessage) {
-        generateConfig.system = systemMessage.content;
-      }
-
-      // Add tools if available
-      if (Object.keys(this.tools).length > 0) {
-        generateConfig.tools = this.tools;
-      }
-
-      // Add model parameters conditionally
-      if (this.model.temperature !== undefined) {
-        generateConfig.temperature = this.model.temperature;
-      }
-
-      if (this.model.maxTokens !== undefined) {
-        generateConfig.maxTokens = this.model.maxTokens;
-      }
-
-      if (this.model.topP !== undefined) {
-        generateConfig.topP = this.model.topP;
-      }
-      
-      const result = await generateText(generateConfig);
-
-      // Update our internal state
-      this.iterations = result.steps?.length || 1;
-      
-      // Store the conversation in our messages for future reference
-      this.messages = [
-        ...this.messages.filter(m => m.role === 'system'),
-        { role: 'user', content: input },
-        { role: 'assistant', content: result.text || '' }
-      ];
-
-      // Extract tool calls from steps if available
-      const toolCallsUsed: string[] = [];
-      if (result.steps) {
-        result.steps.forEach(step => {
-          if (step.toolCalls) {
-            step.toolCalls.forEach(toolCall => {
-              toolCallsUsed.push(toolCall.toolName || toolCall.toolCallId || 'unknown');
-            });
-          }
-        });
-      }
-
-      const executionResult: ExecutionResult = {
-        success: true,
-        result: result.text,
-        messages: this.messages,
-        iterations: this.iterations,
-        toolCallsUsed,
-      };
-
-      return executionResult;
-
     } catch (error) {
       console.error('Error in Orchestrator.execute:', error);
       
@@ -133,6 +72,159 @@ export class Orchestrator {
 
       return errorResult;
     }
+  }
+
+  // Execute with string input (original behavior)
+  private async executeWithString(input: string): Promise<ExecutionResult> {
+    // If custom logic is provided, use it
+    if (this.customLogic) {
+      return await this.executeWithCustomLogic(input);
+    }
+
+    const provider = await ProviderManager.createProvider(this.model);
+
+    const generateConfig: any = {
+      model: provider(this.model.model),
+      prompt: input,
+      maxSteps: this.maxIterations,
+    };
+
+    // Add system message if it exists
+    const systemMessage = this.messages.find(m => m.role === 'system');
+    if (systemMessage) {
+      generateConfig.system = systemMessage.content;
+    }
+
+    // Add tools if available
+    if (Object.keys(this.tools).length > 0) {
+      generateConfig.tools = this.tools;
+    }
+
+    // Add model parameters conditionally
+    if (this.model.temperature !== undefined) {
+      generateConfig.temperature = this.model.temperature;
+    }
+
+    if (this.model.maxTokens !== undefined) {
+      generateConfig.maxTokens = this.model.maxTokens;
+    }
+
+    if (this.model.topP !== undefined) {
+      generateConfig.topP = this.model.topP;
+    }
+    
+    const result = await generateText(generateConfig);
+
+    // Update our internal state
+    this.iterations = result.steps?.length || 1;
+    
+    // Store the conversation in our messages for future reference
+    this.messages = [
+      ...this.messages.filter(m => m.role === 'system'),
+      { role: 'user', content: input },
+      { role: 'assistant', content: result.text || '' }
+    ];
+
+    // Extract tool calls from steps if available
+    const toolCallsUsed: string[] = [];
+    if (result.steps) {
+      result.steps.forEach(step => {
+        if (step.toolCalls) {
+          step.toolCalls.forEach(toolCall => {
+            toolCallsUsed.push(toolCall.toolName || toolCall.toolCallId || 'unknown');
+          });
+        }
+      });
+    }
+
+    const executionResult: ExecutionResult = {
+      success: true,
+      result: result.text,
+      messages: this.messages,
+      iterations: this.iterations,
+      toolCallsUsed,
+    };
+
+    return executionResult;
+  }
+
+  // Execute with message array (new behavior)
+  private async executeWithMessages(inputMessages: CoreMessage[]): Promise<ExecutionResult> {
+    const provider = await ProviderManager.createProvider(this.model);
+
+    // Convert CoreMessage[] to AI SDK compatible format
+    const convertedMessages = this.convertCoresToAISDK(inputMessages);
+
+    const generateConfig: any = {
+      model: provider(this.model.model),
+      messages: convertedMessages,
+      maxSteps: this.maxIterations,
+    };
+
+    // Extract system message from input if present, otherwise use existing one
+    const systemMessage = inputMessages.find(m => m.role === 'system');
+    if (systemMessage) {
+      generateConfig.system = typeof systemMessage.content === 'string' 
+        ? systemMessage.content 
+        : JSON.stringify(systemMessage.content);
+    } else {
+      const existingSystemMessage = this.messages.find(m => m.role === 'system');
+      if (existingSystemMessage) {
+        generateConfig.system = existingSystemMessage.content;
+      }
+    }
+
+    // Add tools if available
+    if (Object.keys(this.tools).length > 0) {
+      generateConfig.tools = this.tools;
+    }
+
+    // Add model parameters conditionally
+    if (this.model.temperature !== undefined) {
+      generateConfig.temperature = this.model.temperature;
+    }
+
+    if (this.model.maxTokens !== undefined) {
+      generateConfig.maxTokens = this.model.maxTokens;
+    }
+
+    if (this.model.topP !== undefined) {
+      generateConfig.topP = this.model.topP;
+    }
+    
+    const result = await generateText(generateConfig);
+
+    // Update our internal state
+    this.iterations = result.steps?.length || 1;
+    
+    // Update internal messages with the full conversation context
+    this.messages = [
+      ...this.messages.filter(m => m.role === 'system'),
+      ...this.convertCoreToInternal(inputMessages.filter(m => m.role !== 'system')),
+      { role: 'assistant', content: result.text || '' }
+    ];
+
+    // Extract tool calls from steps if available
+    const toolCallsUsed: string[] = [];
+    if (result.steps) {
+      result.steps.forEach(step => {
+        if (step.toolCalls) {
+          step.toolCalls.forEach(toolCall => {
+            toolCallsUsed.push(toolCall.toolName || toolCall.toolCallId || 'unknown');
+          });
+        }
+      });
+    }
+
+    const executionResult: ExecutionResult = {
+      success: true,
+      result: result.text,
+      messages: this.messages,
+      iterations: this.iterations,
+      toolCallsUsed,
+    };
+
+    return executionResult;
   }
 
   // Tool management methods
@@ -201,6 +293,48 @@ export class Orchestrator {
   public clear(): void {
     this.messages = [];
     this.iterations = 0;
+  }
+
+  // Helper methods for message conversion
+  private convertCoresToAISDK(coreMessages: CoreMessage[]): any[] {
+    return coreMessages
+      .filter(m => m.role !== 'system') // System messages handled separately
+      .map(m => {
+        if (m.role === 'user') {
+          return { 
+            role: 'user' as const, 
+            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+          };
+        } else if (m.role === 'assistant') {
+          return { 
+            role: 'assistant' as const, 
+            content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+          };
+        } else if (m.role === 'tool') {
+          return { 
+            role: 'tool' as const, 
+            content: [{ 
+              type: 'tool-result' as const, 
+              toolCallId: m.toolCallId || '',
+              toolName: 'unknown',
+              result: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+            }] 
+          };
+        }
+        return { 
+          role: 'user' as const, 
+          content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
+        };
+      });
+  }
+
+  private convertCoreToInternal(coreMessages: CoreMessage[]): Message[] {
+    return coreMessages.map(m => ({
+      role: m.role,
+      content: typeof m.content === 'string' ? m.content : JSON.stringify(m.content),
+      toolCallId: m.toolCallId,
+      toolCalls: m.toolCalls,
+    }));
   }
 
   // Private methods
