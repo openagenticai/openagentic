@@ -1,5 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import type { ToolDetails } from '../types';
+import { toOpenAgenticTool } from './utils';
 
 const rawHttpTool = tool({
   description: 'Make HTTP requests to external APIs and services',
