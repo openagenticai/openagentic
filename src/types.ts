@@ -74,17 +74,7 @@ export interface ToolDetails {
 }
 
 // Self-contained tool interface
-export interface Tool {
-  name: string;
-  description: string;
-  parameters: JSONSchema;
-  execute: (params: any, context?: ToolContext) => Promise<any>;
-  
-  // Optional metadata
-  category?: 'utility' | 'ai' | 'custom';
-  version?: string;
-  requiresAuth?: boolean;
-}
+export interface OpenAgenticTool = Tool & ToolDetails;
 
 // =============================================================================
 // EXECUTION RESULT TYPES
