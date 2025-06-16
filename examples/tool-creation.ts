@@ -88,7 +88,7 @@ async function toolCreationExample() {
   const multiToolAgent = createAgent({
     model: 'gpt-4o-mini',
     tools: [calculatorTool, greetingTool],
-    systemPrompt: 'You are a versatile assistant with access to calculation, greeting, and text analysis tools.',
+    systemPrompt: 'You are a versatile assistant with access to calculation and greeting tools.',
   });
 
   try {
