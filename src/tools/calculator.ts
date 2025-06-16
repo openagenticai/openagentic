@@ -1,22 +1,12 @@
 import type { Tool } from '../types';
 
-export const calculatorTool: Tool = {
+export const calculatorTool = tool({
   name: 'calculator',
   description: 'Perform mathematical calculations and evaluations',
-  category: 'utility',
-  version: '1.0.0',
-  parameters: {
-    type: 'object',
-    properties: {
-      expression: {
-        type: 'string',
-        description: 'Mathematical expression to evaluate (e.g., "2 + 2", "Math.sqrt(16)", "Math.PI * 2")',
-        required: true,
-      },
-    },
-    required: ['expression'],
-  },
-  execute: async (params: any) => {
+  parameters: z.object({
+    expression: z.string().describe('Mathematical expression to evaluate (e.g., "2 + 2", "Math.sqrt(16)", "Math.PI * 2")'),
+  }),
+  execute: async ({ expression }) => {
     const { expression } = params;
     
     // Enhanced safety check - allow more mathematical operations
@@ -74,4 +64,4 @@ export const calculatorTool: Tool = {
       throw new Error(`Invalid mathematical expression: ${expression}. ${error instanceof Error ? error.message : ''}`);
     }
   },
-};
+});
