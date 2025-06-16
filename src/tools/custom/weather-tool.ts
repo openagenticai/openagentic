@@ -8,9 +8,7 @@ export const weatherTool = tool({
     location: z.string().describe('City name or coordinates'),
     units: z.enum(['celsius', 'fahrenheit']).optional().default('celsius').describe('Temperature units'),
   }),
-  execute: async ({ location, units = 'celsius' }) => {
-    const { location, units = 'celsius' } = params;
-    
+  execute: async ({ location, units = 'celsius' }) => {    
     // Simulate weather API call (self-contained)
     // In real implementation, you would call an actual weather API
     const weatherData = {
