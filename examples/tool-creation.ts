@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { createAgent, createTool, calculatorTool } from '../src';
 
 // =============================================================================
