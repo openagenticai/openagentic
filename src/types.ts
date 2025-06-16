@@ -69,6 +69,7 @@ export interface ToolDetails {
   name: string;
   useCases: string[];
   parameters: Record<string, string>;
+  logo: string;
   internal: boolean;
 }
 
