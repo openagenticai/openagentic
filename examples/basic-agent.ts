@@ -102,7 +102,6 @@ async function basicAgentExample() {
   toolAgent.addTool(timestampTool);
 
   console.log('🔧 Available tools count:', toolAgent.getAllTools().length);
-  console.log('🔢 All tools count:', toolAgent.getToolsByCategory('utility').length);
 
   try {
     const result = await toolAgent.execute('What is 100 / 5 and what time is it?');
