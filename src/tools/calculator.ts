@@ -1,4 +1,5 @@
-import type { Tool } from '../types';
+import { tool } from 'ai';
+import { z } from 'zod';
 
 export const calculatorTool = tool({
   name: 'calculator',
