@@ -4,7 +4,7 @@ import { ProviderManager } from './providers/manager';
 
 export class Orchestrator {
   private model: AIModel;
-  private tools: Record<string, any>() = {};
+  private tools: Record<string, any> = {};
   private messages: Message[] = [];
   private iterations = 0;
   private maxIterations: number;
