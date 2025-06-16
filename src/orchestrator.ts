@@ -435,7 +435,7 @@ export class Orchestrator {
       
       const toolCallsInStep = result.toolCalls?.map((tc: any) => tc.toolName || tc.toolCallId || 'unknown') || [];
       
-      this.log('📝', `Step ${stepIndex + 1} completed`, {
+      this.log('📝', `Step ${this.stepsExecuted} completed`, {
         stepType: result.stepType || 'unknown',
         finishReason: result.finishReason || 'unknown',
         duration: `${stepDuration}ms`,
