@@ -1,6 +1,7 @@
-import type { Tool } from '../types';
+import { tool } from 'ai';
+import { z } from 'zod';
 
-export const timestampTool: Tool = {
+export const timestampTool = tool({
   name: 'timestamp',
   description: 'Get current timestamp and date information with timezone support',
   parameters: z.object({
@@ -76,4 +77,4 @@ export const timestampTool: Tool = {
       throw new Error(`Timestamp generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   },
-};
+});
