@@ -11,8 +11,6 @@ export const httpTool = tool({
     body: z.string().optional().describe('Request body (for POST, PUT, PATCH requests)'),
   }),
   execute: async ({ url, method = 'GET', headers = {}, body }) => {
-    const { url, method = 'GET', headers = {}, body } = params;
-    
     // Validate URL
     try {
       new URL(url);
