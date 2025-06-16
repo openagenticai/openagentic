@@ -322,11 +322,6 @@ export class StreamingOrchestrator {
         reasoning: result.reasoning ? 'has_reasoning' : 'no_reasoning',
         tokensUsed: result.usage?.totalTokens || 'unknown',
       });
-
-      // Track step completion
-      if (stepIndex + 1 > this.stepsExecuted) {
-        this.stepsExecuted = stepIndex + 1;
-      }
     };
   }
 
