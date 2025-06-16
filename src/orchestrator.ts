@@ -118,37 +118,25 @@ export class Orchestrator {
   }
 
   // Tool management methods
-  public addTool(tool: Tool): void {
-    // Validate tool structure
-    if (!tool.name || !tool.description || !tool.execute) {
-      throw new Error(`Invalid tool: missing required properties`);
-    }
-    
-    if (!tool.parameters || tool.parameters.type !== 'object') {
-      throw new Error(`Invalid tool parameters for ${tool.name}`);
-    }
-    
-    if (this.tools.has(tool.name)) {
-      throw new Error(`Tool already exists: ${tool.name}`);
-    }
-    
-    this.tools.set(tool.name, tool);
+  public addTool(tool: any): void {
+    const toolName = `tool_${Object.keys(this.tools).length}`;
+    this.tools[toolName] = tool;
   }
 
   public removeTool(toolName: string): void {
-    this.tools.delete(toolName);
+    delete this.tools[toolName];
   }
 
-  public getTool(toolName: string): Tool | undefined {
-    return this.tools.get(toolName);
+  public getTool(toolName: string): any {
+    return this.tools[toolName];
   }
 
-  public getAllTools(): Tool[] {
-    return Array.from(this.tools.values());
+  public getAllTools(): any[] {
+    return Object.values(this.tools);
   }
 
-  public getToolsByCategory(category: Tool['category']): Tool[] {
-    return this.getAllTools().filter(tool => tool.category === category);
+  public getToolsByCategory(category: string): any[] {
+    return this.getAllTools();
   }
 
   // Model switching using ProviderManager
@@ -205,7 +193,7 @@ export class Orchestrator {
         result: result.content || result,
         messages: this.messages,
         iterations: this.iterations,
-        toolCallsUsed: this.getUsedTools(),
+        toolCallsUsed: [],
       };
     } catch (error) {
       return {
@@ -213,7 +201,7 @@ export class Orchestrator {
         error: error instanceof Error ? error.message : String(error),
         messages: this.messages,
         iterations: this.iterations,
-        toolCallsUsed: this.getUsedTools(),
+        toolCallsUsed: [],
       };
     }
   }
