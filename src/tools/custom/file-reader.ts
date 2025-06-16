@@ -8,9 +8,7 @@ export const fileReaderTool = tool({
     filepath: z.string().describe('Path to the file to read'),
     encoding: z.enum(['utf8', 'ascii', 'base64']).optional().default('utf8').describe('File encoding'),
   }),
-  execute: async ({ filepath, encoding = 'utf8' }) => {
-    const { filepath, encoding = 'utf8' } = params;
-    
+  execute: async ({ filepath, encoding = 'utf8' }) => {    
     try {
       // Use dynamic import for Node.js fs module
       const fs = await import('fs/promises');
