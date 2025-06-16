@@ -16,7 +16,7 @@ export { ProviderManager } from './providers/manager';
 export * from './types';
 
 // =============================================================================
-// MAIN API - TWO SIMPLIFIED FACTORY FUNCTIONS
+// AGENT CREATION FUNCTIONS
 // =============================================================================
 
 import { Orchestrator } from './orchestrator';
