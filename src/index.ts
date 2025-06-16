@@ -60,6 +60,7 @@ export function createStreamingAgent(options: {
   enableTimingLogging?: boolean;
   enableStatisticsLogging?: boolean;
   enableStreamingLogging?: boolean;
+  onFinish?: (result: any) => void | Promise<void>;
 }) {
   return new StreamingOrchestrator(options);
 }

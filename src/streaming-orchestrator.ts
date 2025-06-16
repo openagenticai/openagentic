@@ -18,6 +18,9 @@ export class StreamingOrchestrator {
   private chunksProcessed = 0;
   private totalTextLength = 0;
 
+  // User-provided callback
+  private onFinishCallback?: (result: any) => void | Promise<void>;
+
   constructor(options: {
     model: string | AIModel;
     tools?: OpenAgenticTool[];
@@ -30,6 +33,7 @@ export class StreamingOrchestrator {
     enableTimingLogging?: boolean;
     enableStatisticsLogging?: boolean;
     enableStreamingLogging?: boolean;
+    onFinish?: (result: any) => void | Promise<void>;
   }) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
@@ -44,6 +48,9 @@ export class StreamingOrchestrator {
       enableTimingLogging: options.enableTimingLogging ?? false,
       enableStatisticsLogging: options.enableStatisticsLogging ?? false,
     };
+
+    // Store user-provided onFinish callback
+    this.onFinishCallback = options.onFinish;
     
     // Register tools with validation
     if (options.tools) {
@@ -63,6 +70,7 @@ export class StreamingOrchestrator {
       toolsCount: this.tools.size,
       maxIterations: this.maxIterations,
       loggingLevel: this.loggingConfig.logLevel,
+      hasOnFinishCallback: !!this.onFinishCallback,
     });
   }
 
@@ -351,7 +359,32 @@ export class StreamingOrchestrator {
   }
 
   private createFinishCallback() {
-    return (result: any) => {
+    return async (result: any) => {
+      // First, call the user-provided onFinish callback if it exists
+      if (this.onFinishCallback) {
+        try {
+          this.log('🎯', 'Calling user onFinish callback', {
+            hasResult: !!result,
+            resultKeys: result ? Object.keys(result) : [],
+          });
+
+          // Handle both sync and async callbacks
+          const callbackResult = this.onFinishCallback(result);
+          if (callbackResult && typeof callbackResult.then === 'function') {
+            await callbackResult;
+          }
+
+          this.log('✅', 'User onFinish callback completed successfully');
+        } catch (error) {
+          // Log callback error but don't break the internal flow
+          this.log('❌', 'User onFinish callback failed', {
+            error: error instanceof Error ? error.message : String(error),
+            stackTrace: error instanceof Error ? error.stack : undefined,
+          });
+        }
+      }
+
+      // Then execute the existing internal logging logic
       const executionStats = this.calculateExecutionStats();
       
       this.log('🏁', 'Streaming completed', {

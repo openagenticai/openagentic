@@ -41,7 +41,8 @@
     "example:openai": "tsx examples/openai-tool-example.ts",
     "example:tools": "tsx examples/tool-creation.ts",
     "example:messages": "tsx examples/message-array-example.ts",
-    "example:logging": "tsx examples/logging-example.ts"
+    "example:logging": "tsx examples/logging-example.ts",
+    "example:streaming-callback": "tsx examples/streaming-agent-with-callback.ts"
   },
   "keywords": [
     "ai",
