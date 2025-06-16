@@ -133,7 +133,7 @@ async function toolCreationExample() {
   
   const organizedAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, greetingTool, textAnalysisTool, configManagerTool],
+    tools: [calculatorTool, greetingTool],
   });
 
   console.log('🔧 All tools:', organizedAgent.getAllTools().map(t => `${t.name} (${t.category})`));
