@@ -22,5 +22,5 @@ import { openaiTool } from './openai';
 
 // Categorized tool collections
 export const aiTools = [openaiTool];
-export const utilityTools = [httpTool, calculatorTool, openaiTool];
+export const utilityTools = [httpTool, calculatorTool, timestampTool];
 export const allTools = [...utilityTools, ...aiTools];
