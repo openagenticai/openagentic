@@ -427,24 +427,23 @@ export class Orchestrator {
 
   // Create step finish callback for AI SDK
   private createStepFinishCallback() {
-    return (step: any, stepIndex: number) => {
+    return (result: any) => {
       const stepDuration = Date.now() - this.executionStartTime;
       this.stepTimings.push(stepDuration);
       
-      const toolCallsInStep = step.toolCalls?.map((tc: any) => tc.toolName || tc.toolCallId || 'unknown') || [];
+      this.stepsExecuted++;
+      
+      const toolCallsInStep = result.toolCalls?.map((tc: any) => tc.toolName || tc.toolCallId || 'unknown') || [];
       
       this.log('📝', `Step ${stepIndex + 1} completed`, {
-        stepType: step.type || 'unknown',
+        stepType: result.stepType || 'unknown',
+        finishReason: result.finishReason || 'unknown',
         duration: `${stepDuration}ms`,
         toolCalls: toolCallsInStep,
-        stepResult: step.result ? 'has_result' : 'no_result',
-        reasoning: step.reasoning ? 'has_reasoning' : 'no_reasoning',
+        text: result.text ? `${result.text.length} chars` : 'no_result',
+        reasoning: result.reasoning ? 'has_reasoning' : 'no_reasoning',
+        tokensUsed: result.usage?.totalTokens || 'unknown',
       });
-
-      // Track step completion
-      if (stepIndex + 1 > this.stepsExecuted) {
-        this.stepsExecuted = stepIndex + 1;
-      }
     };
   }
 
