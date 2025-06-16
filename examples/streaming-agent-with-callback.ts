@@ -52,7 +52,7 @@ async function streamingAgentWithCallbackExample() {
   console.log('📝 Example 2: Async onFinish Callback');
   
   const asyncAgent = createStreamingAgent({
-    model: 'claude-4-sonnet-20250514',
+    model: 'claude-sonnet-4-20250514',
     tools: [timestampTool],
     systemPrompt: 'You are a helpful assistant.',
     enableDebugLogging: true,
@@ -205,7 +205,7 @@ async function streamingAgentWithCallbackExample() {
   console.log('📝 Example 5: Integration with External Systems');
   
   const integrationAgent = createStreamingAgent({
-    model: 'claude-4-sonnet-20250514',
+    model: 'claude-sonnet-4-20250514',
     tools: [calculatorTool],
     systemPrompt: 'You are a helpful calculator assistant.',
     enableDebugLogging: true,
@@ -218,7 +218,7 @@ async function streamingAgentWithCallbackExample() {
         sessionId: 'demo-session-123',
         completion: {
           timestamp: new Date().toISOString(),
-          model: 'claude-4-sonnet-20250514',
+          model: 'claude-sonnet-4-20250514',
           finishReason: result.finishReason,
           usage: result.usage,
           success: result.finishReason === 'stop',
