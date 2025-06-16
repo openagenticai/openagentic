@@ -97,7 +97,7 @@ export class Orchestrator {
 
     // Add tools if available
     if (Object.keys(this.tools).length > 0) {
-      generateConfig.tools = this.tools;
+      generateConfig.tools = this.convertToAISDKTools();
     }
 
     // Add model parameters conditionally
@@ -188,7 +188,7 @@ export class Orchestrator {
 
     // Add tools if available
     if (Object.keys(this.tools).length > 0) {
-      generateConfig.tools = this.tools;
+      generateConfig.tools = this.convertToAISDKTools();
     }
 
     // Add model parameters conditionally
@@ -347,6 +347,59 @@ export class Orchestrator {
       toolCallId: m.toolCallId,
       toolCalls: m.toolCalls,
     }));
+  }
+
+  private convertToAISDKTools(): Record<string, any> {
+    const tools: Record<string, any> = {};
+    
+    Object.entries(this.tools).forEach(([key, tool]) => {
+      console.log(`🔍 Converting tool ${key}:`, {
+        toolId: tool.toolId,
+        description: tool.description,
+        hasParameters: !!tool.parameters,
+        parameterType: typeof tool.parameters,
+        parameterKeys: tool.parameters ? Object.keys(tool.parameters) : [],
+        parameterProto: tool.parameters ? Object.getPrototypeOf(tool.parameters) : null,
+        parameterConstructor: tool.parameters ? tool.parameters.constructor?.name : 'none',
+        hasExecute: !!tool.execute,
+        allKeys: Object.keys(tool)
+      });
+      
+      // Try to inspect the Zod schema
+      if (tool.parameters && typeof tool.parameters === 'object') {
+        console.log(`🔍 Parameter object details for ${key}:`, {
+          _def: tool.parameters._def ? 'has _def' : 'no _def',
+          _defKeys: tool.parameters._def ? Object.keys(tool.parameters._def) : [],
+          typeName: tool.parameters._def?.typeName,
+          shape: tool.parameters._def?.shape ? 'has shape' : 'no shape',
+        });
+      }
+      
+      tools[key] = {
+        description: tool.description,
+        parameters: tool.parameters,
+        execute: async (args: any, context?: any) => {
+          console.log(`🔧 Orchestrator executing tool: ${tool.toolId}`, args);
+          try {
+            if (!tool.execute) {
+              throw new Error(`Tool ${tool.toolId} has no execute function`);
+            }
+            const result = await tool.execute(args, context);
+            console.log(`✅ Orchestrator tool success: ${tool.toolId}`, { 
+              resultType: typeof result,
+              resultPreview: typeof result === 'string' ? result.substring(0, 100) + '...' : JSON.stringify(result).substring(0, 100) + '...'
+            });
+            return result;
+          } catch (error) {
+            console.error(`❌ Orchestrator tool error: ${tool.toolId}`, error);
+            throw error;
+          }
+        },
+      };
+    });
+    
+    console.log(`🔍 Final tools object:`, Object.keys(tools));
+    return tools;
   }
 
   // Private methods
