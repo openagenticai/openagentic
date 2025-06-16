@@ -297,7 +297,7 @@ export class ProviderManager {
     let apiKey: string | undefined;
 
     // OpenAI models
-    if (modelName.includes('gpt') || modelName.includes('o1') || modelName.includes('o3')) {
+    if (modelName.includes('gpt') || modelName.includes('o3')) {
       provider = 'openai';
       apiKey = this.getDefaultApiKey('openai');
     }
