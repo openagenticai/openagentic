@@ -32,6 +32,13 @@ OpenAgentic provides a comprehensive framework for creating AI-powered agents th
 - **Model switching** at runtime
 - **Error handling** with detailed error types
 
+### ☁️ AWS S3 Integration
+- **File upload utilities** for images, audio, video, HTML, and generic files
+- **Automatic content type detection** and file organization
+- **Secure credential management** via environment variables
+- **Batch upload support** with detailed progress tracking
+- **File size validation** and comprehensive error handling
+
 ## Quick Start
 
 ### Installation
@@ -75,6 +82,28 @@ const stream = await streamingAgent.stream('Write a short story and calculate 5 
 for await (const chunk of stream.textStream) {
   process.stdout.write(chunk);
 }
+```
+
+### AWS S3 File Uploads
+
+```typescript
+import { uploadImageToS3, generateImageFileName, initializeS3 } from 'openagentic';
+
+// Initialize S3 (validates environment variables)
+await initializeS3();
+
+// Generate unique filename
+const fileName = generateImageFileName('user avatar photo', 'png');
+
+// Upload image
+const imageUrl = await uploadImageToS3(
+  imageBuffer,
+  fileName,
+  'image/png',
+  'User profile avatar'
+);
+
+console.log('Image uploaded:', imageUrl);
 ```
 
 ## API Reference
@@ -134,6 +163,35 @@ import {
 } from 'openagentic';
 ```
 
+### AWS S3 Utilities
+
+Comprehensive S3 file upload functionality:
+
+```typescript
+import {
+  // Initialization
+  initializeS3,
+  testS3Connection,
+  
+  // Upload functions
+  uploadFileToS3,
+  uploadImageToS3,
+  uploadAudioToS3,
+  uploadVideoToS3,
+  uploadHtmlToS3,
+  
+  // Filename generators
+  generateImageFileName,
+  generateAudioFileName,
+  generateVideoFileName,
+  generateHtmlFileName,
+  
+  // Utilities
+  sanitizeFilename,
+  getContentTypeFromExtension,
+} from 'openagentic';
+```
+
 ### Supported Providers
 
 OpenAgentic auto-detects providers based on model names:
@@ -157,6 +215,50 @@ OpenAgentic auto-detects providers based on model names:
 #### Perplexity
 - **Models**: `llama-3.1-sonar-small-128k-online`, `llama-3.1-sonar-large-128k-online`
 - **Environment**: `PERPLEXITY_API_KEY`
+
+## Environment Setup
+
+### Required Environment Variables
+
+Create a `.env` file in your project root:
+
+```bash
+# AI Provider API Keys
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
+
+# AWS S3 Configuration (for file uploads)
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_REGION=us-east-1
+S3_BUCKET_NAME=your-bucket-name
+```
+
+### AWS S3 Setup
+
+1. **Create an S3 bucket** in your AWS console
+2. **Set up IAM user** with S3 permissions
+3. **Configure bucket policy** for public read access (if needed)
+4. **Set environment variables** as shown above
+
+Required S3 permissions:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:PutObjectAcl",
+                "s3:GetObject"
+            ],
+            "Resource": "arn:aws:s3:::your-bucket-name/*"
+        }
+    ]
+}
+```
 
 ## Advanced Usage
 
@@ -204,6 +306,64 @@ const weatherTool = createTool({
 });
 ```
 
+### S3 File Upload Examples
+
+#### Upload Image with Generated Filename
+
+```typescript
+import { uploadImageToS3, generateImageFileName } from 'openagentic';
+
+// Generate unique filename
+const fileName = generateImageFileName('user profile picture', 'jpg');
+
+// Upload image
+const imageUrl = await uploadImageToS3(
+  imageBuffer,
+  fileName,
+  'image/jpeg',
+  'User uploaded profile picture'
+);
+```
+
+#### Upload HTML Website
+
+```typescript
+import { uploadHtmlToS3, generateHtmlFileName } from 'openagentic';
+
+const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head><title>My Page</title></head>
+<body><h1>Hello World!</h1></body>
+</html>
+`;
+
+const fileName = generateHtmlFileName('landing page', 'html');
+const htmlUrl = await uploadHtmlToS3(htmlContent, fileName);
+```
+
+#### Batch Upload Multiple Files
+
+```typescript
+import { batchUploadToS3 } from 'openagentic';
+
+const files = [
+  {
+    buffer: imageBuffer,
+    fileName: 'image1.jpg',
+    options: { directory: 'images', description: 'Product photo' }
+  },
+  {
+    buffer: audioBuffer,
+    fileName: 'audio1.mp3',
+    options: { directory: 'audio', description: 'Voice recording' }
+  }
+];
+
+const results = await batchUploadToS3(files);
+console.log('Upload results:', results);
+```
+
 ### Model Configuration
 
 Use specific model configurations:
@@ -226,29 +386,6 @@ const agent = createAgent({
 });
 ```
 
-### Custom Logic
-
-Add custom pre-processing logic:
-
-```typescript
-const agent = createAgent({
-  model: 'gpt-4o-mini',
-  tools: [calculatorTool],
-  customLogic: async (input, context) => {
-    // Custom pre-processing
-    if (input.includes('fibonacci')) {
-      return {
-        content: 'Custom Fibonacci logic handled this!',
-        customHandled: true
-      };
-    }
-    
-    // Let normal orchestration handle it
-    return null;
-  }
-});
-```
-
 ### Tool Management
 
 Dynamically manage tools:
@@ -265,27 +402,23 @@ agent.addTool(timestampTool);
 
 // List tools
 console.log('All tools:', agent.getAllTools().map(t => t.name));
-console.log('Utility tools:', agent.getToolsByCategory('utility').map(t => t.name));
 
 // Remove tools
 agent.removeTool('calculator');
 ```
 
-### Provider Management
+## File Organization
 
-```typescript
-import { ProviderManager } from 'openagentic';
+S3 uploads are automatically organized into directories:
 
-// Get all providers
-const providers = ProviderManager.getAllProviders();
-
-// Get models for a provider
-const openaiModels = ProviderManager.getProviderModels('openai');
-
-// Get model information
-const modelInfo = ProviderManager.getModelInfo('openai', 'gpt-4o-mini');
-console.log('Context window:', modelInfo.contextWindow);
-console.log('Cost per token:', modelInfo.cost);
+```
+your-bucket/
+├── images/         # Image files (.jpg, .png, .gif, etc.)
+├── audio/          # Audio files (.mp3, .wav, .ogg, etc.)
+├── videos/         # Video files (.mp4, .avi, .mov, etc.)
+├── documents/      # Document files (.pdf, .doc, .txt, etc.)
+├── websites/       # HTML files (.html, .htm)
+└── uploads/        # Generic files
 ```
 
 ## Examples
@@ -303,6 +436,25 @@ const mathAgent = createAgent({
 
 const result = await mathAgent.execute('Calculate the square root of 144 plus 5 times 3');
 console.log(result.result);
+```
+
+### File Upload Agent
+
+```typescript
+import { createAgent, httpTool } from 'openagentic';
+import { uploadImageToS3, generateImageFileName } from 'openagentic';
+
+const uploadAgent = createAgent({
+  model: 'gpt-4o-mini',
+  tools: [httpTool],
+  systemPrompt: 'You can help users upload files to S3.',
+});
+
+// In practice, you'd get imageBuffer from user upload or generation
+const fileName = generateImageFileName('ai generated artwork', 'png');
+const imageUrl = await uploadImageToS3(imageBuffer, fileName);
+
+console.log('Uploaded to:', imageUrl);
 ```
 
 ### Multi-Tool Agent
@@ -356,6 +508,21 @@ try {
 }
 ```
 
+For S3 uploads:
+
+```typescript
+try {
+  const url = await uploadImageToS3(buffer, filename);
+  console.log('Upload successful:', url);
+} catch (error) {
+  console.error('Upload failed:', error.message);
+  // Handle specific error cases
+  if (error.message.includes('File size')) {
+    console.log('File too large, try compressing');
+  }
+}
+```
+
 ## Testing
 
 Run the test suite:
@@ -364,6 +531,14 @@ Run the test suite:
 npm test                # Run all tests
 npm run test:watch      # Run tests in watch mode
 npm run test:coverage   # Run tests with coverage
+```
+
+Run examples:
+
+```bash
+npm run example:basic     # Basic agent examples
+npm run example:streaming # Streaming agent examples
+npm run example:s3        # S3 upload examples
 ```
 
 ## Architecture
@@ -381,6 +556,9 @@ openagentic/
 │   │   ├── calculator.ts        # Calculator tool
 │   │   ├── http.ts              # HTTP tool
 │   │   └── timestamp.ts         # Timestamp tool
+│   ├── utils/
+│   │   ├── index.ts             # Utility exports
+│   │   └── s3.ts                # AWS S3 utilities
 │   └── types.ts                 # TypeScript definitions
 ├── examples/                    # Example scripts
 ├── tests/                       # Test suite
@@ -401,6 +579,13 @@ openagentic/
 - **Category-based organization** (utility, ai, custom)
 - **Easy tool creation** with `createTool` utility
 
+### ☁️ AWS S3 Integration
+- **Complete file upload solution** with automatic organization
+- **Security-first design** with environment variable configuration
+- **Comprehensive error handling** and validation
+- **File type detection** and content type management
+- **Batch upload support** for multiple files
+
 ### 🚀 Better Developer Experience
 - **Type-safe** tool parameters and execution results
 - **Provider auto-detection** eliminates configuration complexity
@@ -418,6 +603,7 @@ openagentic/
 - Node.js 18+
 - TypeScript 5.0+
 - AI provider API keys (OpenAI, Anthropic, etc.)
+- AWS credentials (for S3 upload functionality)
 
 ## Contributing
 
@@ -436,4 +622,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**OpenAgentic** - Simplified AI agent orchestration 🤖✨
+**OpenAgentic** - Simplified AI agent orchestration with AWS S3 integration 🤖☁️✨
