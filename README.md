@@ -8,31 +8,29 @@ OpenAgentic provides a comprehensive framework for creating AI-powered agents th
 
 ## Features
 
-### 🤖 Unified Orchestrator Design
-- Single orchestrator class with flexible configuration
-- Auto-detection of AI providers from model names
-- Support for streaming and non-streaming execution
-- Custom orchestration logic support
-- Built-in tool management and model switching
+### 🤖 Simplified Agent Creation
+- **Two main functions**: `createAgent()` for standard execution, `createStreamingAgent()` for real-time streaming
+- **Auto-detection of AI providers** from model names (OpenAI, Anthropic, Google, xAI, Perplexity)
+- **Flexible configuration** with sensible defaults
+- **Tool orchestration** with self-contained tools
+- **Model switching** and provider management
 
 ### 🛠️ Self-Contained Tools
 - **Complete independence** - no shared utilities or dependencies
-- **Consistent @ai-sdk integration** for AI-powered tools
-- **JSONSchema parameter validation** with proper type safety
+- **Consistent interface** with JSONSchema parameter validation
 - **Tool categories**: Utility tools (no AI), AI tools (@ai-sdk), Custom tools
-- **Tool context** for AI tools with model access and API key management
+- **Built-in tools**: Calculator, HTTP requests, timestamps, and more
 
-### 🔄 Multiple Orchestration Patterns
-- Simple one-shot execution
-- Streaming real-time responses
-- Multi-model consensus and refinement
-- Pipeline orchestration for sequential processing
-- Custom orchestration logic via callbacks
+### 🔄 Dual Execution Modes
+- **Standard execution**: `createAgent()` for non-streaming, complete responses
+- **Streaming execution**: `createStreamingAgent()` for real-time response streaming
+- **Tool integration** works seamlessly in both modes
 
-### 📊 Event-Driven Architecture
-- Comprehensive event system for real-time monitoring
-- Built-in event emitter for tool calls, iterations, and results
-- Debug and monitoring capabilities
+### 📊 Enterprise-Ready Features
+- **Event-driven architecture** for monitoring and debugging
+- **Tool management** (add, remove, categorize tools)
+- **Model switching** at runtime
+- **Error handling** with detailed error types
 
 ## Quick Start
 
@@ -45,12 +43,12 @@ npm install openagentic
 ### Basic Usage
 
 ```typescript
-import { Orchestrator, mathTool, httpTool } from 'openagentic';
+import { createAgent, calculatorTool, httpTool } from 'openagentic';
 
-// Create an orchestrator with auto-detected provider
-const agent = new Orchestrator({
-  model: 'gpt-4o-mini', // Auto-detects OpenAI
-  tools: [mathTool, httpTool],
+// Create a standard agent
+const agent = createAgent({
+  model: 'gpt-4o-mini', // Auto-detects OpenAI provider
+  tools: [calculatorTool, httpTool],
   systemPrompt: 'You are a helpful assistant.',
 });
 
@@ -59,76 +57,112 @@ const result = await agent.execute('What is 15 * 24 and what is the current time
 console.log(result.result);
 ```
 
-### Self-Contained Tools
+### Streaming Responses
 
-Every tool in OpenAgentic is completely self-contained with no external dependencies:
+```typescript
+import { createStreamingAgent, calculatorTool } from 'openagentic';
+
+// Create a streaming agent
+const streamingAgent = createStreamingAgent({
+  model: 'claude-4-sonnet-20250514', // Auto-detects Anthropic provider
+  tools: [calculatorTool],
+  systemPrompt: 'You are a helpful assistant.',
+});
+
+// Stream responses in real-time
+const stream = await streamingAgent.stream('Write a short story and calculate 5 * 7');
+
+for await (const chunk of stream.textStream) {
+  process.stdout.write(chunk);
+}
+```
+
+## API Reference
+
+### Core Functions
+
+#### `createAgent(options)`
+
+Creates a standard agent for non-streaming execution.
+
+```typescript
+const agent = createAgent({
+  model: string | AIModel,           // Required: Model name or AIModel object
+  tools?: Tool[],                    // Optional: Array of tools
+  systemPrompt?: string,             // Optional: System prompt
+  maxIterations?: number,            // Optional: Max iterations (default: 10)
+  customLogic?: (input, context) => Promise<any> // Optional: Custom logic
+});
+```
+
+**Returns**: `Orchestrator` instance with methods:
+- `execute(input: string): Promise<ExecutionResult>`
+- `addTool(tool: Tool): void`
+- `removeTool(toolName: string): void`
+- `switchModel(model: string | AIModel): void`
+- `getMessages(): Message[]`
+- `reset(): void`
+
+#### `createStreamingAgent(options)`
+
+Creates a streaming agent for real-time response streaming.
+
+```typescript
+const streamingAgent = createStreamingAgent({
+  model: string | AIModel,           // Required: Model name or AIModel object  
+  tools?: Tool[],                    // Optional: Array of tools
+  systemPrompt?: string,             // Optional: System prompt
+  maxIterations?: number,            // Optional: Max iterations (default: 10)
+});
+```
+
+**Returns**: `StreamingOrchestrator` instance with methods:
+- `stream(input: string): Promise<StreamingResult>`
+- `addTool(tool: Tool): void`
+- `removeTool(toolName: string): void`
+- `switchModel(model: string | AIModel): void`
+
+### Built-in Tools
+
+OpenAgentic includes several self-contained tools:
 
 ```typescript
 import { 
-  httpTool,        // HTTP requests (utility)
-  mathTool,        // Mathematical calculations (utility)
-  timeTool,        // Timestamp operations (utility)
-  aiTextTool,      // AI text generation (AI)
-  aiImageTool,     // AI image generation (AI)
-  aiCodeTool,      // AI code generation (AI)
-  aiTranslateTool, // AI translation (AI)
-  createTool       // Create custom tools
+  calculatorTool,    // Mathematical calculations
+  httpTool,          // HTTP requests
+  timestampTool,     // Timestamp operations
 } from 'openagentic';
-
-// Use utility tools (no AI dependency)
-const utilityAgent = new Orchestrator({
-  model: 'gpt-4o-mini',
-  tools: [httpTool, mathTool, timeTool],
-});
-
-// Use AI tools (with @ai-sdk integration)
-const aiAgent = new Orchestrator({
-  model: 'claude-4-sonnet-20250514',
-  tools: [aiTextTool, aiCodeTool],
-});
 ```
 
-## Tool Architecture
+### Supported Providers
 
-### Tool Categories
+OpenAgentic auto-detects providers based on model names:
 
-**Utility Tools** (No AI dependency):
-- `httpTool` - HTTP requests using fetch API
-- `mathTool` - Mathematical calculations with enhanced functions
-- `timeTool` - Timestamp operations with timezone support
+#### OpenAI
+- **Models**: `gpt-4`, `gpt-4-turbo`, `gpt-4o`, `gpt-4o-mini`, `o3`, `o3-mini`
+- **Environment**: `OPENAI_API_KEY`
 
-**AI Tools** (Use @ai-sdk providers):
-- `aiTextTool` - Text generation using any @ai-sdk model
-- `aiImageTool` - Image generation (DALL-E, etc.)
-- `aiCodeTool` - Code generation optimized for programming
-- `aiTranslateTool` - Language translation
+#### Anthropic
+- **Models**: `claude-4-opus-20250514`, `claude-4-sonnet-20250514`
+- **Environment**: `ANTHROPIC_API_KEY`
 
-**Custom Tools** (User-defined):
-- Follow the same self-contained pattern
-- Optional tool context for AI model access
+#### Google
+- **Models**: `gemini-2.5-pro-preview-06-05`, `gemini-1.5-pro`, `gemini-1.5-flash`
+- **Environment**: `GOOGLE_GENERATIVE_AI_API_KEY`
 
-### Tool Interface
+#### xAI
+- **Models**: `grok-beta`
+- **Environment**: `XAI_API_KEY`
 
-```typescript
-interface Tool {
-  name: string;
-  description: string;
-  parameters: JSONSchema;
-  execute: (params: any, context?: ToolContext) => Promise<any>;
-  
-  // Optional metadata
-  category?: 'utility' | 'ai' | 'custom';
-  version?: string;
-  requiresAuth?: boolean;
-}
+#### Perplexity
+- **Models**: `llama-3.1-sonar-small-128k-online`, `llama-3.1-sonar-large-128k-online`
+- **Environment**: `PERPLEXITY_API_KEY`
 
-interface ToolContext {
-  getModel: (provider?: string) => Promise<LanguageModel>;
-  apiKeys: Record<string, string>;
-}
-```
+## Advanced Usage
 
-### Creating Custom Tools
+### Custom Tools
+
+Create your own self-contained tools:
 
 ```typescript
 import { createTool } from 'openagentic';
@@ -137,8 +171,6 @@ const weatherTool = createTool({
   name: 'weather_lookup',
   description: 'Get weather information for a location',
   category: 'custom',
-  version: '1.0.0',
-  requiresAuth: false,
   parameters: {
     type: 'object',
     properties: {
@@ -156,11 +188,10 @@ const weatherTool = createTool({
     },
     required: ['location'],
   },
-  execute: async (params, context) => {
+  execute: async (params) => {
     const { location, units = 'celsius' } = params;
     
-    // Self-contained implementation
-    // No dependencies on shared utilities
+    // Your weather API implementation here
     const weatherData = await fetchWeatherFromAPI(location, units);
     
     return {
@@ -168,200 +199,219 @@ const weatherTool = createTool({
       temperature: weatherData.temp,
       condition: weatherData.condition,
       units,
-      timestamp: new Date().toISOString(),
     };
   },
 });
 ```
 
-## AI Tool Context
+### Model Configuration
 
-AI-powered tools receive a context object for accessing models and API keys:
+Use specific model configurations:
 
 ```typescript
-const customAITool = createTool({
-  name: 'custom_ai_analysis',
-  description: 'Perform custom AI analysis',
-  category: 'ai',
-  requiresAuth: true,
-  parameters: {
-    type: 'object',
-    properties: {
-      data: { type: 'string', description: 'Data to analyze', required: true },
-      provider: { type: 'string', description: 'AI provider to use', required: false },
-    },
-    required: ['data'],
-  },
-  execute: async (params, context) => {
-    const { data, provider = 'openai' } = params;
-    
-    // Get model from context
-    const model = await context?.getModel(provider);
-    
-    // Use @ai-sdk directly
-    const { generateText } = await import('ai');
-    const result = await generateText({
-      model: model('gpt-4o'),
-      prompt: `Analyze this data: ${data}`,
-    });
-    
-    return {
-      analysis: result.text,
-      provider,
-      timestamp: new Date().toISOString(),
-    };
-  },
+import type { AIModel } from 'openagentic';
+
+const customModel: AIModel = {
+  provider: 'openai',
+  model: 'gpt-4o-mini',
+  apiKey: 'your-api-key',
+  temperature: 0.5,
+  maxTokens: 2000,
+  topP: 0.9,
+};
+
+const agent = createAgent({
+  model: customModel,
+  tools: [calculatorTool],
 });
 ```
 
-## Supported Providers
+### Custom Logic
 
-OpenAgentic auto-detects providers based on model names:
+Add custom pre-processing logic:
 
-### OpenAI
-- **Models**: `gpt-4`, `gpt-4-turbo`, `gpt-4o`, `gpt-4o-mini`, `o3`, `o3-mini`
-- **Auto-detection**: Any model containing `gpt`, `o1`, or `o3`
-- **Environment**: `OPENAI_API_KEY`
+```typescript
+const agent = createAgent({
+  model: 'gpt-4o-mini',
+  tools: [calculatorTool],
+  customLogic: async (input, context) => {
+    // Custom pre-processing
+    if (input.includes('fibonacci')) {
+      return {
+        content: 'Custom Fibonacci logic handled this!',
+        customHandled: true
+      };
+    }
+    
+    // Let normal orchestration handle it
+    return null;
+  }
+});
+```
 
-### Anthropic
-- **Models**: `claude-4-opus-20250514`, `claude-4-sonnet-20250514`
-- **Auto-detection**: Any model containing `claude`
-- **Environment**: `ANTHROPIC_API_KEY`
+### Tool Management
 
-### Google
-- **Models**: `gemini-2.5-pro-preview-06-05`, `gemini-2.5-flash-preview-05-20`, `gemini-1.5-pro`, `gemini-1.5-flash`
-- **Auto-detection**: Any model containing `gemini`
-- **Environment**: `GOOGLE_GENERATIVE_AI_API_KEY`
+Dynamically manage tools:
 
-### Perplexity
-- **Models**: `llama-3.1-sonar-small-128k-online`, `llama-3.1-sonar-large-128k-online`, `llama-3.1-sonar-huge-128k-online`
-- **Auto-detection**: Models containing both `llama` and `sonar`
-- **Environment**: `PERPLEXITY_API_KEY`
+```typescript
+const agent = createAgent({
+  model: 'gpt-4o-mini',
+  tools: [calculatorTool],
+});
 
-### xAI
-- **Models**: `grok-beta`
-- **Auto-detection**: Any model containing `grok`
-- **Environment**: `XAI_API_KEY`
+// Add tools
+agent.addTool(httpTool);
+agent.addTool(timestampTool);
 
-## Advanced Usage
+// List tools
+console.log('All tools:', agent.getAllTools().map(t => t.name));
+console.log('Utility tools:', agent.getToolsByCategory('utility').map(t => t.name));
 
-### Streaming Responses
+// Remove tools
+agent.removeTool('calculator');
+```
+
+### Provider Management
+
+```typescript
+import { ProviderManager } from 'openagentic';
+
+// Get all providers
+const providers = ProviderManager.getAllProviders();
+
+// Get models for a provider
+const openaiModels = ProviderManager.getProviderModels('openai');
+
+// Get model information
+const modelInfo = ProviderManager.getModelInfo('openai', 'gpt-4o-mini');
+console.log('Context window:', modelInfo.contextWindow);
+console.log('Cost per token:', modelInfo.cost);
+```
+
+## Examples
+
+### Basic Calculator Agent
+
+```typescript
+import { createAgent, calculatorTool } from 'openagentic';
+
+const mathAgent = createAgent({
+  model: 'gpt-4o-mini',
+  tools: [calculatorTool],
+  systemPrompt: 'You are a mathematics expert.',
+});
+
+const result = await mathAgent.execute('Calculate the square root of 144 plus 5 times 3');
+console.log(result.result);
+```
+
+### Multi-Tool Agent
+
+```typescript
+import { createAgent, calculatorTool, httpTool, timestampTool } from 'openagentic';
+
+const multiAgent = createAgent({
+  model: 'claude-4-sonnet-20250514',
+  tools: [calculatorTool, httpTool, timestampTool],
+  systemPrompt: 'You are a versatile assistant with access to multiple tools.',
+});
+
+const result = await multiAgent.execute(
+  'Calculate 25 * 16, get the current timestamp, and check if httpbin.org is accessible'
+);
+console.log(result.result);
+```
+
+### Streaming Story Writer
 
 ```typescript
 import { createStreamingAgent } from 'openagentic';
 
-const streamingAgent = createStreamingAgent({
+const storyAgent = createStreamingAgent({
   model: 'claude-4-sonnet-20250514',
-  tools: [aiTextTool],
+  systemPrompt: 'You are a creative writing assistant.',
 });
 
-for await (const chunk of streamingAgent.stream('Write a story about AI')) {
-  process.stdout.write(chunk.delta);
-  if (chunk.done) break;
+const stream = await storyAgent.stream('Write a short story about a robot learning to paint');
+
+for await (const chunk of stream.textStream) {
+  process.stdout.write(chunk);
 }
 ```
 
-### Multi-Model Orchestration
+## Error Handling
+
+OpenAgentic provides comprehensive error handling:
 
 ```typescript
-import { createMultiModelAgent } from 'openagentic';
-
-const multiAgent = createMultiModelAgent([
-  'gpt-4o-mini',
-  'claude-4-sonnet-20250514'
-], [mathTool, aiTextTool]);
-
-const consensus = await multiAgent.executeWithAllModels('Explain quantum computing');
-console.log('Consensus:', consensus.consensus);
-```
-
-### Tool Registry Management
-
-```typescript
-import { ToolRegistry, allTools } from 'openagentic';
-
-const registry = new ToolRegistry();
-
-// Register tools by category
-allTools.forEach(tool => registry.register(tool));
-
-// Get tools by category
-const utilityTools = registry.getByCategory('utility');
-const aiTools = registry.getByCategory('ai');
-
-// Validate tools
-const isValid = registry.getAll().every(tool => 
-  tool.name && tool.description && tool.execute
-);
-```
-
-### Event Monitoring
-
-```typescript
-agent.onEvent((event) => {
-  switch (event.type) {
-    case 'start':
-      console.log(`Started with ${event.data.model.model}`);
-      break;
-    case 'tool_call':
-      console.log(`Calling ${event.data.toolName}`);
-      break;
-    case 'tool_result':
-      console.log(`Tool ${event.data.success ? 'succeeded' : 'failed'}`);
-      break;
-    case 'complete':
-      console.log(`Completed in ${event.data.iterations} iterations`);
-      break;
+try {
+  const result = await agent.execute('Your request here');
+  if (result.success) {
+    console.log('Success:', result.result);
+  } else {
+    console.error('Error:', result.error);
   }
-});
+} catch (error) {
+  console.error('Execution failed:', error.message);
+}
+```
+
+## Testing
+
+Run the test suite:
+
+```bash
+npm test                # Run all tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Run tests with coverage
 ```
 
 ## Architecture
 
 ```
 openagentic/
-├── core/
-│   ├── orchestrator.ts     # Unified orchestrator with tool context
-│   ├── ai-provider.ts      # AI provider abstraction
-│   └── errors.ts           # Error definitions
-├── tools/
-│   └── index.ts            # All self-contained tools
-├── providers/
-│   └── index.ts            # Provider configurations
-├── utils/
-│   ├── simple-event-emitter.ts # Event system
-│   ├── helpers.ts          # Utility functions
-│   └── validators.ts       # Validation utilities
-└── types/
-    └── index.ts            # TypeScript definitions with JSONSchema
+├── src/
+│   ├── index.ts                 # Main exports
+│   ├── orchestrator.ts          # Standard orchestrator
+│   ├── streaming-orchestrator.ts # Streaming orchestrator
+│   ├── providers/
+│   │   └── manager.ts           # Provider management
+│   ├── tools/
+│   │   ├── index.ts             # Tool exports
+│   │   ├── calculator.ts        # Calculator tool
+│   │   ├── http.ts              # HTTP tool
+│   │   └── timestamp.ts         # Timestamp tool
+│   └── types.ts                 # TypeScript definitions
+├── examples/                    # Example scripts
+├── tests/                       # Test suite
+└── docs/                        # Documentation
 ```
 
 ## Key Improvements
 
-### 🎯 Self-Contained Tools
-- **No shared dependencies** - each tool is completely independent
-- **Consistent @ai-sdk usage** for AI-powered tools
-- **JSONSchema validation** with proper type safety
-- **Tool context** for secure API key and model access
-- **Category-based organization** (utility, ai, custom)
+### 🎯 Simplified API
+- **Two main functions** instead of multiple complex factory functions
+- **Consistent interface** with the same options pattern
+- **Auto-detection** of providers from model names
+- **Sensible defaults** for all optional parameters
 
-### 🔧 Enhanced Flexibility
-- **Tool validation** at registration time
-- **Tool context** for cross-provider AI model access
-- **Metadata support** (version, category, auth requirements)
-- **Simplified tool creation** with `createTool` utility
+### 🛠️ Self-Contained Tools
+- **No shared dependencies** - each tool is completely independent
+- **Consistent interface** with JSONSchema validation
+- **Category-based organization** (utility, ai, custom)
+- **Easy tool creation** with `createTool` utility
 
 ### 🚀 Better Developer Experience
-- **Auto-detection** of providers from model names
-- **Type-safe** tool parameters with JSONSchema
-- **Event-driven** monitoring and debugging
-- **Tool registry** for complex scenarios
+- **Type-safe** tool parameters and execution results
+- **Provider auto-detection** eliminates configuration complexity
+- **Tool management** with add, remove, and categorization
+- **Real-time streaming** with native AI SDK integration
 
 ### 📦 Modular Architecture
-- **No complex configuration objects** (simplified)
-- **No tool dependencies** on shared utilities
-- **No provider-specific tool implementations**
-- **Self-contained tools** with optional AI context
+- **Clear separation** between standard and streaming execution
+- **Centralized provider management** for consistent model handling
+- **Tool registry** for complex scenarios
+- **Event-driven** monitoring and debugging
 
 ## Requirements
 
@@ -386,4 +436,4 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 ---
 
-**OpenAgentic** - Self-contained AI agent orchestration 🤖✨
+**OpenAgentic** - Simplified AI agent orchestration 🤖✨
