@@ -2,7 +2,6 @@ import { tool } from 'ai';
 import { z } from 'zod';
 
 export const timestampTool = tool({
-  name: 'timestamp',
   description: 'Get current timestamp and date information with timezone support',
   parameters: z.object({
     format: z.enum(['iso', 'unix', 'human', 'custom']).optional().default('iso').describe('Format for the timestamp'),
