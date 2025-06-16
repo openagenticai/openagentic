@@ -1,10 +1,10 @@
 import { generateText } from 'ai';
-import type { AIModel, Tool, Message, ExecutionResult, ToolContext } from './types';
+import type { AIModel, Message, ExecutionResult, ToolContext } from './types';
 import { ProviderManager } from './providers/manager';
 
 export class Orchestrator {
   private model: AIModel;
-  private tools = new Map<string, Tool>();
+  private tools: Record<string, any>() = {};
   private messages: Message[] = [];
   private iterations = 0;
   private maxIterations: number;
