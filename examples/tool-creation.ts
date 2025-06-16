@@ -172,7 +172,7 @@ async function toolCreationExample() {
 
   try {
     const result = await multiToolAgent.execute(
-      'Calculate 15 * 8, generate a casual afternoon greeting for Bob, and list all configuration settings'
+      'Calculate 15 * 8, and generate a casual afternoon greeting for Bob'
     );
     console.log('✅ Result:', result.result);
     console.log('🔧 Tools used:', result.toolCallsUsed);
