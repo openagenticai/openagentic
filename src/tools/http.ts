@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 
-export const httpTool = tool({
+const rawHttpTool = tool({
   description: 'Make HTTP requests to external APIs and services',
   parameters: z.object({
     url: z.string().describe('The URL to make the request to'),
@@ -56,3 +56,13 @@ export const httpTool = tool({
     }
   },
 });
+
+const toolDetails: ToolDetails = {
+    toolId: 'http',
+    name: 'Http Requests',
+    useCases: [],
+    parameters: {},
+    logo: '',
+};
+
+export const httpTool = toOpenAgenticTool(rawHttpTool, toolDetails);
