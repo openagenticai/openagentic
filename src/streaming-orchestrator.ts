@@ -56,6 +56,7 @@ export class StreamingOrchestrator {
       model: provider(this.model.model),
       messages: this.transformMessages(this.messages),
       maxSteps: this.maxIterations,
+      toolCallStreaming: true, // Enable streaming of tool call deltas
     };
 
     // Add system message if it exists
