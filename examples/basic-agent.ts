@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { createAgent, calculatorTool, httpTool, timestampTool } from '../src';
 
 async function basicAgentExample() {
