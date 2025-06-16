@@ -256,7 +256,7 @@ describe('Message Array Support', () => {
 
       // Should handle tool messages without throwing
       expect(() => {
-        agent.execute(messagesWithTools);
+        agent.stream(messagesWithTools);
       }).not.toThrow();
     });
   });
