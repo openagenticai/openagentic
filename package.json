@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "changeset:publish": "changeset publish",
     "dev": "tsup --watch",
     "test": "jest",
     "test:watch": "jest --watch",
