@@ -1,10 +1,10 @@
 import { generateText } from 'ai';
-import type { AIModel, Message, ExecutionResult, ToolContext } from './types';
+import type { AIModel, Message, ExecutionResult, OpenAgenticTool } from './types';
 import { ProviderManager } from './providers/manager';
 
 export class Orchestrator {
   private model: AIModel;
-  private tools: Record<string, any> = {};
+  private tools: Record<string, OpenAgenticTool> = {};
   private messages: Message[] = [];
   private iterations = 0;
   private maxIterations: number;
@@ -25,7 +25,13 @@ export class Orchestrator {
     // Register tools with validation
     if (options.tools) {
       options.tools.forEach((tool, index) => {
-        const toolName = `tool_${index}`;
+        let toolName = tool.toolId;
+      
+        // Ensure toolId uniqueness
+        if (this.tools[toolName]) {
+          throw new Error(`Tool with name ${toolName} already exists`);
+        }
+        
         this.tools[toolName] = tool;
       });
     }
