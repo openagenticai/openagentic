@@ -1,6 +1,7 @@
 import { Orchestrator } from './orchestrator';
 import { StreamingOrchestrator } from './streaming-orchestrator';
-import type { AIModel } from './types';
+import { ProviderManager } from './providers/manager';
+import type { AIModel, ApiKeyMap } from './types';
 
 // =============================================================================
 // CORE EXPORTS - SIMPLIFIED
@@ -18,6 +19,7 @@ export { ProviderManager } from './providers/manager';
 
 // Types
 export * from './types';
+export type { ApiKeyMap } from './types'; // Explicit export for better IDE support
 
 // =============================================================================
 // AGENT CREATION FUNCTIONS
@@ -39,7 +41,13 @@ export function createAgent(options: {
   enableTimingLogging?: boolean;
   enableStatisticsLogging?: boolean;
   enableStreamingLogging?: boolean;
+  apiKeys?: ApiKeyMap;
 }): Orchestrator {
+  // Set user API keys before creating orchestrator
+  if (options.apiKeys !== undefined) {
+    ProviderManager.setUserApiKeys(options.apiKeys);
+  }
+  
   return new Orchestrator(options);
 }
 
@@ -59,6 +67,12 @@ export function createStreamingAgent(options: {
   enableStatisticsLogging?: boolean;
   enableStreamingLogging?: boolean;
   onFinish?: (result: any) => void | Promise<void>;
+  apiKeys?: ApiKeyMap;
 }) {
+  // Set user API keys before creating orchestrator
+  if (options.apiKeys !== undefined) {
+    ProviderManager.setUserApiKeys(options.apiKeys);
+  }
+  
   return new StreamingOrchestrator(options);
 }

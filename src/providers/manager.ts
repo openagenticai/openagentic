@@ -1,4 +1,4 @@
-import type { AIModel } from '../types';
+import type { AIModel, ApiKeyMap } from '../types';
 
 // Provider configuration with model metadata
 export const providerConfigs = {
@@ -139,6 +139,19 @@ export const providerConfigs = {
 // =============================================================================
 
 export class ProviderManager {
+  private static userApiKeys: ApiKeyMap | undefined;
+
+  /**
+   * Set user-provided API keys that take precedence over environment variables
+   */
+  static setUserApiKeys(apiKeys: ApiKeyMap | undefined): void {
+    this.userApiKeys = apiKeys;
+    
+    if (apiKeys && Object.keys(apiKeys).length > 0) {
+      console.log('🔑 User API keys configured for providers:', Object.keys(apiKeys).join(', '));
+    }
+  }
+
   /**
    * Create a model configuration from a string or AIModel object
    * Automatically detects provider from model name if string is provided
@@ -364,6 +377,12 @@ export class ProviderManager {
   }
 
   private static getDefaultApiKey(provider: AIModel['provider']): string | undefined {
+    // First check user-provided API keys
+    if (this.userApiKeys && provider in this.userApiKeys) {
+      return this.userApiKeys[provider];
+    }
+    
+    // Then fall back to environment variables
     switch (provider) {
       case 'openai':
         return process.env.OPENAI_API_KEY;

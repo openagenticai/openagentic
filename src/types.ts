@@ -33,6 +33,12 @@ export const MessageSchema = z.object({
 export type Message = z.infer<typeof MessageSchema>;
 
 // =============================================================================
+// API KEY MAP TYPE
+// =============================================================================
+
+export type ApiKeyMap = Record<string, string>;
+
+// =============================================================================
 // CORE MESSAGE TYPES (AI SDK COMPATIBLE)
 // =============================================================================
 
