@@ -643,7 +643,7 @@ export class StreamingOrchestrator {
       const executionStats = this.calculateExecutionStats();
       
       this.log('❌', 'Streaming error occurred', {
-        error: error.message || String(error),
+        error: error.message || JSON.stringify(error),
         totalDuration: executionStats.totalDuration,
         stepsExecuted: executionStats.stepsExecuted,
         toolCallsExecuted: executionStats.toolCallsExecuted,
@@ -738,7 +738,7 @@ export class StreamingOrchestrator {
             
             this.log('❌', `Tool execution failed: ${tool.toolId}`, {
               duration: `${toolCallDuration}ms`,
-              error: error instanceof Error ? error.message : String(error),
+              error: error instanceof Error ? error.message : JSON.stringify(error),
               stackTrace: error instanceof Error ? error.stack : undefined,
               parameters: this.sanitizeForLogging(args),
             });
