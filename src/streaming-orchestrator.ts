@@ -245,7 +245,7 @@ export class StreamingOrchestrator {
       return streamText(streamConfig);
     } catch (error) {
       this.log('❌', 'StreamText execution failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
         stackTrace: error instanceof Error ? error.stack : undefined,
         config: {
           model: this.model.model,
@@ -320,7 +320,7 @@ export class StreamingOrchestrator {
       return streamText(streamConfig);
     } catch (error) {
       this.log('❌', 'StreamText execution failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
         stackTrace: error instanceof Error ? error.stack : undefined,
         config: {
           model: this.model.model,
@@ -381,7 +381,7 @@ export class StreamingOrchestrator {
       return streamText(streamConfig);
     } catch (error) {
       this.log('❌', 'StreamText for response execution failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
         stackTrace: error instanceof Error ? error.stack : undefined,
         config: {
           model: this.model.model,
@@ -456,7 +456,7 @@ export class StreamingOrchestrator {
       return streamText(streamConfig);
     } catch (error) {
       this.log('❌', 'StreamText for response execution failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
         stackTrace: error instanceof Error ? error.stack : undefined,
         config: {
           model: this.model.model,
