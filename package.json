@@ -1,6 +1,6 @@
 {
   "name": "openagentic",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "A TypeScript framework for building AI agents with self-contained tool orchestration capabilities",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
