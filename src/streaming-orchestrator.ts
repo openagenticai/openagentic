@@ -122,7 +122,82 @@ export class StreamingOrchestrator {
     }
   }
 
-  // Stream with string input (original behavior)
+  // New streamResponse method - supports both string and message array inputs
+  public async streamResponse(input: string, options?: { sendReasoning?: boolean; headers?: Record<string, string> }): Promise<Response>;
+  public async streamResponse(messages: CoreMessage[], options?: { sendReasoning?: boolean; headers?: Record<string, string> }): Promise<Response>;
+  public async streamResponse(
+    input: string | CoreMessage[], 
+    options: { sendReasoning?: boolean; headers?: Record<string, string> } = {}
+  ): Promise<Response> {
+    this.executionStartTime = Date.now();
+    this.resetExecutionStats();
+    
+    try {
+      const inputType = typeof input === 'string' ? 'string' : 
+                       Array.isArray(input) ? 'message_array' : 
+                       'invalid';
+      const inputLength = typeof input === 'string' ? input.length : 
+                         Array.isArray(input) ? input.length : 
+                         'unknown';
+      
+      this.log('🚀', 'Streaming response execution starting', {
+        inputType,
+        inputLength,
+        modelInfo: `${this.model.provider}/${this.model.model}`,
+        toolsAvailable: this.tools.size,
+        maxSteps: this.maxIterations,
+        sendReasoning: options.sendReasoning,
+      });
+
+      let streamResult: ReturnType<typeof streamText>;
+
+      // Handle different input types
+      if (typeof input === 'string') {
+        streamResult = await this.streamWithStringForResponse(input);
+      } else if (Array.isArray(input)) {
+        streamResult = await this.streamWithMessagesForResponse(input);
+      } else {
+        throw new Error('Input must be either a string or an array of messages');
+      }
+
+      // Convert to data stream response with compatibility headers
+      const response = streamResult.toDataStreamResponse({
+        sendReasoning: options.sendReasoning,
+        headers: {
+          'X-OpenAgentic-Stream': 'direct',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+          ...options.headers,
+        },
+      });
+
+      this.log('✅', 'Streaming response created successfully', {
+        hasResponse: !!response,
+        responseType: 'DataStreamResponse',
+        compatibilityMode: 'useChat',
+      });
+
+      return response;
+
+    } catch (error) {
+      const executionStats = this.calculateExecutionStats();
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      this.log('❌', 'Streaming response execution failed', {
+        error: errorMessage,
+        totalDuration: executionStats.totalDuration,
+        stepsExecuted: executionStats.stepsExecuted,
+        toolCallsExecuted: executionStats.toolCallsExecuted,
+        chunksProcessed: this.chunksProcessed,
+        stackTrace: error instanceof Error ? error.stack : undefined,
+      });
+      
+      throw error;
+    }
+  }
+
+  // Stream with string input (original behavior) - enhanced error handling
   private async streamWithString(input: string): Promise<ReturnType<typeof streamText>> {
     this.messages.push({ role: 'user', content: input });
     
@@ -135,7 +210,7 @@ export class StreamingOrchestrator {
       onStepFinish: this.createStepFinishCallback(),
       onChunk: this.createChunkCallback(),
       onFinish: this.createFinishCallback(),
-      experimental_onError: this.createErrorCallback(),
+      onError: this.createErrorCallback(),
     };
 
     // Add system message if it exists
@@ -166,10 +241,23 @@ export class StreamingOrchestrator {
       toolsEnabled: this.tools.size > 0,
     });
 
-    return streamText(streamConfig);
+    try {
+      return streamText(streamConfig);
+    } catch (error) {
+      this.log('❌', 'StreamText execution failed', {
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+        config: {
+          model: this.model.model,
+          provider: this.model.provider,
+          toolsCount: this.tools.size,
+        },
+      });
+      throw error;
+    }
   }
 
-  // Stream with message array (new behavior)
+  // Stream with message array (new behavior) - enhanced error handling
   private async streamWithMessages(inputMessages: CoreMessage[]): Promise<ReturnType<typeof streamText>> {
     const provider = await ProviderManager.createProvider(this.model);
 
@@ -190,7 +278,7 @@ export class StreamingOrchestrator {
       onStepFinish: this.createStepFinishCallback(),
       onChunk: this.createChunkCallback(),
       onFinish: this.createFinishCallback(),
-      experimental_onError: this.createErrorCallback(),
+      onError: this.createErrorCallback(),
     };
 
     // Extract system message from input if present, otherwise use existing one
@@ -228,7 +316,157 @@ export class StreamingOrchestrator {
       ...this.convertCoreToInternal(inputMessages.filter(m => m.role !== 'system'))
     ];
 
-    return streamText(streamConfig);
+    try {
+      return streamText(streamConfig);
+    } catch (error) {
+      this.log('❌', 'StreamText execution failed', {
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+        config: {
+          model: this.model.model,
+          provider: this.model.provider,
+          messageCount: inputMessages.length,
+          toolsCount: this.tools.size,
+        },
+      });
+      throw error;
+    }
+  }
+
+  // Stream with string input for Response (enhanced error handling)
+  private async streamWithStringForResponse(input: string): Promise<ReturnType<typeof streamText>> {
+    this.messages.push({ role: 'user', content: input });
+    
+    const provider = await ProviderManager.createProvider(this.model);
+
+    const streamConfig: any = {
+      model: provider(this.model.model),
+      messages: this.transformMessages(this.messages),
+      maxSteps: this.maxIterations,
+      onStepFinish: this.createStepFinishCallback(),
+      onChunk: this.createChunkCallback(),
+      onFinish: this.createFinishCallback(),
+      onError: this.createErrorCallback(),
+    };
+
+    // Add system message if it exists
+    const systemMessage = this.messages.find(m => m.role === 'system');
+    if (systemMessage) {
+      streamConfig.system = systemMessage.content;
+    }
+
+    // Add tools if available - convert to AI SDK format
+    if (this.tools.size > 0) {
+      streamConfig.tools = this.convertToAISDKTools();
+    }
+
+    // Add model parameters conditionally
+    if (this.model.temperature !== undefined) {
+      streamConfig.temperature = this.model.temperature;
+    }
+    if (this.model.maxTokens !== undefined) {
+      streamConfig.maxTokens = this.model.maxTokens;
+    }
+    if (this.model.topP !== undefined) {
+      streamConfig.topP = this.model.topP;
+    }
+
+    this.log('📝', 'Starting text streaming for response', {
+      prompt: this.sanitizeForLogging(input),
+      systemMessage: systemMessage ? 'present' : 'none',
+      toolsEnabled: this.tools.size > 0,
+    });
+
+    try {
+      return streamText(streamConfig);
+    } catch (error) {
+      this.log('❌', 'StreamText for response execution failed', {
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+        config: {
+          model: this.model.model,
+          provider: this.model.provider,
+          toolsCount: this.tools.size,
+        },
+      });
+      throw error;
+    }
+  }
+
+  // Stream with message array for Response (enhanced error handling)
+  private async streamWithMessagesForResponse(inputMessages: CoreMessage[]): Promise<ReturnType<typeof streamText>> {
+    const provider = await ProviderManager.createProvider(this.model);
+
+    // Convert CoreMessage[] to AI SDK compatible format
+    const convertedMessages = this.convertCoresToAISDK(inputMessages);
+
+    this.log('📝', 'Processing message array for streaming response', {
+      messageCount: inputMessages.length,
+      messageTypes: inputMessages.map(m => m.role),
+      hasSystemMessage: inputMessages.some(m => m.role === 'system'),
+      lastMessageRole: inputMessages[inputMessages.length - 1]?.role,
+    });
+
+    const streamConfig: any = {
+      model: provider(this.model.model),
+      messages: convertedMessages,
+      maxSteps: this.maxIterations,
+      onStepFinish: this.createStepFinishCallback(),
+      onChunk: this.createChunkCallback(),
+      onFinish: this.createFinishCallback(),
+      onError: this.createErrorCallback(),
+    };
+
+    // Extract system message from input if present, otherwise use existing one
+    const systemMessage = inputMessages.find(m => m.role === 'system');
+    if (systemMessage) {
+      streamConfig.system = typeof systemMessage.content === 'string' 
+        ? systemMessage.content 
+        : JSON.stringify(systemMessage.content);
+    } else {
+      const existingSystemMessage = this.messages.find(m => m.role === 'system');
+      if (existingSystemMessage) {
+        streamConfig.system = existingSystemMessage.content;
+      }
+    }
+
+    // Add tools if available - convert to AI SDK format
+    if (this.tools.size > 0) {
+      streamConfig.tools = this.convertToAISDKTools();
+    }
+
+    // Add model parameters conditionally
+    if (this.model.temperature !== undefined) {
+      streamConfig.temperature = this.model.temperature;
+    }
+    if (this.model.maxTokens !== undefined) {
+      streamConfig.maxTokens = this.model.maxTokens;
+    }
+    if (this.model.topP !== undefined) {
+      streamConfig.topP = this.model.topP;
+    }
+
+    // Update internal messages with the full conversation context
+    this.messages = [
+      ...this.messages.filter(m => m.role === 'system'),
+      ...this.convertCoreToInternal(inputMessages.filter(m => m.role !== 'system'))
+    ];
+
+    try {
+      return streamText(streamConfig);
+    } catch (error) {
+      this.log('❌', 'StreamText for response execution failed', {
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+        config: {
+          model: this.model.model,
+          provider: this.model.provider,
+          messageCount: inputMessages.length,
+          toolsCount: this.tools.size,
+        },
+      });
+      throw error;
+    }
   }
 
   // Tool management methods
@@ -412,6 +650,8 @@ export class StreamingOrchestrator {
         chunksProcessed: this.chunksProcessed,
         stackTrace: error.stack,
         errorType: error.constructor?.name || 'Unknown',
+        modelInfo: `${this.model.provider}/${this.model.model}`,
+        toolsAvailable: this.tools.size,
       });
     };
   }
