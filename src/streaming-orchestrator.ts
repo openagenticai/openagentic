@@ -107,7 +107,7 @@ export class StreamingOrchestrator {
       }
     } catch (error) {
       const executionStats = this.calculateExecutionStats();
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       
       this.log('❌', 'Streaming execution failed', {
         error: errorMessage,
