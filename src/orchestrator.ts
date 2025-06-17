@@ -125,7 +125,7 @@ export class Orchestrator {
       return result;
     } catch (error) {
       const executionStats = this.calculateExecutionStats();
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error);
       
       this.log('❌', 'Execution failed', {
         error: errorMessage,
@@ -537,7 +537,7 @@ export class Orchestrator {
             
             this.log('❌', `Tool execution failed: ${tool.toolId}`, {
               duration: `${toolCallDuration}ms`,
-              error: error instanceof Error ? error.message : String(error),
+              error: error instanceof Error ? error.message : JSON.stringify(error),
               stackTrace: error instanceof Error ? error.stack : undefined,
               parameters: this.sanitizeForLogging(args),
             });
@@ -644,13 +644,13 @@ export class Orchestrator {
       };
     } catch (error) {
       this.log('❌', 'Custom logic failed', {
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
         stackTrace: error instanceof Error ? error.stack : undefined,
       });
       
       return {
         success: false,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
         messages: this.messages,
         iterations: this.iterations,
         toolCallsUsed: [],
