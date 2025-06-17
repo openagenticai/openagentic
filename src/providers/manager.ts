@@ -148,7 +148,7 @@ export class ProviderManager {
     this.userApiKeys = apiKeys;
     
     if (apiKeys && Object.keys(apiKeys).length > 0) {
-      console.log('🔑 User API keys configured for providers:', Object.keys(apiKeys).join(', '));
+      console.log('🔑 User API keys configured for providers:', Object.keys(apiKeys).length);
     }
   }
 
