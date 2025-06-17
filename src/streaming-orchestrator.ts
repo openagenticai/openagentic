@@ -616,7 +616,7 @@ export class StreamingOrchestrator {
         } catch (error) {
           // Log callback error but don't break the internal flow
           this.log('❌', 'User onFinish callback failed', {
-            error: error instanceof Error ? error.message : String(error),
+            error: error instanceof Error ? error.message : JSON.stringify(error),
             stackTrace: error instanceof Error ? error.stack : undefined,
           });
         }
