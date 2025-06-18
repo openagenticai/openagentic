@@ -166,7 +166,7 @@ const rawOpenAITool = tool({
       console.error('❌ OpenAI Tool - Generation failed:', {
         model,
         promptLength: prompt.length,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -198,7 +198,7 @@ const rawOpenAITool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`OpenAI text generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`OpenAI text generation failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
