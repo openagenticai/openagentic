@@ -213,7 +213,7 @@ export class StreamingOrchestrator {
         }),
         object: Promise.resolve('chat.completion.chunk' as const),
         experimental_providerMetadata: Promise.resolve(undefined),
-      } as ReturnType<typeof streamText>;
+      } as unknown as ReturnType<typeof streamText>;
 
     } catch (error) {
       this.log('❌', 'Streaming custom logic failed', {
@@ -317,7 +317,7 @@ export class StreamingOrchestrator {
         }),
         object: Promise.resolve('chat.completion.chunk' as const),
         experimental_providerMetadata: Promise.resolve(undefined),
-      } as ReturnType<typeof streamText>;
+      } as unknown as ReturnType<typeof streamText>;
 
     } catch (error) {
       this.log('❌', 'Custom logic orchestrator streaming failed', {
