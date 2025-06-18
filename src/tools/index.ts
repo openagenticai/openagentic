@@ -9,6 +9,7 @@ export { timestampTool } from './timestamp';
 export { openaiTool } from './openai';
 export { anthropicTool } from './anthropic';
 export { geminiTool } from './gemini';
+export { githubTool } from './github';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -23,12 +24,13 @@ import { timestampTool } from './timestamp';
 import { openaiTool } from './openai';
 import { anthropicTool } from './anthropic';
 import { geminiTool } from './gemini';
+import { githubTool } from './github';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool, anthropicTool, geminiTool];
-export const utilityTools = [httpTool, calculatorTool, timestampTool];
+export const utilityTools = [httpTool, calculatorTool, timestampTool, githubTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================
