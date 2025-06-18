@@ -176,7 +176,7 @@ const rawNewsDataTool = tool({
       try {
         data = await response.json() as NewsDataIOResponse;
       } catch (error) {
-        throw new Error(`Failed to parse NewsData IO response: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to parse NewsData IO response: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       // Validate response structure
@@ -286,7 +286,7 @@ ${formattedArticles.map(article =>
         country,
         category,
         language,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -324,7 +324,7 @@ ${formattedArticles.map(article =>
       }
 
       // Generic error fallback
-      throw new Error(`NewsData IO search failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`NewsData IO search failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
