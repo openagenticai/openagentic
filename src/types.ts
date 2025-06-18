@@ -143,6 +143,7 @@ export interface OrchestratorContext {
   iterations: number;
   maxIterations: number;
   loggingConfig: LoggingConfig;
+  orchestratorParams?: Record<string, any>;
 }
 
 /**
@@ -221,6 +222,9 @@ export interface OrchestratorOptions {
   
   /** Alternative parameter name for orchestrator ID */
   orchestratorId?: string;
+  
+  /** Parameters to pass to the orchestrator */
+  orchestratorParams?: Record<string, any>;
   
   /** Whether to allow orchestrator to override system prompt */
   allowOrchestratorPromptOverride?: boolean;

@@ -14,6 +14,7 @@ interface OrchestratorTestCase {
   expectedKeys: string[];
   skipIfMissingEnv?: string[];
   timeout?: number;
+  orchestratorParams?: Record<string, any>;
 }
 
 interface OrchestratorTestResult {
@@ -65,6 +66,9 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
     expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
     skipIfMissingEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENAI_API_KEY'],
     timeout: 180000, // 3 minutes for code analysis
+    orchestratorParams: {
+      additionalPaths: ['src/components', 'src/components/__tests__']
+    }
   },
 ];
 
@@ -199,6 +203,7 @@ class OrchestratorTester {
       const agent = createAgent({
         model: 'gpt-4o-mini', // Use consistent model for testing
         orchestrator: testCase.orchestratorId,
+        orchestratorParams: testCase.orchestratorParams,
         tools: requiredTools,
         enableDebugLogging: true,
         logLevel: 'basic',

@@ -51,6 +51,7 @@ export class StreamingOrchestrator {
     this.orchestratorOptions = {
       orchestrator: options.orchestrator,
       orchestratorId: options.orchestratorId,
+      orchestratorParams: options.orchestratorParams,
       allowOrchestratorPromptOverride: options.allowOrchestratorPromptOverride ?? true,
       allowOrchestratorToolControl: options.allowOrchestratorToolControl ?? true,
     };
@@ -280,6 +281,7 @@ export class StreamingOrchestrator {
         iterations: this.stepsExecuted,
         maxIterations: this.maxIterations,
         loggingConfig: this.loggingConfig,
+        orchestratorParams: this.orchestratorOptions.orchestratorParams,
       };
 
       // Execute custom logic (this returns an ExecutionResult, not a stream)
@@ -349,6 +351,7 @@ export class StreamingOrchestrator {
       iterations: this.stepsExecuted,
       maxIterations: this.maxIterations,
       loggingConfig: this.loggingConfig,
+      orchestratorParams: this.orchestratorOptions.orchestratorParams,
     };
 
     // Filter tools if orchestrator specifies allowed tools

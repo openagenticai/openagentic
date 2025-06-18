@@ -30,6 +30,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:tools": "tsx examples/scripts/tool-testing.ts",
+    "test:orchestrators": "tsx examples/scripts/orchestrator-testing.ts",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "type-check": "tsc --noEmit",

@@ -45,6 +45,7 @@ export class Orchestrator {
     this.orchestratorOptions = {
       orchestrator: options.orchestrator,
       orchestratorId: options.orchestratorId,
+      orchestratorParams: options.orchestratorParams,
       allowOrchestratorPromptOverride: options.allowOrchestratorPromptOverride ?? true,
       allowOrchestratorToolControl: options.allowOrchestratorToolControl ?? true,
     };
@@ -238,6 +239,7 @@ export class Orchestrator {
         iterations: this.iterations,
         maxIterations: this.maxIterations,
         loggingConfig: this.loggingConfig,
+        orchestratorParams: this.orchestratorOptions.orchestratorParams,
       };
 
       // Initialize orchestrator if it has an initialize method
@@ -304,6 +306,7 @@ export class Orchestrator {
       iterations: this.iterations,
       maxIterations: this.maxIterations,
       loggingConfig: this.loggingConfig,
+      orchestratorParams: this.orchestratorOptions.orchestratorParams,
     };
 
     // Use the orchestrator's execute method which handles tool filtering and prompt override

@@ -2,6 +2,8 @@ import { MultiAIOrchestrator, type ParallelAIResult, type ToolChainResult, type 
 import type { OrchestratorContext, CoreMessage, OpenAgenticTool } from '../../types';
 import { registerOrchestrator } from '../registry';
 
+const FILE_LIMIT = 50;
+
 /**
  * Code Assessment Orchestrator
  * 
@@ -32,7 +34,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
     const inputText = typeof input === 'string' ? input : 
                      input.map(m => m.content).join(' ');
     
-    const repoInfo = this.parseRepositoryInfo(inputText);
+    const repoInfo = this.parseRepositoryInfo(inputText, context.orchestratorParams);
     
     if (!repoInfo.owner || !repoInfo.repo) {
       throw new Error('Please provide repository information in the format: owner/repo or a GitHub URL');
@@ -41,6 +43,9 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
     try {
       // Step 1: Fetch code from GitHub
       console.log('📥 Step 1: Fetching code from GitHub repository');
+      if (repoInfo.additionalPaths && repoInfo.additionalPaths.length > 0) {
+        console.log(`📁 Custom directories requested: ${repoInfo.additionalPaths.join(', ')}`);
+      }
       const codeData = await this.fetchRepositoryCode(repoInfo, context);
 
       // Step 2: Parallel analysis with multiple AI models
@@ -94,49 +99,72 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
   }
 
   /**
-   * Parse repository information from input
+   * Parse repository information and additional directory paths from input and orchestratorParams
    */
-  private parseRepositoryInfo(input: string): { owner: string; repo: string; path?: string } {
+  private parseRepositoryInfo(input: string, orchestratorParams?: Record<string, any>): { owner: string; repo: string; path?: string; additionalPaths: string[] } {
+    let owner = '';
+    let repo = '';
+    let path: string | undefined;
+    const additionalPaths: string[] = [];
+
     // Match GitHub URL patterns
     const githubUrlMatch = input.match(/github\.com\/([^\/]+)\/([^\/\s]+)(?:\/(?:tree|blob)\/[^\/]+\/(.*))?/);
     if (githubUrlMatch && githubUrlMatch[1] && githubUrlMatch[2]) {
-      return {
-        owner: githubUrlMatch[1],
-        repo: githubUrlMatch[2].replace(/\.git$/, ''),
-        path: githubUrlMatch[3],
-      };
-    }
-
-    // Match owner/repo pattern
-    const ownerRepoMatch = input.match(/\b([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\b/);
-    if (ownerRepoMatch && ownerRepoMatch[1] && ownerRepoMatch[2]) {
-      return {
-        owner: ownerRepoMatch[1],
-        repo: ownerRepoMatch[2],
-      };
-    }
-
-    // Try to extract from natural language
-    const words = input.toLowerCase().split(/\s+/);
-    const repoIndex = words.findIndex(word => word.includes('repository') || word.includes('repo'));
-    if (repoIndex !== -1 && repoIndex < words.length - 1) {
-      const repoCandidate = words[repoIndex + 1];
-      if (repoCandidate) {
-        const match = repoCandidate.match(/([^\/]+)\/([^\/]+)/);
-        if (match && match[1] && match[2]) {
-          return { owner: match[1], repo: match[2] };
+      owner = githubUrlMatch[1];
+      repo = githubUrlMatch[2].replace(/\.git$/, '');
+      path = githubUrlMatch[3];
+    } else {
+      // Match owner/repo pattern
+      const ownerRepoMatch = input.match(/\b([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\b/);
+      if (ownerRepoMatch && ownerRepoMatch[1] && ownerRepoMatch[2]) {
+        owner = ownerRepoMatch[1];
+        repo = ownerRepoMatch[2];
+      } else {
+        // Try to extract from natural language
+        const words = input.toLowerCase().split(/\s+/);
+        const repoIndex = words.findIndex(word => word.includes('repository') || word.includes('repo'));
+        if (repoIndex !== -1 && repoIndex < words.length - 1) {
+          const repoCandidate = words[repoIndex + 1];
+          if (repoCandidate) {
+            const match = repoCandidate.match(/([^\/]+)\/([^\/]+)/);
+            if (match && match[1] && match[2]) {
+              owner = match[1];
+              repo = match[2];
+            }
+          }
         }
       }
     }
 
-    return { owner: '', repo: '' };
+    // Check orchestratorParams first for additionalPaths
+    if (orchestratorParams?.additionalPaths && Array.isArray(orchestratorParams.additionalPaths)) {
+      // Use paths from orchestratorParams if provided
+      const paramPaths = orchestratorParams.additionalPaths
+        .filter((path: any) => typeof path === 'string' && path.length > 0)
+        .map((path: string) => path.replace(/\/$/, '').replace(/\/\*$/, ''));
+      
+      additionalPaths.push(...paramPaths);
+      console.log(`📁 Using additionalPaths from orchestratorParams: ${paramPaths.join(', ')}`);
+    }
+
+    // Remove duplicates and clean up paths
+    const uniquePaths = Array.from(new Set(additionalPaths))
+      .filter(path => path.length > 0 && !path.includes('github.com'));
+
+    console.log(`📋 Parsed repository: ${owner}/${repo}`);
+    if (uniquePaths.length > 0) {
+      const source = orchestratorParams?.additionalPaths ? 'orchestratorParams' : 'text parsing';
+      console.log(`📁 Additional paths to assess (from ${source}): ${uniquePaths.join(', ')}`);
+    }
+
+    return { owner, repo, path, additionalPaths: uniquePaths };
   }
 
   /**
    * Fetch repository code using GitHub tool
    */
   private async fetchRepositoryCode(
-    repoInfo: { owner: string; repo: string; path?: string },
+    repoInfo: { owner: string; repo: string; path?: string; additionalPaths?: string[] },
     context: OrchestratorContext
   ): Promise<{
     repository: string;
@@ -162,60 +190,12 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
       throw new Error(`Failed to fetch repository: ${rootResponse.error || 'Unknown error'}`);
     }
 
-    const files: Array<{ path: string; content: string; size: number; type: string }> = [];
-    let totalLines = 0;
-
-    // Handle both file and directory responses
-    if (rootResponse.type === 'file') {
-      // Single file
-      const content = rootResponse.file.content || '';
-      const lines = content.split('\n').length;
-      totalLines += lines;
-      
-      files.push({
-        path: rootResponse.file.path,
-        content: content,
-        size: rootResponse.file.size,
-        type: 'file',
-      });
-    } else if (rootResponse.type === 'directory') {
-      // Directory - fetch key files
-      const directory = rootResponse.directory;
-      const importantFiles = directory.contents.filter((item: any) => 
-        item.type === 'file' && this.isImportantFile(item.name)
-      ).slice(0, 10); // Limit to 10 files to avoid rate limits
-
-      console.log(`📁 Found ${directory.contents.length} items, fetching ${importantFiles.length} important files`);
-
-      // Fetch each important file
-      for (const file of importantFiles) {
-        try {
-          const fileResponse = await githubTool.execute({
-            owner: repoInfo.owner,
-            repo: repoInfo.repo,
-            path: file.path,
-          }, { toolCallId: 'github-file', messages: [] });
-
-          if (fileResponse.success && fileResponse.type === 'file') {
-            const content = fileResponse.file.content || '';
-            const lines = content.split('\n').length;
-            totalLines += lines;
-
-            files.push({
-              path: file.path,
-              content: content,
-              size: file.size,
-              type: 'file',
-            });
-
-            console.log(`📄 Fetched: ${file.path} (${lines} lines)`);
-          }
-        } catch (error) {
-          console.warn(`⚠️ Failed to fetch ${file.path}:`, error);
-          // Continue with other files
-        }
-      }
-    }
+    // Use systematic repository exploration with optional additional paths
+    console.log('🔍 Exploring repository structure to find source code...');
+    const files = await this.exploreRepositoryStructure(repoInfo, githubTool);
+    
+    // Calculate total lines
+    let totalLines = files.reduce((total, file) => total + file.content.split('\n').length, 0);
 
     console.log(`✅ Code fetching completed: ${files.length} files, ${totalLines} total lines`);
 
@@ -228,18 +208,172 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
   }
 
   /**
-   * Determine if a file is important for analysis
+   * Explore specific repository directories for source code
    */
-  private isImportantFile(filename: string): boolean {
-    const importantExtensions = ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.cs', '.go', '.rs', '.php', '.rb'];
-    const importantFiles = ['README.md', 'package.json', 'Dockerfile', 'docker-compose.yml', '.gitignore', 'requirements.txt', 'pom.xml', 'build.gradle'];
+  private async exploreRepositoryStructure(
+    repoInfo: { owner: string; repo: string; path?: string; additionalPaths?: string[] },
+    githubTool: OpenAgenticTool
+  ): Promise<Array<{ path: string; content: string; size: number; type: string }>> {
+    const files: Array<{ path: string; content: string; size: number; type: string }> = [];
     
-    return importantFiles.includes(filename) || 
-           importantExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+    // Default target directories to explore
+    const defaultPaths = [
+      '',                          // Root directory (for config files)
+      // 'src/components',            // Main components
+      // 'src/components/__tests__'   // Component tests
+    ];
+
+    // Combine default paths with any additional paths provided
+    const targetPaths = [...defaultPaths];
+    
+    if (repoInfo.additionalPaths && repoInfo.additionalPaths.length > 0) {
+      // Add additional paths, avoiding duplicates
+      for (const additionalPath of repoInfo.additionalPaths) {
+        if (!targetPaths.includes(additionalPath)) {
+          targetPaths.push(additionalPath);
+        }
+      }
+      console.log(`📂 Assessing ${targetPaths.length} directories (${repoInfo.additionalPaths.length} additional)`);
+    } else {
+      console.log(`📂 Assessing ${targetPaths.length} default directories`);
+    }
+
+    // Root directory files to always include
+    const rootFiles = ['package.json', 'tsconfig.json', 'eslint.config.js', 'next.config.js', 'vite.config.ts', 'README.md'];
+
+    /**
+     * Check if a file is a source code file we want to analyze
+     */
+    const isSourceFile = (filename: string, dirPath: string): boolean => {
+      // Always include root config files
+      if (dirPath === '' && rootFiles.includes(filename)) return true;
+      
+      // Include source code files
+      const ext = filename.split('.').pop()?.toLowerCase();
+      return ['.js', '.ts', '.jsx', '.tsx', '.vue'].includes(`.${ext}`);
+    };
+
+    /**
+     * Explore a specific directory and collect files
+     */
+    const exploreDirectory = async (dirPath: string): Promise<void> => {
+      try {
+        if (!githubTool.execute) {
+          console.warn(`⚠️ GitHub tool execute method not available for ${dirPath}`);
+          return;
+        }
+
+        console.log(`📁 Exploring: ${dirPath || 'root'}`);
+
+        const response = await githubTool.execute({
+          owner: repoInfo.owner,
+          repo: repoInfo.repo,
+          path: dirPath,
+        }, { toolCallId: `github-explore-${dirPath || 'root'}`, messages: [] });
+
+        if (!response.success) {
+          console.log(`⚠️ Directory not found: ${dirPath}`);
+          return;
+        }
+
+        if (response.type === 'directory') {
+          const directory = response.directory;
+          console.log(`📂 Found ${directory.contents.length} items in ${dirPath || 'root'}`);
+
+          // Filter for source files
+          const sourceFiles = directory.contents.filter((item: any) => 
+            item.type === 'file' && isSourceFile(item.name, dirPath)
+          );
+
+          console.log(`📄 Found ${sourceFiles.length} source files in ${dirPath || 'root'}`);
+
+          // Fetch content for each source file
+          for (const file of sourceFiles) {
+            if (files.length >= FILE_LIMIT) {
+              console.log(`🛑 Reached file limit (${files.length} files)`);
+              break;
+            }
+
+            try {
+              if (!githubTool.execute) {
+                console.warn(`⚠️ GitHub tool execute method not available for ${file.path}`);
+                continue;
+              }
+
+              const fileResponse = await githubTool.execute({
+                owner: repoInfo.owner,
+                repo: repoInfo.repo,
+                path: file.path,
+              }, { toolCallId: `github-file-${file.path.replace(/[^a-zA-Z0-9]/g, '-')}`, messages: [] });
+
+              if (fileResponse.success && fileResponse.type === 'file') {
+                const content = fileResponse.file.content || '';
+                files.push({
+                  path: file.path,
+                  content: content,
+                  size: file.size,
+                  type: 'file',
+                });
+                console.log(`📄 Fetched: ${file.path} (${content.split('\n').length} lines)`);
+              }
+            } catch (error) {
+              console.warn(`⚠️ Failed to fetch ${file.path}:`, error);
+            }
+          }
+
+        } else if (response.type === 'file' && isSourceFile(response.file.name || '', dirPath)) {
+          // Single file case
+          const content = response.file.content || '';
+          files.push({
+            path: response.file.path,
+            content: content,
+            size: response.file.size,
+            type: 'file',
+          });
+          console.log(`📄 Fetched: ${response.file.path} (${content.split('\n').length} lines)`);
+        }
+
+      } catch (error) {
+        console.warn(`⚠️ Failed to explore ${dirPath}:`, error);
+      }
+    };
+
+    // Explore each target directory
+    for (const dirPath of targetPaths) {
+      if (files.length >= FILE_LIMIT) {
+        console.log(`🛑 Reached file limit (${files.length} files), stopping exploration`);
+        break;
+      }
+
+      await exploreDirectory(dirPath);
+    }
+
+    console.log(`✅ Exploration completed: ${files.length} files from ${targetPaths.length} directories`);
+    console.log(`📂 Assessed directories: ${targetPaths.join(', ')}`);
+    
+    // Dynamic file categorization based on paths
+    const fileDistribution: Record<string, number> = {};
+    for (const file of files) {
+      if (!file.path.includes('/')) {
+        fileDistribution['root'] = (fileDistribution['root'] || 0) + 1;
+      } else {
+        const pathParts = file.path.split('/');
+        const topDir = pathParts[0];
+        if (topDir) {
+          const category = file.path.includes('/__tests__/') || file.path.includes('/test/') ? 
+            `${topDir}/tests` : topDir;
+          fileDistribution[category] = (fileDistribution[category] || 0) + 1;
+        }
+      }
+    }
+    
+    console.log(`📊 Files by directory:`, fileDistribution);
+
+    return files;
   }
 
   /**
-   * Perform parallel analysis with Claude and Gemini
+   * Perform specialized parallel analysis with Claude and Gemini
    */
   private async performParallelAnalysis(
     codeData: { repository: string; files: any[]; totalLines: number },
@@ -249,111 +383,167 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
     // Prepare code summary for analysis
     const codeContext = this.prepareCodeContext(codeData);
 
-    // Define analysis prompts
+    // Define specialized analysis prompts based on reference implementation
     const claudePrompt = `
-Perform a comprehensive code quality analysis of this ${codeData.repository} repository:
+You are a Security & Architecture Expert analyzing the ${codeData.repository} repository.
 
 ${codeContext}
 
-As an expert code reviewer, analyze:
+**CRITICAL REQUIREMENT: Provide CONCRETE code examples and SPECIFIC fixes for every finding.**
 
-1. **Code Quality & Architecture**
-   - Overall code structure and organization
-   - Design patterns and architectural decisions
-   - Code maintainability and readability
+Analyze the repository with focus on:
 
-2. **Best Practices & Standards**
-   - Coding standards compliance
-   - Error handling and logging
-   - Security considerations
+🔒 **SECURITY ANALYSIS** (with exact code fixes):
+- Input validation vulnerabilities → Show sanitization code
+- Authentication/authorization flaws → Show secure implementations  
+- Sensitive data handling → Show proper encryption/clearing code
+- Dependency security → Show specific update commands
+- XSS/CSRF/Injection vulnerabilities → Show prevention code
 
-3. **Technical Debt & Issues**
-   - Code smells and anti-patterns
-   - Potential bugs or vulnerabilities
-   - Performance concerns
+🏗️ **ARCHITECTURE & CODE QUALITY** (with refactoring examples):
+- Design patterns and architectural decisions → Show better patterns
+- Code organization and maintainability → Show restructuring examples
+- Error handling and logging → Show proper implementations
+- Code smells and anti-patterns → Show refactored versions
 
-4. **Documentation & Testing**
-   - Code documentation quality
-   - Test coverage and quality
-   - API documentation
+**OUTPUT FORMAT:**
+For each issue, provide:
+1. **File & Line Numbers**: Exact location (e.g., "src/components/Button.tsx:42-45")
+2. **Current Code**: Exact problematic code snippet
+3. **Issue**: Clear explanation of the problem
+4. **Fix**: Exact replacement code with implementation details
+5. **Impact**: Security/performance/maintainability benefits
 
-Provide specific examples and actionable recommendations for improvement.`;
+**EXAMPLE FORMAT:**
+
+📁 src/components/UserInput.tsx:15-20
+❌ VULNERABLE CODE:
+\`\`\`javascript
+const handleInput = (input) => {
+  database.query("SELECT * FROM users WHERE name = '" + input + "'");
+}
+\`\`\`
+
+🔧 SECURE FIX:
+(wrap in language-specific markdown codeblock:)
+const handleInput = (input) => {
+  // Use parameterized queries to prevent SQL injection
+  const sanitizedInput = validator.escape(input);
+  database.query("SELECT * FROM users WHERE name = ?", [sanitizedInput]);
+}
+
+
+💡 IMPACT: Prevents SQL injection attacks, improves data validation
+
+Focus on actionable, copy-paste ready solutions with clear security and architectural improvements.`;
 
     const geminiPrompt = `
-Conduct a deep technical analysis of this ${codeData.repository} repository:
+You are a Performance & Quality Expert analyzing the ${codeData.repository} repository.
 
 ${codeContext}
 
-As a technical architect, evaluate:
+**CRITICAL REQUIREMENT: Provide CONCRETE code examples and MEASURABLE improvements for every finding.**
 
-1. **Technical Architecture**
-   - System design and component architecture
-   - Data flow and integration patterns
-   - Scalability and performance architecture
+Analyze the repository with focus on:
 
-2. **Technology Stack Assessment**
-   - Technology choices and their appropriateness
-   - Dependencies and their management
-   - Version compatibility and updates
+⚡ **PERFORMANCE OPTIMIZATION** (with specific implementations):
+- React performance issues → Show memoization implementations
+- Bundle optimization → Show specific import improvements
+- Database query optimization → Show efficient query patterns
+- Memory leaks → Show cleanup implementations
+- Rendering optimization → Show lazy loading/virtualization code
 
-3. **Implementation Quality**
-   - Algorithm efficiency and optimization
-   - Resource usage and memory management
-   - Concurrency and threading considerations
+📋 **CODE QUALITY & TESTING** (with example implementations):
+- Code duplication → Show DRY refactoring examples
+- Type safety improvements → Show TypeScript enhancements
+- Test coverage gaps → Show actual test implementations
+- Documentation quality → Show JSDoc/README improvements
+- Build process optimization → Show configuration improvements
 
-4. **Operational Readiness**
-   - Deployment and configuration management
-   - Monitoring and observability
-   - Error handling and recovery
+**OUTPUT FORMAT:**
+For each optimization, provide:
+1. **File & Line Numbers**: Exact location with context
+2. **Current Implementation**: Show existing code
+3. **Performance Issue**: Quantify the problem (bundle size, render time, etc.)
+4. **Optimized Implementation**: Show improved code with explanations
+5. **Measurable Impact**: Specific performance gains (% improvement, bundle reduction, etc.)
 
-Focus on technical depth and provide specific technical recommendations.`;
+**EXAMPLE FORMAT:**
 
-    console.log('🤖 Running parallel analysis with Claude and Gemini');
+📁 src/components/ProductList.tsx:25-35
+⚠️ PERFORMANCE ISSUE:
+(wrap in language-specific markdown codeblock:)
+const ProductList = ({ products, onSelect }) => {
+  return products.map(product => (
+    <ProductCard 
+      key={product.id} 
+      product={product} 
+      onSelect={() => onSelect(product)}
+    />
+  ));
+};
+
+🚀 OPTIMIZED IMPLEMENTATION:
+(wrap in language-specific markdown codeblock:)
+const ProductList = React.memo(({ products, onSelect }) => {
+  const handleSelect = useCallback((product) => {
+    onSelect(product);
+  }, [onSelect]);
+
+  return products.map(product => (
+    <ProductCard 
+      key={product.id} 
+      product={product} 
+      onSelect={handleSelect}
+    />
+  ));
+});
+
+📈 MEASURABLE IMPACT: Reduces re-renders by ~60%, improves list performance for 1000+ items
+
+Focus on implementations that provide measurable performance improvements and code quality enhancements.`;
+
+    console.log('🤖 Running specialized parallel analysis with Claude (Security/Architecture) and Gemini (Performance/Quality)');
 
     try {
-      // Execute both analyses in parallel
-      const parallelResults = await this.runInParallel(
-        claudePrompt,
-        [
-          'claude-sonnet-4-20250514',
-          'gemini-1.5-pro'
-        ],
-        {
-          temperature: 0.3, // Lower temperature for more focused analysis
-          maxTokens: 3000,
-          timeoutMs: 120000, // 2 minute timeout
-          failFast: false, // Continue even if one fails
-        }
-      );
+      // Execute both analyses in parallel with different specialized prompts
+      const claudePromise = this.runInParallel(claudePrompt, ['claude-sonnet-4-20250514'], {
+        temperature: 0.2,
+        maxTokens: 4000,
+        timeoutMs: 150000,
+      });
 
-      // Extract results
-      const claudeResult = parallelResults.find(r => r.provider === 'anthropic');
-      const geminiResult = parallelResults.find(r => r.provider === 'google');
+      const geminiPromise = this.runInParallel(geminiPrompt, ['gemini-1.5-pro'], {
+        temperature: 0.2,
+        maxTokens: 4000,
+        timeoutMs: 150000,
+      });
+
+      // Wait for both analyses to complete
+      const [claudeResults, geminiResults] = await Promise.all([claudePromise, geminiPromise]);
+
+      // Extract individual results
+      const claudeResult = claudeResults[0] || { modelId: 'claude-sonnet-4-20250514', provider: 'anthropic', success: false, error: 'Analysis failed', duration: 0 };
+      const geminiResult = geminiResults[0] || { modelId: 'gemini-1.5-pro', provider: 'google', success: false, error: 'Analysis failed', duration: 0 };
 
       if (!claudeResult?.success && !geminiResult?.success) {
         throw new Error('Both Claude and Gemini analyses failed');
       }
 
-      // Handle partial failures
-      const failureInfo = this.handlePartialFailures(parallelResults, {
-        minimumSuccessRate: 0.5, // At least 50% success
-        fallbackStrategy: 'continue',
-      });
-
-      console.log('📊 Parallel analysis results:', {
+      console.log('📊 Specialized parallel analysis results:', {
         claudeSuccess: claudeResult?.success || false,
         geminiSuccess: geminiResult?.success || false,
-        recommendation: failureInfo.recommendation,
+        analysisTypes: 'Claude: Security/Architecture, Gemini: Performance/Quality',
       });
 
       return {
-        claude: claudeResult || { modelId: 'claude-sonnet-4-20250514', provider: 'anthropic', success: false, error: 'Analysis failed', duration: 0 },
-        gemini: geminiResult || { modelId: 'gemini-1.5-pro', provider: 'google', success: false, error: 'Analysis failed', duration: 0 },
+        claude: claudeResult,
+        gemini: geminiResult,
       };
 
     } catch (error) {
-      console.error('❌ Parallel analysis failed:', error);
-      throw new Error(`Parallel analysis failed: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('❌ Specialized parallel analysis failed:', error);
+      throw new Error(`Specialized parallel analysis failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -377,7 +567,7 @@ ${file.content.substring(0, 2000)}${file.content.length > 2000 ? '\n... (truncat
 ${filesSummary}
 
 **File Types Present:**
-${[...new Set(codeData.files.map(f => f.path.split('.').pop()))].join(', ')}
+${Array.from(new Set(codeData.files.map(f => f.path.split('.').pop()))).join(', ')}
 `;
   }
 
@@ -391,14 +581,14 @@ ${[...new Set(codeData.files.map(f => f.path.split('.').pop()))].join(', ')}
     
     console.log('🧩 Synthesizing findings with GPT-4o');
 
-    // Prepare synthesis context
+    // Prepare enhanced synthesis context
     const synthesisPrompt = `
-Synthesize the following code analysis results for ${codeData.repository} into a comprehensive assessment:
+Synthesize the following specialized code analysis results for ${codeData.repository} into a comprehensive, actionable assessment:
 
-## Claude Analysis (Code Quality Focus)
+## Claude Analysis (Security & Architecture Expert)
 ${analysisResults.claude.success ? analysisResults.claude.result : 'Analysis failed: ' + (analysisResults.claude.error || 'Unknown error')}
 
-## Gemini Analysis (Technical Architecture Focus)  
+## Gemini Analysis (Performance & Quality Expert)  
 ${analysisResults.gemini.success ? analysisResults.gemini.result : 'Analysis failed: ' + (analysisResults.gemini.error || 'Unknown error')}
 
 ## Repository Context
@@ -407,26 +597,43 @@ ${analysisResults.gemini.success ? analysisResults.gemini.result : 'Analysis fai
 - **Total Lines:** ${codeData.totalLines}
 - **Analysis Status:** Claude: ${analysisResults.claude.success ? 'Success' : 'Failed'}, Gemini: ${analysisResults.gemini.success ? 'Success' : 'Failed'}
 
-Please provide:
+**SYNTHESIS REQUIREMENTS:**
 
 1. **Executive Summary** (2-3 paragraphs)
-   - Overall assessment of the codebase
-   - Key strengths and areas for improvement
-   - Business impact and risk assessment
+   - Overall grade/assessment of the codebase
+   - Key strengths and critical areas for improvement
+   - Business impact and risk assessment with specific examples
+   - Security and performance implications
 
-2. **Detailed Findings** (comprehensive analysis)
-   - Integrate insights from both analyses
-   - Prioritize findings by importance
-   - Provide specific examples and evidence
-   - Resolve any conflicts between analyses
+2. **Detailed Findings** (organized by category)
+   - **Security Issues**: Preserve ALL concrete examples from Claude's analysis with file paths and fixes
+   - **Performance Issues**: Preserve ALL concrete examples from Gemini's analysis with measurable impacts
+   - **Code Quality**: Integrate architectural and quality insights from both analyses
+   - **Testing & Documentation**: Coverage gaps and improvement recommendations
+   - Prioritize findings by severity and implementation effort
 
-3. **Actionable Recommendations** (prioritized list)
-   - Immediate actions (quick wins)
-   - Medium-term improvements
-   - Long-term strategic changes
-   - Implementation guidance
+3. **Actionable Recommendations** (prioritized implementation roadmap)
+   - **Immediate Actions (Quick Wins)**: Copy-paste ready fixes with specific code examples
+   - **Medium-term Improvements**: Architectural changes with implementation guidance
+   - **Long-term Strategic Changes**: Technology stack and process improvements
+   - **Implementation Guidance**: Step-by-step instructions for each recommendation
 
-Format the response as structured markdown with clear sections.`;
+**CRITICAL REQUIREMENTS:**
+- Preserve ALL concrete code examples, file paths, and specific fixes from both analyses
+- Maintain the actionable, copy-paste ready nature of all recommendations
+- Include measurable impact estimates where provided
+- Resolve any conflicts between analyses while preserving technical details
+- Format as structured markdown with clear section headers
+- **ESSENTIAL: Use proper markdown code blocks for ALL code examples**
+
+**MISSING CRITICAL ANALYSIS AREAS:**
+If either analysis failed, note what critical areas couldn't be assessed and recommend manual review for:
+- Component implementation quality (if React/Vue project)
+- Test coverage and quality (if test files missing)
+- Security vulnerability patterns (if security analysis failed)
+- Performance optimization opportunities (if performance analysis failed)
+
+Format the response as comprehensive, structured markdown optimized for developer implementation.`;
 
     try {
       const synthesis = await this.executeWithModel(
@@ -468,9 +675,9 @@ Format the response as structured markdown with clear sections.`;
     };
 
     // Try to parse structured markdown sections
-    const executiveSummaryMatch = content.match(/(?:^|\n)#+\s*Executive Summary.*?\n(.*?)(?=\n#+|\n\*\*|$)/is);
-    const detailedFindingsMatch = content.match(/(?:^|\n)#+\s*Detailed Findings.*?\n(.*?)(?=\n#+|\n\*\*|$)/is);
-    const recommendationsMatch = content.match(/(?:^|\n)#+\s*(?:Actionable )?Recommendations.*?\n(.*?)(?=\n#+|$)/is);
+    const executiveSummaryMatch = content.match(/(?:^|\n)#+\s*Executive Summary.*?\n(.*?)(?=\n#+|\n\*\*|$)/i);
+    const detailedFindingsMatch = content.match(/(?:^|\n)#+\s*Detailed Findings.*?\n(.*?)(?=\n#+|\n\*\*|$)/i);
+    const recommendationsMatch = content.match(/(?:^|\n)#+\s*(?:Actionable )?Recommendations.*?\n(.*?)(?=\n#+|$)/i);
 
     sections.executiveSummary = executiveSummaryMatch?.[1]?.trim() || content.substring(0, 500) + '...';
     sections.detailedFindings = detailedFindingsMatch?.[1]?.trim() || content.substring(500, 2000) + '...';
@@ -508,7 +715,7 @@ ${analysisResults.gemini.success ? analysisResults.gemini.result : `Failed: ${an
 - Repository: ${codeData.repository}
 - Files Analyzed: ${codeData.files.length}
 - Total Lines: ${codeData.totalLines}
-- File Types: ${[...new Set(codeData.files.map(f => f.path.split('.').pop()))].join(', ')}`;
+- File Types: ${Array.from(new Set(codeData.files.map(f => f.path.split('.').pop()))).join(', ')}`;
 
     const recommendations = `
 ## Immediate Actions

@@ -40,12 +40,12 @@ export const providerConfigs = {
   anthropic: {
     baseURL: 'https://api.anthropic.com',
     models: {
-      'claude-4-opus-20250514': { 
+      'claude-opus-4-20250514': { 
         contextWindow: 200000, 
         cost: { input: 0.015, output: 0.075 },
         description: 'Most capable Claude 4 model'
       },
-      'claude-4-sonnet-20250514': { 
+      'claude-sonnet-4-20250514': { 
         contextWindow: 200000, 
         cost: { input: 0.003, output: 0.015 },
         description: 'Balanced Claude 4 model for most use cases'
@@ -343,7 +343,7 @@ export class ProviderManager {
 
     // Validate model is supported by detected provider
     if (!this.isModelSupported(provider, modelName)) {
-      console.warn(`Model "${modelName}" not found in ${provider} configuration, but proceeding anyway`);
+      throw new Error(`Model "${modelName}" not found in ${provider} configuration`);
     }
 
     return {
@@ -389,7 +389,7 @@ export class ProviderManager {
       case 'anthropic':
         return process.env.ANTHROPIC_API_KEY;
       case 'google':
-        return process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+        return process.env.GOOGLE_API_KEY;
       case 'google-vertex':
         return undefined; // Vertex uses service account auth
       case 'perplexity':

@@ -92,8 +92,8 @@ export abstract class MultiAIOrchestrator extends CustomLogicOrchestratorClass {
 
     const executeWithTimeout = async (modelConfig: string | AIModel, index: number): Promise<ParallelAIResult> => {
       const startTime = Date.now();
-      let modelId: string;
-      let provider: string;
+      let modelId: string = 'unknown';
+      let provider: string = 'unknown';
 
       try {
         // Create model configuration
@@ -138,15 +138,22 @@ export abstract class MultiAIOrchestrator extends CustomLogicOrchestratorClass {
         // Retry logic
         if (retryCount > 0) {
           console.log(`🔄 Retrying ${provider}/${modelId} (${retryCount} attempts remaining)`);
-          return await this.runInParallel(prompt, [modelConfig], {
+          const retryResults = await this.runInParallel(prompt, [modelConfig], {
             ...options,
             retryCount: retryCount - 1,
-          }).then(results => results[0]);
+          });
+          return retryResults[0] || {
+            modelId,
+            provider,
+            success: false,
+            error: 'Retry failed - no results returned',
+            duration: Date.now() - startTime,
+          };
         }
 
         const result: ParallelAIResult = {
-          modelId: modelId || 'unknown',
-          provider: provider || 'unknown',
+          modelId,
+          provider,
           success: false,
           error: errorMessage,
           duration,
@@ -192,7 +199,7 @@ export abstract class MultiAIOrchestrator extends CustomLogicOrchestratorClass {
    * @param strategy - Consolidation strategy
    * @returns Consolidated result
    */
-  protected consolidateResults(
+  protected override consolidateResults(
     results: ParallelAIResult[],
     strategy: 'best' | 'consensus' | 'weighted' | 'all' = 'best'
   ): string {
@@ -221,8 +228,14 @@ export abstract class MultiAIOrchestrator extends CustomLogicOrchestratorClass {
           resultCounts.set(result, (resultCounts.get(result) || 0) + 1);
         });
         
-        const [consensusResult] = Array.from(resultCounts.entries())
+        const consensusEntry = Array.from(resultCounts.entries())
           .sort(([,a], [,b]) => b - a)[0];
+        
+        if (!consensusEntry) {
+          throw new Error('No consensus result found');
+        }
+        
+        const [consensusResult] = consensusEntry;
         
         console.log(`🤝 Consensus result selected (${resultCounts.get(consensusResult)} votes)`);
         return consensusResult;
@@ -357,12 +370,16 @@ export abstract class MultiAIOrchestrator extends CustomLogicOrchestratorClass {
     }
 
     if (analyses.length === 1) {
+      const singleAnalysis = analyses[0];
+      if (!singleAnalysis) {
+        throw new Error('Invalid analysis data');
+      }
       return {
-        primaryAnalysis: analyses[0].content,
+        primaryAnalysis: singleAnalysis.content,
         supportingAnalyses: [],
-        synthesis: analyses[0].content,
-        confidence: analyses[0].confidence || 0.8,
-        sources: [analyses[0].source],
+        synthesis: singleAnalysis.content,
+        confidence: singleAnalysis.confidence || 0.8,
+        sources: [singleAnalysis.source],
       };
     }
 
@@ -373,6 +390,10 @@ export abstract class MultiAIOrchestrator extends CustomLogicOrchestratorClass {
 
     const primaryAnalysis = sortedAnalyses[0];
     const supportingAnalyses = sortedAnalyses.slice(1);
+
+    if (!primaryAnalysis) {
+      throw new Error('No primary analysis found');
+    }
 
     // Create synthesis prompt
     const synthesisPrompt = prompt || `
@@ -524,7 +545,12 @@ ${style === 'detailed' ? '- Provides comprehensive coverage with supporting deta
     const results: ToolChainResult[] = [];
 
     for (let i = 0; i < toolChain.length; i++) {
-      const { tool, parameters, onSuccess, onError } = toolChain[i];
+      const stepConfig = toolChain[i];
+      if (!stepConfig) {
+        throw new Error(`Invalid tool chain configuration at step ${i + 1}`);
+      }
+      
+      const { tool, parameters, onSuccess, onError } = stepConfig;
       const startTime = Date.now();
 
       try {
@@ -538,11 +564,11 @@ ${style === 'detailed' ? '- Provides comprehensive coverage with supporting deta
         console.log(`🔗 [${i + 1}/${toolChain.length}] Parameters resolved:`, {
           toolId: tool.toolId,
           parametersType: typeof parameters,
-          resolvedParams: this.sanitizeForLogging(resolvedParameters),
+          resolvedParams: this.sanitizeDataForLogging(resolvedParameters),
         });
 
-        // Execute the tool
-        const result = await tool.execute(resolvedParameters, context);
+        // Execute the tool - use executeTool helper from base class
+        const result = await this.executeTool(tool, resolvedParameters, context);
         const duration = Date.now() - startTime;
 
         const stepResult: ToolChainResult = {
@@ -941,7 +967,7 @@ ${style === 'detailed' ? '- Provides comprehensive coverage with supporting deta
    * @param data - Data to sanitize
    * @returns Sanitized data
    */
-  private sanitizeForLogging(data: any): any {
+  private sanitizeDataForLogging(data: any): any {
     if (typeof data === 'string') {
       const sanitized = data.length > 300 ? `${data.substring(0, 300)}...` : data;
       return sanitized.replace(/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g, '[EMAIL]')

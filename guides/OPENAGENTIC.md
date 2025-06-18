@@ -209,7 +209,7 @@ OpenAgentic auto-detects providers based on model names:
 
 #### Google
 - **Models**: `gemini-2.5-pro-preview-06-05`, `gemini-1.5-pro`, `gemini-1.5-flash`
-- **Environment**: `GOOGLE_GENERATIVE_AI_API_KEY`
+- **Environment**: `GOOGLE_API_KEY`
 
 #### xAI
 - **Models**: `grok-beta`
@@ -229,7 +229,7 @@ Create a `.env` file in your project root:
 # AI Provider API Keys
 OPENAI_API_KEY=your_openai_api_key_here
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
-GOOGLE_GENERATIVE_AI_API_KEY=your_google_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
 
 # AWS S3 Configuration (for file uploads)
 AWS_ACCESS_KEY_ID=your_aws_access_key_id
