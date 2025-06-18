@@ -1,7 +1,7 @@
 import 'dotenv/config';
 
-import { createAgent, createStreamingAgent, calculatorTool, timestampTool, httpTool } from '../src';
-import type { CoreMessage } from '../src/types';
+import { createAgent, createStreamingAgent, calculatorTool, timestampTool, httpTool } from '../../src';
+import type { CoreMessage } from '../../src/types';
 
 async function loggingExample() {
   console.log('📊 OpenAgentic - Enhanced Logging and Debugging Example\n');
