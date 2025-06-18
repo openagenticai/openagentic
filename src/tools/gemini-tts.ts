@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 import { uploadAudioToS3, generateAudioFileName } from '../utils/s3';
@@ -156,12 +156,15 @@ const rawGeminiTTSTool = tool({
       output_format,
       is_dialogue,
       speakerCount: is_dialogue ? speakers?.length || 0 : 1,
+      usingSDK: 'GoogleGenAI SDK',
     });
 
     try {
-      // Initialize Google Generative AI client
-      const genAI = new GoogleGenerativeAI(apiKey);
-      const geminiModel = genAI.getGenerativeModel({ model });
+      // Initialize GoogleGenAI client (new SDK)
+      console.log('🔧 Initializing GoogleGenAI SDK client...');
+      const ai = new GoogleGenAI({
+        apiKey: apiKey
+      });
 
       // Prepare the text with style prompt if provided
       let finalText = text.trim();
@@ -199,22 +202,25 @@ const rawGeminiTTSTool = tool({
         };
       }
 
-      // Generate audio using Gemini
-      console.log('🔄 Generating audio with Gemini...');
+      // Generate audio using GoogleGenAI SDK
+      console.log('🔄 Generating audio with Gemini using SDK...');
       
-      const result = await geminiModel.generateContent({
-        contents: [{ parts: [{ text: finalText }] }],
-        generationConfig: {
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: [{ 
+          parts: [{ text: finalText }] 
+        }],
+        config: {
           responseModalities: ['AUDIO'],
           speechConfig: speechConfig
         }
       });
 
-      // Extract audio data
-      const audioData = result.response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      // Extract audio data from SDK response
+      const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
       
       if (!audioData || !audioData.data) {
-        throw new Error('No audio data received from Gemini TTS API');
+        throw new Error('No audio data received from Gemini TTS API via SDK');
       }
 
       if (audioData.mimeType !== 'audio/pcm') {
@@ -257,6 +263,7 @@ const rawGeminiTTSTool = tool({
         estimatedDuration: estimatedDurationSeconds,
         voiceCount: is_dialogue ? speakers?.length || 0 : 1,
         style_prompt: style_prompt || 'none',
+        sdkUsed: 'GoogleGenAI SDK',
       });
 
       // Return structured result
@@ -281,6 +288,7 @@ const rawGeminiTTSTool = tool({
           sampleRate: 24000,
           channels: 1,
           bitsPerSample: 16,
+          apiUsed: 'GoogleGenAI SDK',
         },
       };
 
@@ -290,11 +298,17 @@ const rawGeminiTTSTool = tool({
         textLength: text.length,
         is_dialogue,
         speakerCount: is_dialogue ? speakers?.length || 0 : 1,
+        sdkUsed: 'GoogleGenAI SDK',
         error: error instanceof Error ? error.message : String(error),
       });
 
       // Handle specific error types
       if (error instanceof Error) {
+        // SDK-specific errors
+        if (error.message.includes('GoogleGenAI') || error.message.includes('SDK')) {
+          throw new Error('Failed to initialize GoogleGenAI SDK. Please check your API key and configuration.');
+        }
+
         // API key errors
         if (error.message.includes('API key') || error.message.includes('401') || 
             error.message.includes('authentication') || error.message.includes('unauthorized')) {
