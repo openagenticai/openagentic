@@ -1,12 +1,17 @@
 import { streamText } from 'ai';
-import type { AIModel, CoreMessage, OpenAgenticTool, Message, LoggingConfig, LogLevel, ExecutionStats } from './types';
+import type { AIModel, CoreMessage, OpenAgenticTool, Message, LoggingConfig, LogLevel, ExecutionStats, BaseOrchestrator, OrchestratorContext, OrchestratorOptions } from './types';
 import { ProviderManager } from './providers/manager';
+import { resolveOrchestrator } from './orchestrators/registry';
 
 export class StreamingOrchestrator {
   private model: AIModel;
   private tools = new Map<string, OpenAgenticTool>();
   private messages: Message[] = [];
   private maxIterations: number;
+  
+  // Orchestrator support
+  private orchestrator?: BaseOrchestrator;
+  private orchestratorOptions: OrchestratorOptions;
   
   // Logging configuration
   private loggingConfig: LoggingConfig;
@@ -34,10 +39,23 @@ export class StreamingOrchestrator {
     enableStatisticsLogging?: boolean;
     enableStreamingLogging?: boolean;
     onFinish?: (result: any) => void | Promise<void>;
-  }) {
+  } & OrchestratorOptions) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
     this.maxIterations = options.maxIterations || 10;
+    
+    // Store orchestrator options
+    this.orchestratorOptions = {
+      orchestrator: options.orchestrator,
+      orchestratorId: options.orchestratorId,
+      allowOrchestratorPromptOverride: options.allowOrchestratorPromptOverride ?? true,
+      allowOrchestratorToolControl: options.allowOrchestratorToolControl ?? true,
+    };
+    
+    // Resolve orchestrator if provided
+    this.orchestrator = resolveOrchestrator(
+      options.orchestrator || options.orchestratorId
+    );
     
     // Configure logging
     this.loggingConfig = {
@@ -71,6 +89,9 @@ export class StreamingOrchestrator {
       maxIterations: this.maxIterations,
       loggingLevel: this.loggingConfig.logLevel,
       hasOnFinishCallback: !!this.onFinishCallback,
+      hasOrchestrator: !!this.orchestrator,
+      orchestratorId: this.orchestrator?.id,
+      orchestratorType: this.orchestrator?.type,
     });
   }
 
@@ -95,7 +116,18 @@ export class StreamingOrchestrator {
         modelInfo: `${this.model.provider}/${this.model.model}`,
         toolsAvailable: this.tools.size,
         maxSteps: this.maxIterations,
+        hasOrchestrator: !!this.orchestrator,
+        orchestratorType: this.orchestrator?.type,
       });
+
+      // Note: Orchestrator delegation for streaming is more complex
+      // For now, we'll log if orchestrator is present but continue with standard flow
+      if (this.orchestrator) {
+        this.log('⚠️', 'Orchestrator delegation not yet implemented for streaming', {
+          orchestratorId: this.orchestrator.id,
+          orchestratorType: this.orchestrator.type,
+        });
+      }
 
       // Handle different input types
       if (typeof input === 'string') {
@@ -320,6 +352,32 @@ export class StreamingOrchestrator {
         error: 'Model info not available',
       };
     }
+  }
+
+  // Orchestrator management methods
+  public getOrchestrator(): BaseOrchestrator | undefined {
+    return this.orchestrator;
+  }
+
+  public setOrchestrator(orchestrator: string | BaseOrchestrator | undefined): void {
+    const resolvedOrchestrator = resolveOrchestrator(orchestrator);
+    
+    if (orchestrator && !resolvedOrchestrator) {
+      throw new Error(`Failed to resolve orchestrator: ${typeof orchestrator === 'string' ? orchestrator : 'invalid orchestrator object'}`);
+    }
+
+    const oldId = this.orchestrator?.id;
+    this.orchestrator = resolvedOrchestrator;
+    
+    this.log('🎭', 'Orchestrator changed', {
+      from: oldId || 'none',
+      to: this.orchestrator?.id || 'none',
+      type: this.orchestrator?.type,
+    });
+  }
+
+  public hasOrchestrator(): boolean {
+    return !!this.orchestrator;
   }
 
   // Utility methods

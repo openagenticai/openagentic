@@ -123,3 +123,108 @@ export const ExecutionResultSchema = z.object({
 });
 
 export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;
+
+// =============================================================================
+// ORCHESTRATOR TYPES
+// =============================================================================
+
+/**
+ * Supported orchestrator types
+ */
+export type OrchestratorType = 'prompt-based' | 'custom-logic';
+
+/**
+ * Context object passed to orchestrator execute methods
+ */
+export interface OrchestratorContext {
+  model: AIModel;
+  tools: OpenAgenticTool[];
+  messages: Message[];
+  iterations: number;
+  maxIterations: number;
+  loggingConfig: LoggingConfig;
+}
+
+/**
+ * Base interface for all orchestrators
+ */
+export interface BaseOrchestrator {
+  /** Unique identifier for the orchestrator */
+  id: string;
+  
+  /** Human-readable name */
+  name: string;
+  
+  /** Description of what this orchestrator does */
+  description: string;
+  
+  /** Type of orchestrator */
+  type: OrchestratorType;
+  
+  /** Execute the orchestration logic */
+  execute(input: string | CoreMessage[], context: OrchestratorContext): Promise<ExecutionResult>;
+  
+  /** Get the orchestrator name */
+  getName(): string;
+  
+  /** Get the orchestrator description */
+  getDescription(): string;
+  
+  /** Get the orchestrator type */
+  getType(): OrchestratorType;
+  
+  /** Optional validation method for inputs */
+  validate?(input: string | CoreMessage[], context: OrchestratorContext): Promise<boolean>;
+  
+  /** Optional initialization method */
+  initialize?(context: OrchestratorContext): Promise<void>;
+  
+  /** Optional cleanup method */
+  cleanup?(context: OrchestratorContext): Promise<void>;
+}
+
+/**
+ * Orchestrator that uses system prompts and standard LLM interaction
+ */
+export interface PromptBasedOrchestrator extends BaseOrchestrator {
+  type: 'prompt-based';
+  
+  /** System prompt used for orchestration */
+  systemPrompt: string;
+  
+  /** Get the system prompt */
+  getSystemPrompt(): string;
+  
+  /** Optional method to modify system prompt based on context */
+  buildSystemPrompt?(context: OrchestratorContext): string;
+}
+
+/**
+ * Orchestrator that uses custom logic instead of standard LLM flow
+ */
+export interface CustomLogicOrchestrator extends BaseOrchestrator {
+  type: 'custom-logic';
+  
+  /** Custom logic function for orchestration */
+  customLogic(input: string | CoreMessage[], context: OrchestratorContext): Promise<any>;
+  
+  /** Optional method to determine if custom logic should be used */
+  shouldUseCustomLogic?(input: string | CoreMessage[], context: OrchestratorContext): boolean;
+}
+
+/**
+ * Options for creating orchestrator-enabled agents
+ */
+export interface OrchestratorOptions {
+  /** Orchestrator instance or ID to use */
+  orchestrator?: string | BaseOrchestrator;
+  
+  /** Alternative parameter name for orchestrator ID */
+  orchestratorId?: string;
+  
+  /** Whether to allow orchestrator to override system prompt */
+  allowOrchestratorPromptOverride?: boolean;
+  
+  /** Whether to allow orchestrator to modify tool execution */
+  allowOrchestratorToolControl?: boolean;
+}

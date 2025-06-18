@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
-import type { AIModel, Message, CoreMessage, ExecutionResult, OpenAgenticTool, LoggingConfig, LogLevel, ExecutionStats, StepInfo } from './types';
+import type { AIModel, Message, CoreMessage, ExecutionResult, OpenAgenticTool, LoggingConfig, LogLevel, ExecutionStats, StepInfo, BaseOrchestrator, OrchestratorContext, OrchestratorOptions } from './types';
 import { ProviderManager } from './providers/manager';
+import { resolveOrchestrator } from './orchestrators/registry';
 
 export class Orchestrator {
   private model: AIModel;
@@ -9,6 +10,10 @@ export class Orchestrator {
   private iterations = 0;
   private maxIterations: number;
   private customLogic?: (input: string, context: any) => Promise<any>;
+  
+  // Orchestrator support
+  private orchestrator?: BaseOrchestrator;
+  private orchestratorOptions: OrchestratorOptions;
   
   // Logging configuration
   private loggingConfig: LoggingConfig;
@@ -30,11 +35,24 @@ export class Orchestrator {
     enableToolLogging?: boolean;
     enableTimingLogging?: boolean;
     enableStatisticsLogging?: boolean;
-  }) {
+  } & OrchestratorOptions) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
     this.maxIterations = options.maxIterations || 10;
     this.customLogic = options.customLogic;
+    
+    // Store orchestrator options
+    this.orchestratorOptions = {
+      orchestrator: options.orchestrator,
+      orchestratorId: options.orchestratorId,
+      allowOrchestratorPromptOverride: options.allowOrchestratorPromptOverride ?? true,
+      allowOrchestratorToolControl: options.allowOrchestratorToolControl ?? true,
+    };
+    
+    // Resolve orchestrator if provided
+    this.orchestrator = resolveOrchestrator(
+      options.orchestrator || options.orchestratorId
+    );
     
     // Configure logging
     this.loggingConfig = {
@@ -60,7 +78,7 @@ export class Orchestrator {
       });
     }
     
-    // Add system prompt if provided
+    // Add system prompt if provided (orchestrator may override this)
     if (options.systemPrompt) {
       this.messages.push({
         role: 'system',
@@ -73,6 +91,9 @@ export class Orchestrator {
       toolsCount: Object.keys(this.tools).length,
       maxIterations: this.maxIterations,
       loggingLevel: this.loggingConfig.logLevel,
+      hasOrchestrator: !!this.orchestrator,
+      orchestratorId: this.orchestrator?.id,
+      orchestratorType: this.orchestrator?.type,
     });
   }
 
@@ -98,9 +119,16 @@ export class Orchestrator {
         modelInfo: `${this.model.provider}/${this.model.model}`,
         toolsAvailable: Object.keys(this.tools).length,
         maxSteps: this.maxIterations,
+        hasOrchestrator: !!this.orchestrator,
+        orchestratorType: this.orchestrator?.type,
       });
 
-      // Handle different input types
+      // If orchestrator is available, delegate to it
+      if (this.orchestrator) {
+        return await this.executeWithOrchestrator(input);
+      }
+
+      // Handle different input types with standard execution
       let result: ExecutionResult;
       if (typeof input === 'string') {
         result = await this.executeWithString(input);
@@ -145,6 +173,73 @@ export class Orchestrator {
       };
 
       return errorResult;
+    }
+  }
+
+  // Execute with orchestrator delegation
+  private async executeWithOrchestrator(input: string | CoreMessage[]): Promise<ExecutionResult> {
+    if (!this.orchestrator) {
+      throw new Error('Orchestrator not available');
+    }
+
+    this.log('🎭', 'Delegating to orchestrator', {
+      orchestratorId: this.orchestrator.id,
+      orchestratorType: this.orchestrator.type,
+      orchestratorName: this.orchestrator.name,
+    });
+
+    try {
+      // Build orchestrator context
+      const context: OrchestratorContext = {
+        model: this.model,
+        tools: Object.values(this.tools),
+        messages: this.messages,
+        iterations: this.iterations,
+        maxIterations: this.maxIterations,
+        loggingConfig: this.loggingConfig,
+      };
+
+      // Initialize orchestrator if it has an initialize method
+      if (this.orchestrator.initialize) {
+        await this.orchestrator.initialize(context);
+      }
+
+      // Validate input if orchestrator has a validate method
+      if (this.orchestrator.validate) {
+        const isValid = await this.orchestrator.validate(input, context);
+        if (!isValid) {
+          throw new Error('Orchestrator validation failed');
+        }
+      }
+
+      // Execute with orchestrator
+      const result = await this.orchestrator.execute(input, context);
+
+      // Update our internal state based on orchestrator result
+      this.iterations = result.iterations || 0;
+      this.stepsExecuted = result.iterations || 0;
+
+      // Cleanup orchestrator if it has a cleanup method
+      if (this.orchestrator.cleanup) {
+        await this.orchestrator.cleanup(context);
+      }
+
+      this.log('✅', 'Orchestrator execution completed', {
+        orchestratorId: this.orchestrator.id,
+        success: result.success,
+        iterations: result.iterations,
+        toolCallsUsed: result.toolCallsUsed?.length || 0,
+      });
+
+      return result;
+    } catch (error) {
+      this.log('❌', 'Orchestrator execution failed', {
+        orchestratorId: this.orchestrator.id,
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
     }
   }
 
@@ -407,6 +502,32 @@ export class Orchestrator {
         error: 'Model info not available',
       };
     }
+  }
+
+  // Orchestrator management methods
+  public getOrchestrator(): BaseOrchestrator | undefined {
+    return this.orchestrator;
+  }
+
+  public setOrchestrator(orchestrator: string | BaseOrchestrator | undefined): void {
+    const resolvedOrchestrator = resolveOrchestrator(orchestrator);
+    
+    if (orchestrator && !resolvedOrchestrator) {
+      throw new Error(`Failed to resolve orchestrator: ${typeof orchestrator === 'string' ? orchestrator : 'invalid orchestrator object'}`);
+    }
+
+    const oldId = this.orchestrator?.id;
+    this.orchestrator = resolvedOrchestrator;
+    
+    this.log('🎭', 'Orchestrator changed', {
+      from: oldId || 'none',
+      to: this.orchestrator?.id || 'none',
+      type: this.orchestrator?.type,
+    });
+  }
+
+  public hasOrchestrator(): boolean {
+    return !!this.orchestrator;
   }
 
   // Utility methods
