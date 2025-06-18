@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, openaiTool, calculatorTool } from '../src';
+import { createAgent, openaiTool, calculatorTool } from '../../src';
 
 async function openaiToolExample() {
   console.log('🤖 OpenAI Tool Example\n');
