@@ -212,6 +212,16 @@ const TEST_CASES: TestCase[] = [
     },
     expectedKeys: ['success', 'audioUrl', 'fileName', 'mode'],
     skipIfMissingEnv: ['GOOGLE_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
+  },
+  {
+    toolId: 'inception_labs',
+    description: 'Inception Labs search for recent AI developments',
+    parameters: {
+      text: 'Hello! What is a diffusion model?',
+      model: 'mercury-coder'
+    },
+    expectedKeys: ['success', 'text', 'model', 'usage'],
+    skipIfMissingEnv: ['INCEPTION_API_KEY']
   }
 ];
 
