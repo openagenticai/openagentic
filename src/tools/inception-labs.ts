@@ -257,7 +257,7 @@ const rawInceptionLabsTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'infusion_labs',
+  toolId: 'inception_labs',
   name: 'Inception Labs Mercury',
   useCases: [
     'Generate high-quality code with advanced understanding',
