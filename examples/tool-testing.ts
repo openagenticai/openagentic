@@ -479,7 +479,7 @@ class ToolTester {
       const status = hasTest ? '✅' : '❌';
       const envReqs = hasTest?.skipIfMissingEnv ? ` (requires: ${hasTest.skipIfMissingEnv.join(', ')})` : '';
       
-      console.log(`${index + 1:2}. ${status} ${tool.toolId} - ${tool.name}${envReqs}`);
+      console.log(`${(index + 1).toString().padStart(2)}. ${status} ${tool.toolId} - ${tool.name}${envReqs}`);
     });
 
     const testedCount = Object.keys(testCasesByTool).length;
