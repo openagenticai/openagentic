@@ -276,4 +276,4 @@ const toolDetails: ToolDetails = {
   logo: '🔬',
 };
 
-export const infusionLabsTool = toOpenAgenticTool(rawInfusionLabsTool, toolDetails);
+export const inceptionLabsTool = toOpenAgenticTool(rawInceptionLabsTool, toolDetails);
