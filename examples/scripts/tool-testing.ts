@@ -70,10 +70,10 @@ const TEST_CASES: TestCase[] = [
     toolId: 'gemini_chat',
     description: 'Google Gemini multimodal understanding',
     parameters: {
-      prompt: 'Explain the concept of artificial intelligence in simple terms.',
-      model: 'gemini-2.5-flash',
-      temperature: 0.5,
-      maxTokens: 200
+      prompt: 'What is AI?',
+      model: 'gemini-1.5-flash',
+      temperature: 0.7,
+      maxTokens: 1000
     },
     expectedKeys: ['success', 'text', 'model', 'usage'],
     skipIfMissingEnv: ['GOOGLE_API_KEY']
