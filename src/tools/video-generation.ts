@@ -240,7 +240,7 @@ const rawVideoGenerationTool = tool({
         maxWaitTime,
         promptLength: prompt.length,
         sdkUsed: 'GoogleGenAI SDK',
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -326,7 +326,7 @@ const rawVideoGenerationTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`Video generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Video generation failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
