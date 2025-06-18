@@ -23,7 +23,7 @@ export interface UploadResult {
 }
 
 export interface UploadOptions {
-  directory?: string;
+  directory?: S3Directory;
   description?: string;
   metadata?: Record<string, string>;
   cacheControl?: string;
@@ -766,7 +766,7 @@ export async function testS3Connection(): Promise<boolean> {
       Buffer.from(testContent),
       testFileName,
       'text/plain',
-      'test'
+      S3Directory.UPLOADS
     );
     
     console.log('✅ S3 connection test successful');
