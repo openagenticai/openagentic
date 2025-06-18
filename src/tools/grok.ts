@@ -195,8 +195,8 @@ const rawGrokTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'grok_text_generation',
-  name: 'xAI Grok',
+  toolId: 'grok_chat',
+  name: 'xAI Grok Chat',
   useCases: [
     'Generate creative content and stories',
     'Answer questions with real-time information',

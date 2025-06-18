@@ -407,8 +407,8 @@ const rawVideoGenerationTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'video_generation',
-  name: 'Video Generation',
+  toolId: 'video_generator',
+  name: 'Video Generator',
   useCases: [
     'Generate videos from text descriptions',
     'Create animated content for social media',

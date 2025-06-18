@@ -422,8 +422,8 @@ const rawElevenLabsTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'elevenlabs_text_to_speech',
-  name: 'ElevenLabs Text-to-Speech',
+  toolId: 'elevenlabs_tts',
+  name: 'ElevenLabs TTS',
   useCases: [
     'Convert blog posts and articles to natural speech',
     'Create podcast episodes from scripts',

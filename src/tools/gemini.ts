@@ -256,8 +256,8 @@ const rawGeminiTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'gemini_text_generation',
-  name: 'Google Gemini',
+  toolId: 'gemini_chat',
+  name: 'Google Gemini Chat',
   useCases: [
     'Generate creative content and stories',
     'Answer questions with multimodal understanding',

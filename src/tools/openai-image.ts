@@ -297,8 +297,8 @@ const rawOpenAIImageTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'openai_image_generation',
-  name: 'OpenAI Image Generation',
+  toolId: 'openai_image_generator',
+  name: 'OpenAI Image Generator',
   useCases: [
     'Generate photorealistic images from text descriptions',
     'Create artistic illustrations and digital art',

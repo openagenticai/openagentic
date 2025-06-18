@@ -202,8 +202,8 @@ const rawAnthropicTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'anthropic_text_generation',
-  name: 'Anthropic Text Generation',
+  toolId: 'anthropic_chat',
+  name: 'Anthropic Claude Chat',
   useCases: [
     'Generate thoughtful and nuanced creative content',
     'Provide detailed analysis and explanations',

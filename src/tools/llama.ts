@@ -289,8 +289,8 @@ const rawLlamaTool = tool({
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'llama_text_generation',
-  name: 'Meta Llama',
+  toolId: 'llama_chat',
+  name: 'Meta Llama Chat',
   useCases: [
     'Generate creative content and stories',
     'Engage in multi-turn conversations',
