@@ -162,7 +162,7 @@ const rawOpenAIImageTool = tool({
       try {
         imageData = await response.json();
       } catch (error) {
-        throw new Error(`Failed to parse OpenAI Images API response: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to parse OpenAI Images API response: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       // Validate response structure
@@ -228,7 +228,7 @@ const rawOpenAIImageTool = tool({
         quality,
         style,
         promptLength: prompt.length,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -291,7 +291,7 @@ const rawOpenAIImageTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`OpenAI image generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`OpenAI image generation failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
