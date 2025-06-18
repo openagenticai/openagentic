@@ -12,7 +12,7 @@ import {
   generateAudioFileName,
   generateHtmlFileName,
   type UploadResult
-} from '../src/utils/s3';
+} from '../../src/utils/s3';
 
 async function s3UploadExample() {
   console.log('🚀 AWS S3 Upload Example\n');
