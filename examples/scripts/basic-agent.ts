@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, calculatorTool, httpTool, timestampTool } from '../src';
+import { createAgent, calculatorTool, httpTool, timestampTool } from '../../src';
 
 async function basicAgentExample() {
   console.log('🤖 OpenAgentic - Basic Agent Example\n');
