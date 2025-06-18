@@ -109,7 +109,7 @@ const rawPerplexityTool = tool({
         model,
         queryLength: query.length,
         query: query.substring(0, 100) + (query.length > 100 ? '...' : ''),
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -161,7 +161,7 @@ const rawPerplexityTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`Perplexity search failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Perplexity search failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
