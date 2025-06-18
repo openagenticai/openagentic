@@ -7,10 +7,11 @@ import { toOpenAgenticTool } from './utils';
 
 // Supported Anthropic Claude models with validation
 const SUPPORTED_MODELS = [
-  'claude-4-sonnet-20250514',
-  'claude-4-opus-20250514',
-  'claude-3-7-sonnet-20250219',
-  'claude-3-5-haiku-20241022'
+  'claude-opus-4-20250514',
+  'claude-sonnet-4-20250514', 
+  'claude-3-7-sonnet-latest',
+  'claude-3-5-sonnet-latest',
+  'claude-3-5-haiku-latest'
 ] as const;
 
 const rawAnthropicTool = tool({
@@ -23,8 +24,8 @@ const rawAnthropicTool = tool({
     
     model: z.string()
       .optional()
-      .default('claude-4-sonnet-20250514')
-      .describe('Claude model to use (claude-4-sonnet-20250514, claude-4-opus-20250514, claude-3-7-sonnet-20250219, claude-3-5-haiku-20241022)'),
+      .default('claude-sonnet-4-20250514')
+      .describe('Claude model to use (claude-opus-4-20250514, claude-sonnet-4-20250514, claude-3-7-sonnet-latest, claude-3-5-sonnet-latest, claude-3-5-haiku-latest)'),
     
     maxTokens: z.number()
       .int()
@@ -57,7 +58,7 @@ const rawAnthropicTool = tool({
   
   execute: async ({ 
     prompt, 
-    model = 'claude-4-sonnet-20250514',
+    model = 'claude-sonnet-4-20250514',
     maxTokens = 1000,
     temperature = 0.7,
     topP,
@@ -159,6 +160,11 @@ const rawAnthropicTool = tool({
 
       // Handle specific error types
       if (error instanceof Error) {
+        // Overloaded error (server capacity issues)
+        if (error.message.includes('Overloaded') || error.message.includes('overloaded') || error.message.includes('529')) {
+          throw new Error('Anthropic API is currently overloaded. Please try again in a few moments.');
+        }
+        
         // Rate limiting error
         if (error.message.includes('rate limit') || error.message.includes('429')) {
           throw new Error('Anthropic API rate limit exceeded. Please try again in a moment.');
@@ -192,6 +198,11 @@ const rawAnthropicTool = tool({
         // Claude-specific safety errors
         if (error.message.includes('safety') || error.message.includes('harmful')) {
           throw new Error('Request was rejected by Claude safety filters. Please modify your prompt.');
+        }
+
+        // Service availability errors
+        if (error.message.includes('502') || error.message.includes('503') || error.message.includes('504')) {
+          throw new Error('Anthropic service temporarily unavailable. Please try again later.');
         }
       }
 
