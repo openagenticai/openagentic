@@ -1,6 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { Octokit } from 'octokit';
+import { Octokit } from "@octokit/rest";
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 
@@ -100,7 +100,7 @@ const rawGitHubTool = tool({
           },
           directory: {
             path: normalizedPath || '/',
-            contents: response.data.map(item => ({
+            contents: response.data.map((item: any) => ({
               name: item.name,
               type: item.type,
               size: item.size || 0,
@@ -198,23 +198,15 @@ const rawGitHubTool = tool({
           throw new Error('GitHub API rate limit exceeded. Please try again later.');
         } else if (error.message && error.message.includes('abuse')) {
           throw new Error('Request was flagged as potential abuse. Please try again later.');
+        } else {
+          throw new Error('Access forbidden. The repository may be private or your token lacks sufficient permissions.');
         }
-        throw new Error('Access forbidden. The repository may be private or your token lacks sufficient permissions.');
       } else if (error.status === 451) {
         throw new Error('Repository unavailable due to legal reasons.');
-      } else if (error.status === 500) {
-        throw new Error('GitHub server error. Please try again later.');
-      } else if (error.status === 502 || error.status === 503 || error.status === 504) {
-        throw new Error('GitHub service temporarily unavailable. Please try again later.');
-      }
-
-      // Handle network and other errors
-      if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      }else if (error.message && error.message.includes('timeout')) {
+        throw new Error('GitHub API request timed out. Please try again.');
+      } else if (error.message && error.message.includes('network')) {
         throw new Error('Network error connecting to GitHub API. Please check your internet connection.');
-      }
-
-      if (error.message && error.message.includes('timeout')) {
-        throw new Error('Request timed out. Please try again.');
       }
 
       // Generic error fallback
@@ -228,15 +220,15 @@ const toolDetails: ToolDetails = {
   name: 'GitHub Contents',
   useCases: [
     'Fetch file contents from GitHub repositories',
-    'Browse directory structures in repositories',
-    'Access repository files for code analysis',
-    'Retrieve documentation and README files',
-    'Download configuration files',
-    'Access specific branches or commits',
-    'Explore open source codebases',
-    'Fetch repository metadata and information',
-    'Access private repository contents (with token)',
-    'Retrieve file history and versions',
+    'Browse directory listings in repositories',
+    'Download specific files or entire directories',
+    'Access repository content from specific branches or commits',
+    'Retrieve README files and documentation',
+    'Access configuration files and source code',
+    'Browse open source project structures',
+    'Fetch specific versions of files using refs',
+    'Access both public and private repositories (with proper tokens)',
+    'Retrieve file metadata including size, SHA, and URLs',
   ],
   logo: 'https://www.openagentic.org/tools/github.svg',
 };
