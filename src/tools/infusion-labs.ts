@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 
-// Supported Infusion Labs Mercury models with validation
+// Supported Inception Labs Mercury models with validation
 const SUPPORTED_MODELS = [
   'mercury-coder',
 ] as const;
