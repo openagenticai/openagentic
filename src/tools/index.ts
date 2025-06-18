@@ -16,6 +16,7 @@ export { perplexityTool } from './perplexity';
 export { qrcodeTool } from './qrcode';
 export { websearchTool } from './websearch';
 export { elevenlabsTool } from './elevenlabs';
+export { videoGenerationTool } from './video-generation';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -37,12 +38,13 @@ import { perplexityTool } from './perplexity';
 import { qrcodeTool } from './qrcode';
 import { websearchTool } from './websearch';
 import { elevenlabsTool } from './elevenlabs';
+import { videoGenerationTool } from './video-generation';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool];
-export const utilityTools = [calculatorTool, githubTool, newsdataTool, qrcodeTool, openaiImageTool, elevenlabsTool];
+export const utilityTools = [calculatorTool, githubTool, newsdataTool, qrcodeTool, openaiImageTool, elevenlabsTool, videoGenerationTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================

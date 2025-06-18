@@ -158,7 +158,7 @@ const rawOpenAIImageTool = tool({
       }
 
       // Parse response
-      let imageData;
+      let imageData: any;
       try {
         imageData = await response.json();
       } catch (error) {
