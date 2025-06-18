@@ -135,7 +135,7 @@ const rawElevenLabsTool = tool({
       // Validate each dialogue input
       for (let i = 0; i < dialogue_inputs.length; i++) {
         const input = dialogue_inputs[i];
-        if (!input.text || input.text.trim().length === 0) {
+        if (!input || !input.text || input.text.trim().length === 0) {
           throw new Error(`Dialogue input ${i + 1} text cannot be empty`);
         }
         if (input.text.length > 5000) {
@@ -221,8 +221,8 @@ const rawElevenLabsTool = tool({
         // Generate speech
         const audioResponse = await client.textToSpeech.convert(finalVoiceId, {
           text: text!.trim(),
-          model_id,
-          output_format,
+          modelId: model_id,
+          outputFormat: output_format,
         });
 
         // Convert response to buffer
@@ -261,6 +261,9 @@ const rawElevenLabsTool = tool({
         const audioSegments: Buffer[] = [];
         for (let i = 0; i < processedInputs.length; i++) {
           const segment = processedInputs[i];
+          if (!segment) {
+            throw new Error(`Dialogue segment ${i + 1} is undefined`);
+          }
           
           console.log(`🎤 Generating segment ${i + 1}/${processedInputs.length}:`, {
             voice_id: segment.voice_id,
@@ -270,8 +273,8 @@ const rawElevenLabsTool = tool({
 
           const audioResponse = await client.textToSpeech.convert(segment.voice_id, {
             text: segment.text,
-            model_id,
-            output_format,
+            modelId: model_id,
+            outputFormat: output_format,
           });
 
           // Convert response to buffer
