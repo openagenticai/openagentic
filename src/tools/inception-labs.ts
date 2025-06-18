@@ -136,7 +136,7 @@ const rawInceptionLabsTool = tool({
       try {
         responseData = await response.json();
       } catch (error) {
-        throw new Error(`Failed to parse Inception Labs API response: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to parse Inception Labs API response: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       // Validate response structure
