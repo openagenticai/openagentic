@@ -10,6 +10,7 @@ export { openaiTool } from './openai';
 export { anthropicTool } from './anthropic';
 export { geminiTool } from './gemini';
 export { githubTool } from './github';
+export { grokTool } from './grok';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -25,11 +26,12 @@ import { openaiTool } from './openai';
 import { anthropicTool } from './anthropic';
 import { geminiTool } from './gemini';
 import { githubTool } from './github';
+import { grokTool } from './grok';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
-export const aiTools = [openaiTool, anthropicTool, geminiTool];
+export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool];
 export const utilityTools = [httpTool, calculatorTool, timestampTool, githubTool];
 export const allTools = [...utilityTools, ...aiTools];
 
