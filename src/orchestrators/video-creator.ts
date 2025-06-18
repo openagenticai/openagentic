@@ -73,10 +73,10 @@ WORKFLOW EXECUTION:
 
 Remember: Each stage builds toward the ultimate goal of producing a stunning, professional-quality video that exceeds expectations.`,
   [
-    'web_search',           // For visual research and trend discovery
-    'anthropic_chat',       // For creative direction and storytelling
-    'gemini_chat',          // For Veo prompt optimization
-    'video_generator',      // For final video generation
+    websearchTool.toolId,           // For visual research and trend discovery
+    anthropicTool.toolId,       // For creative direction and storytelling
+    geminiTool.toolId,          // For Veo prompt optimization
+    videoGenerationTool.toolId,      // For final video generation
   ]
 );
 
