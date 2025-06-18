@@ -177,7 +177,7 @@ const rawLlamaTool = tool({
       try {
         responseData = await response.json();
       } catch (error) {
-        throw new Error(`Failed to parse Llama API response: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to parse Llama API response: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
       }
 
       // Validate response with Zod schema
@@ -241,7 +241,7 @@ const rawLlamaTool = tool({
       console.error('❌ Llama Tool - Generation failed:', {
         model,
         messagesCount: messages.length,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -289,7 +289,7 @@ const rawLlamaTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`Llama text generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Llama text generation failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
