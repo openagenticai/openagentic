@@ -1,5 +1,6 @@
 import { tool } from 'ai';
 import { z } from 'zod';
+import { GoogleGenAI } from '@google/genai';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 import { uploadVideoToS3, generateVideoFileName } from '../utils/s3';
@@ -9,29 +10,6 @@ const SUPPORTED_MODELS = [
   'veo-2.0-generate-001',
   'veo-2.0-preview-001',
 ] as const;
-
-// Video generation status
-type VideoStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
-
-interface VideoGenerationResponse {
-  name: string;
-  metadata: {
-    createTime: string;
-    updateTime: string;
-  };
-  done: boolean;
-  response?: {
-    generatedVideos: Array<{
-      videoUri: string;
-      prompt: string;
-    }>;
-  };
-  error?: {
-    code: number;
-    message: string;
-    details: any[];
-  };
-}
 
 const rawVideoGenerationTool = tool({
   description: 'Generate high-quality videos using Google Gemini Veo 2.0 model with automatic S3 upload and storage',
@@ -106,139 +84,77 @@ const rawVideoGenerationTool = tool({
       numberOfVideos,
       maxWaitTime,
       model,
+      usingSDK: 'GoogleGenAI SDK',
     });
 
     try {
       // Helper function to delay execution
       const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-      // Initialize generation operations array
-      const generationOperations: string[] = [];
+      // Initialize GoogleGenAI client
+      console.log('🔧 Initializing GoogleGenAI SDK client...');
+      const ai = new GoogleGenAI({
+        vertexai: false,
+        apiKey: apiKey
+      });
 
-      // Start video generation for each requested video
-      console.log(`🎥 Starting generation of ${numberOfVideos} video(s)...`);
+      console.log(`🎥 Starting generation of ${numberOfVideos} video(s) using SDK...`);
       
-      for (let i = 0; i < numberOfVideos; i++) {
-        console.log(`🎬 Initiating video ${i + 1}/${numberOfVideos}...`);
-        
-        // Prepare request body for Google Video Generation API
-        const requestBody = {
-          model: `models/${model}`,
-          contents: [{
-            parts: [{
-              text: prompt.trim()
-            }]
-          }],
-          generationConfig: {
-            candidateCount: 1,
-            maxOutputTokens: 1000,
-            temperature: 0.7,
-          }
-        };
+      // Start video generation using SDK
+      let operation = await ai.models.generateVideos({
+        model: model,
+        prompt: prompt.trim(),
+        config: {
+          numberOfVideos,
+        },
+      });
 
-        // Make API request to start video generation
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        });
-
-        // Check if response is ok
-        if (!response.ok) {
-          const errorText = await response.text();
-          let errorMessage = `Google Video API error: ${response.status} - ${response.statusText}`;
-          
-          try {
-            const errorJson = JSON.parse(errorText);
-            if (errorJson.error && errorJson.error.message) {
-              errorMessage = errorJson.error.message;
-            }
-          } catch {
-            // Use default error message if parsing fails
-          }
-
-          throw new Error(errorMessage);
-        }
-
-        // Parse response to get operation name
-        let operationData: VideoGenerationResponse;
-        try {
-          operationData = await response.json() as VideoGenerationResponse;
-        } catch (error) {
-          throw new Error(`Failed to parse Google Video API response: ${error instanceof Error ? error.message : String(error)}`);
-        }
-
-        if (!operationData.name) {
-          throw new Error('No operation name received from Google Video API');
-        }
-
-        generationOperations.push(operationData.name);
-        console.log(`✅ Video ${i + 1} generation started with operation: ${operationData.name}`);
+      if (!operation) {
+        throw new Error('No operation returned from GoogleGenAI SDK');
       }
 
-      // Polling function to check operation status
-      const checkOperationStatus = async (operationName: string): Promise<VideoGenerationResponse> => {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/${operationName}`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-          },
-        });
+      console.log(`✅ Video generation operation started with SDK: ${operation.name || 'operation-id'}`);
 
-        if (!response.ok) {
-          throw new Error(`Failed to check operation status: ${response.status} - ${response.statusText}`);
-        }
-
-        return await response.json() as VideoGenerationResponse;
-      };
-
-      // Poll for completion of all operations
+      // Polling for completion using SDK
       const startWaitTime = Date.now();
       const maxWaitMs = maxWaitTime * 1000;
-      const completedOperations: VideoGenerationResponse[] = [];
 
-      console.log(`⏳ Waiting for ${generationOperations.length} video(s) to complete...`);
+      console.log(`⏳ Waiting for ${numberOfVideos} video(s) to complete using SDK polling...`);
 
-      while (completedOperations.length < generationOperations.length) {
+      while (!operation.done) {
         const elapsedTime = Date.now() - startWaitTime;
         
         if (elapsedTime > maxWaitMs) {
-          throw new Error(`Video generation timed out after ${maxWaitTime} seconds. ${completedOperations.length}/${generationOperations.length} videos completed.`);
+          throw new Error(`Video generation timed out after ${maxWaitTime} seconds. Operation may still be running.`);
         }
 
-        // Check status of remaining operations
-        for (let i = 0; i < generationOperations.length; i++) {
-          if (completedOperations[i]) continue; // Already completed
-
-          const operationName = generationOperations[i];
-          if (!operationName) continue;
-
-          try {
-            const status = await checkOperationStatus(operationName);
-            
-            if (status.done) {
-              if (status.error) {
-                throw new Error(`Video ${i + 1} generation failed: ${status.error.message}`);
-              }
-              
-              completedOperations[i] = status;
-              console.log(`✅ Video ${i + 1} generation completed`);
-            }
-          } catch (error) {
-            console.error(`❌ Error checking video ${i + 1} status:`, error);
-            throw error;
+        console.log(`🎬 Waiting for completion... (${Math.round(elapsedTime / 1000)}s elapsed)`);
+        await delay(5000); // Check every 5 seconds
+        
+        try {
+          operation = await ai.operations.getVideosOperation({ operation });
+        } catch (pollError) {
+          console.error('🎬 Error polling operation status with SDK:', pollError);
+          if (elapsedTime > maxWaitMs * 0.8) {
+            throw pollError;
           }
-        }
-
-        // If not all completed, wait before next check
-        if (completedOperations.length < generationOperations.length) {
-          console.log(`🎬 Waiting for completion... (${Math.round(elapsedTime / 1000)}s elapsed, ${completedOperations.filter(Boolean).length}/${generationOperations.length} completed)`);
-          await delay(5000); // Check every 5 seconds
+          // Continue polling if we haven't reached 80% of max wait time
+          continue;
         }
       }
+
+      // Check for operation errors
+      if (operation.error) {
+        throw new Error(`Video generation failed: ${operation.error.message || 'Unknown error'}`);
+      }
+
+      // Process generated videos
+      const videos = operation.response?.generatedVideos;
+      if (!videos || videos.length === 0) {
+        throw new Error('No videos were generated');
+      }
+
+      console.log(`✅ ${videos.length} video(s) generation completed with SDK`);
 
       // Download and process all generated videos
       console.log('📥 Downloading generated videos...');
@@ -246,21 +162,18 @@ const rawVideoGenerationTool = tool({
       const videoUrls: string[] = [];
       const generatedFileNames: string[] = [];
 
-      for (let i = 0; i < completedOperations.length; i++) {
-        const operation = completedOperations[i];
-        if (!operation || !operation.response || !operation.response.generatedVideos) {
-          throw new Error(`No video data in completed operation ${i + 1}`);
-        }
+      for (let i = 0; i < videos.length; i++) {
+        const video = videos[i];
+        const videoUri = video.video?.uri; // SDK response structure
 
-        const generatedVideo = operation.response.generatedVideos[0];
-        if (!generatedVideo || !generatedVideo.videoUri) {
+        if (!videoUri) {
           throw new Error(`No video URI in generated video ${i + 1}`);
         }
 
-        console.log(`📥 Downloading video ${i + 1} from: ${generatedVideo.videoUri}`);
+        console.log(`📥 Downloading video ${i + 1} from SDK response: ${videoUri}`);
 
         // Download video from Google's temporary URL
-        const videoResponse = await fetch(generatedVideo.videoUri);
+        const videoResponse = await fetch(videoUri);
         if (!videoResponse.ok) {
           throw new Error(`Failed to download video ${i + 1}: ${videoResponse.status} - ${videoResponse.statusText}`);
         }
@@ -299,6 +212,7 @@ const rawVideoGenerationTool = tool({
         fileSizes: videoBuffers.map(buf => buf.length),
         generationTime: Math.round(totalDuration / 1000),
         maxWaitTime,
+        sdkUsed: 'GoogleGenAI SDK',
       });
 
       // Return structured result
@@ -314,7 +228,7 @@ const rawVideoGenerationTool = tool({
           promptLength: prompt.length,
           generationTime: Math.round(totalDuration / 1000),
           fileSizes: videoBuffers.map(buf => buf.length),
-          apiUsed: 'Gemini Veo 2.0',
+          apiUsed: 'GoogleGenAI SDK',
           uploadedToS3: true,
         },
       };
@@ -325,11 +239,17 @@ const rawVideoGenerationTool = tool({
         numberOfVideos,
         maxWaitTime,
         promptLength: prompt.length,
+        sdkUsed: 'GoogleGenAI SDK',
         error: error instanceof Error ? error.message : String(error),
       });
 
       // Handle specific error types
       if (error instanceof Error) {
+        // SDK initialization errors
+        if (error.message.includes('GoogleGenAI') || error.message.includes('SDK')) {
+          throw new Error('Failed to initialize GoogleGenAI SDK. Please check your API key and configuration.');
+        }
+
         // Rate limiting error
         if (error.message.includes('rate limit') || error.message.includes('429') || 
             error.message.includes('quota') || error.message.includes('limit exceeded')) {
@@ -360,6 +280,16 @@ const rawVideoGenerationTool = tool({
         // Video generation failures
         if (error.message.includes('generation failed') || error.message.includes('video failed')) {
           throw new Error('Video generation failed. Please try again with a different prompt or model.');
+        }
+        
+        // SDK operation errors
+        if (error.message.includes('operation') || error.message.includes('generateVideos')) {
+          throw new Error('Failed to start video generation operation with SDK. Please try again.');
+        }
+        
+        // SDK polling errors
+        if (error.message.includes('getVideosOperation') || error.message.includes('polling')) {
+          throw new Error('Failed to track video generation progress with SDK. Please try again.');
         }
         
         // Download errors
@@ -393,11 +323,6 @@ const rawVideoGenerationTool = tool({
         if (error.message.includes('too complex') || error.message.includes('cannot generate')) {
           throw new Error('Video prompt is too complex for generation. Please simplify your description.');
         }
-        
-        // Operation errors
-        if (error.message.includes('operation') || error.message.includes('tracking')) {
-          throw new Error('Failed to track video generation progress. Please try again.');
-        }
       }
 
       // Generic error fallback
@@ -410,7 +335,7 @@ const toolDetails: ToolDetails = {
   toolId: 'video_generator',
   name: 'Video Generator',
   useCases: [
-    'Generate videos from text descriptions',
+    'Generate videos from text descriptions using Veo 2.0',
     'Create animated content for social media',
     'Generate promotional videos for products',
     'Create educational video content',
