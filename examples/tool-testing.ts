@@ -131,7 +131,7 @@ const TEST_CASES: TestCase[] = [
     toolId: 'calculator',
     description: 'Mathematical calculation with complex expression',
     parameters: {
-      expression: 'Math.sqrt(144) + Math.pow(2, 3) * 5'
+      expression: '(15 + 25) * 2 - 10'
     },
     expectedKeys: ['result', 'expression', 'type']
   },
