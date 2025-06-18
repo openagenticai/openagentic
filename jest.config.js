@@ -16,5 +16,15 @@ module.exports = {
     '!src/**/__tests__/**'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html']
+  coverageReporters: ['text', 'lcov', 'html'],
+  // Handle ES module imports that don't work with Jest
+  moduleNameMapper: {
+    '^@octokit/rest$': '<rootDir>/tests/__mocks__/@octokit/rest.js'
+  },
+  // Transform ES modules from node_modules
+  transformIgnorePatterns: [
+    'node_modules/(?!(@octokit)/)'
+  ],
+  // Setup files to run before tests
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts']
 };
