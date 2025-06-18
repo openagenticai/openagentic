@@ -9,7 +9,7 @@ const SUPPORTED_MODELS = [
 ] as const;
 
 const rawInfusionLabsTool = tool({
-  description: 'Generate high-quality code and technical content using Infusion Labs Mercury Coder model with specialized coding capabilities',
+  description: 'Generate high-quality code and technical content using Inception Labs Mercury Coder model with specialized coding capabilities',
   parameters: z.object({
     prompt: z.string()
       .min(1)
@@ -76,7 +76,7 @@ const rawInfusionLabsTool = tool({
     }
 
     // Start logging
-    console.log('🔬 Infusion Labs Tool - Generation started:', {
+    console.log('🔬 Inception Labs Tool - Generation started:', {
       model,
       promptLength: prompt.length,
       maxTokens,
@@ -86,7 +86,7 @@ const rawInfusionLabsTool = tool({
     });
 
     try {
-      // Prepare request body for Infusion Labs API
+      // Prepare request body for Inception Labs API
       const requestBody: any = {
         model,
         messages: [
@@ -117,7 +117,7 @@ const rawInfusionLabsTool = tool({
       // Check if response is ok
       if (!response.ok) {
         const errorText = await response.text();
-        let errorMessage = `Infusion Labs API error: ${response.status} - ${response.statusText}`;
+        let errorMessage = `Inception Labs API error: ${response.status} - ${response.statusText}`;
         
         try {
           const errorJson = JSON.parse(errorText);
@@ -136,12 +136,12 @@ const rawInfusionLabsTool = tool({
       try {
         responseData = await response.json();
       } catch (error) {
-        throw new Error(`Failed to parse Infusion Labs API response: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to parse Inception Labs API response: ${error instanceof Error ? error.message : String(error)}`);
       }
 
       // Validate response structure
       if (!responseData || !responseData.choices || !Array.isArray(responseData.choices) || responseData.choices.length === 0) {
-        throw new Error('Invalid response structure from Infusion Labs API');
+        throw new Error('Invalid response structure from Inception Labs API');
       }
 
       // Extract text content
@@ -149,7 +149,7 @@ const rawInfusionLabsTool = tool({
       const text = choice?.message?.content || '';
       
       if (!text) {
-        throw new Error('No content received from Infusion Labs API');
+        throw new Error('No content received from Inception Labs API');
       }
 
       // Extract usage information
@@ -157,7 +157,7 @@ const rawInfusionLabsTool = tool({
       const finishReason = choice?.finish_reason || 'unknown';
 
       // Log completion
-      console.log('✅ Infusion Labs Tool - Generation completed:', {
+      console.log('✅ Inception Labs Tool - Generation completed:', {
         model,
         tokensUsed: usage.total_tokens || 0,
         responseLength: text.length,
@@ -189,7 +189,7 @@ const rawInfusionLabsTool = tool({
       };
 
     } catch (error) {
-      console.error('❌ Infusion Labs Tool - Generation failed:', {
+      console.error('❌ Inception Labs Tool - Generation failed:', {
         model,
         promptLength: prompt.length,
         error: error instanceof Error ? error.message : String(error),
@@ -199,12 +199,12 @@ const rawInfusionLabsTool = tool({
       if (error instanceof Error) {
         // Rate limiting error
         if (error.message.includes('rate limit') || error.message.includes('429')) {
-          throw new Error('Infusion Labs API rate limit exceeded. Please try again in a moment.');
+          throw new Error('Inception Labs API rate limit exceeded. Please try again in a moment.');
         }
         
         // Authentication error
         if (error.message.includes('401') || error.message.includes('authentication')) {
-          throw new Error('Infusion Labs API authentication failed. Please check your INCEPTION_API_KEY.');
+          throw new Error('Inception Labs API authentication failed. Please check your INCEPTION_API_KEY.');
         }
         
         // Token limit error
@@ -225,18 +225,18 @@ const rawInfusionLabsTool = tool({
         // Network errors
         if (error.message.includes('network') || error.message.includes('timeout') || 
             error.message.includes('ECONNREFUSED') || error.message.includes('ETIMEDOUT')) {
-          throw new Error('Network error connecting to Infusion Labs API. Please check your internet connection.');
+          throw new Error('Network error connecting to Inception Labs API. Please check your internet connection.');
         }
         
         // Service availability errors
         if (error.message.includes('502') || error.message.includes('503') || error.message.includes('504') ||
             error.message.includes('service unavailable') || error.message.includes('server error')) {
-          throw new Error('Infusion Labs service temporarily unavailable. Please try again later.');
+          throw new Error('Inception Labs service temporarily unavailable. Please try again later.');
         }
         
         // API overload errors
         if (error.message.includes('overload') || error.message.includes('capacity')) {
-          throw new Error('Infusion Labs API is currently overloaded. Please try again in a few moments.');
+          throw new Error('Inception Labs API is currently overloaded. Please try again in a few moments.');
         }
         
         // Invalid request errors
@@ -251,14 +251,14 @@ const rawInfusionLabsTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`Infusion Labs text generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Inception Labs text generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   },
 });
 
 const toolDetails: ToolDetails = {
   toolId: 'infusion_labs',
-  name: 'Infusion Labs Mercury',
+  name: 'Inception Labs Mercury',
   useCases: [
     'Generate high-quality code with advanced understanding',
     'Provide detailed technical explanations and documentation',
