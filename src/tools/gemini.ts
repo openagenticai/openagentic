@@ -7,9 +7,11 @@ import { toOpenAgenticTool } from './utils';
 
 // Supported Google Gemini models with validation
 const SUPPORTED_MODELS = [
-  'gemini-2.5-pro',
-  'gemini-2.5-flash', 
-  'gemini-2.5-flash-lite-preview-06-17',
+  'gemini-1.5-pro',
+  'gemini-1.5-flash',
+  // 'gemini-2.5-pro',
+  // 'gemini-2.5-flash', 
+  // 'gemini-2.5-flash-lite-preview-06-17',
 ] as const;
 
 const rawGeminiTool = tool({
@@ -22,8 +24,9 @@ const rawGeminiTool = tool({
     
     model: z.string()
       .optional()
-      .default('gemini-2.5-pro')
-      .describe('Gemini model to use (gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite-preview-06-17)'),
+      .default('gemini-1.5-pro')
+      .describe('Gemini model to use (gemini-1.5-pro, gemini-1.5-flash)'),
+      // .describe('Gemini model to use (gemini-1.5-pro, gemini-1.5-flash, gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite-preview-06-17)'),
     
     maxTokens: z.number()
       .int()
@@ -120,7 +123,7 @@ const rawGeminiTool = tool({
       // Prepare generation config
       const generateConfig: any = {
         model: google(model),
-        maxTokens,
+        maxTokens: Math.min(maxTokens, 4000), // Reduce maxTokens to avoid the empty response bug
         temperature,
       };
 
@@ -160,6 +163,11 @@ const rawGeminiTool = tool({
 
       // Generate text
       const { text, usage, finishReason } = await generateText(generateConfig);
+
+      // Check for empty response
+      if (!text || text.trim().length === 0) {
+        throw new Error(`Gemini model returned empty response. FinishReason: ${finishReason}. This may indicate insufficient maxTokens, content filtering, or model issues.`);
+      }
 
       // Log completion
       console.log('✅ Gemini Tool - Generation completed:', {
