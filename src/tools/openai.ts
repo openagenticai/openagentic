@@ -219,7 +219,7 @@ const toolDetails: ToolDetails = {
     'Generate product descriptions',
     'Write emails and communications',
   ],
-  logo: 'https://openai.com/favicon.ico',
+  logo: 'https://www.openagentic.org/tools/openai.svg',
 };
 
 export const openaiTool = toOpenAgenticTool(rawOpenAITool, toolDetails);
