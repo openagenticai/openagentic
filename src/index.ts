@@ -17,8 +17,9 @@ export * from './tools';
 // Provider management
 export { ProviderManager } from './providers/manager';
 
-// Orchestrator registry
+// Orchestrator registry and utilities
 export * from './orchestrators/registry';
+export * from './orchestrators';
 
 // Types
 export * from './types';
@@ -79,3 +80,7 @@ export function createStreamingAgent(options: {
   
   return new StreamingOrchestrator(options);
 }
+
+// Load built-in orchestrators on import
+import { loadBuiltInOrchestrators } from './orchestrators';
+loadBuiltInOrchestrators();

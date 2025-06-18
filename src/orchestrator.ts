@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import type { AIModel, Message, CoreMessage, ExecutionResult, OpenAgenticTool, LoggingConfig, LogLevel, ExecutionStats, StepInfo, BaseOrchestrator, OrchestratorContext, OrchestratorOptions } from './types';
+import type { AIModel, Message, CoreMessage, ExecutionResult, OpenAgenticTool, LoggingConfig, LogLevel, ExecutionStats, StepInfo, BaseOrchestrator, OrchestratorContext, OrchestratorOptions, PromptBasedOrchestrator } from './types';
 import { ProviderManager } from './providers/manager';
 import { resolveOrchestrator } from './orchestrators/registry';
 
@@ -189,6 +189,12 @@ export class Orchestrator {
     });
 
     try {
+      // For prompt-based orchestrators, we can handle them specially
+      if (this.orchestrator.type === 'prompt-based') {
+        return await this.executeWithPromptBasedOrchestrator(input, this.orchestrator as PromptBasedOrchestrator);
+      }
+
+      // For custom-logic orchestrators, delegate completely
       // Build orchestrator context
       const context: OrchestratorContext = {
         model: this.model,
@@ -241,6 +247,32 @@ export class Orchestrator {
 
       throw error;
     }
+  }
+
+  // Execute with prompt-based orchestrator (optimized path)
+  private async executeWithPromptBasedOrchestrator(
+    input: string | CoreMessage[],
+    orchestrator: PromptBasedOrchestrator
+  ): Promise<ExecutionResult> {
+    this.log('🎭', 'Executing with prompt-based orchestrator', {
+      orchestratorId: orchestrator.id,
+      orchestratorName: orchestrator.name,
+      allowPromptOverride: this.orchestratorOptions.allowOrchestratorPromptOverride,
+      allowToolControl: this.orchestratorOptions.allowOrchestratorToolControl,
+    });
+
+    // Build context for orchestrator
+    const context: OrchestratorContext = {
+      model: this.model,
+      tools: Object.values(this.tools),
+      messages: this.messages,
+      iterations: this.iterations,
+      maxIterations: this.maxIterations,
+      loggingConfig: this.loggingConfig,
+    };
+
+    // Use the orchestrator's execute method which handles tool filtering and prompt override
+    return await orchestrator.execute(input, context);
   }
 
   // Execute with string input (original behavior)
