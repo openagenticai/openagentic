@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createStreamingAgent, calculatorTool, timestampTool } from '../src';
+import { createStreamingAgent, calculatorTool, timestampTool } from '../../src';
 
 async function streamingAgentWithCallbackExample() {
   console.log('📡 OpenAgentic - Streaming Agent with onFinish Callback Example\n');
