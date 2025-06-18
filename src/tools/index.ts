@@ -40,7 +40,7 @@ import { websearchTool } from './websearch';
 import { elevenlabsTool } from './elevenlabs';
 import { videoGenerationTool } from './video-generation';
 import { geminiTtsTool } from './gemini-tts';
-import { infusionLabsTool } from './infusion-labs';
+import { inceptionLabsTool } from './inception-labs';
 
 import { type ToolDetails } from '../types'
 
