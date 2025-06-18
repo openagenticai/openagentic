@@ -47,7 +47,7 @@ const rawPerplexityTool = tool({
 
     // Validate model
     if (!SUPPORTED_MODELS.includes(model as any)) {
-      console.warn(`Model "${model}" not in supported list, but proceeding anyway`);
+      throw new Error(`Model "${model}" not in supported list`);
     }
 
     // Start logging
