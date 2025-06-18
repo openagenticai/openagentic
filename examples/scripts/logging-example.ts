@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, createStreamingAgent, timestampTool, httpTool } from '../../src';
+import { createAgent, createStreamingAgent, qrcodeTool, githubTool } from '../../src';
 import type { CoreMessage } from '../../src/types';
 
 async function loggingExample() {
@@ -13,7 +13,7 @@ async function loggingExample() {
   
   const basicAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool],
+    tools: [qrcodeTool],
     systemPrompt: 'You are a helpful assistant with access to tools.',
     enableDebugLogging: true,
     logLevel: 'basic',
@@ -22,7 +22,7 @@ async function loggingExample() {
   try {
     console.log('\n🔄 Executing with basic logging...\n');
     
-    const result = await basicAgent.execute('Tell me the current time in both human format and ISO format');
+    const result = await basicAgent.execute('Create a QR code for the website https://example.com with size 256x256');
     
     console.log('\n✅ Basic logging result:', {
       success: result.success,
@@ -44,7 +44,7 @@ async function loggingExample() {
   
   const detailedAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool, httpTool],
+    tools: [qrcodeTool, githubTool],
     systemPrompt: 'You are a helpful assistant with detailed logging.',
     enableDebugLogging: true,
     logLevel: 'detailed',
@@ -58,9 +58,9 @@ async function loggingExample() {
     console.log('\n🔄 Executing with detailed logging...\n');
     
     const conversationHistory: CoreMessage[] = [
-      { role: 'user', content: 'I need to check the time and test a website' },
-      { role: 'assistant', content: 'I can help you check the time and test website accessibility!' },
-      { role: 'user', content: 'Get the current timestamp and check if httpbin.org/status/200 is accessible' }
+      { role: 'user', content: 'I need to create some QR codes and check a GitHub repository' },
+      { role: 'assistant', content: 'I can help you generate QR codes and access GitHub repositories!' },
+      { role: 'user', content: 'Create a QR code for https://github.com and fetch the README from openai/openai-node repository' }
     ];
     
     const result = await detailedAgent.execute(conversationHistory);
@@ -86,7 +86,7 @@ async function loggingExample() {
   
   const streamingAgent = createStreamingAgent({
     model: 'claude-sonnet-4-20250514',
-    tools: [timestampTool],
+    tools: [qrcodeTool],
     systemPrompt: 'You are a helpful streaming assistant with comprehensive logging.',
     enableDebugLogging: true,
     logLevel: 'detailed',
@@ -101,9 +101,9 @@ async function loggingExample() {
     console.log('\n🔄 Streaming with comprehensive logging...\n');
     
     const streamingMessages: CoreMessage[] = [
-      { role: 'user', content: 'Write a brief explanation of time and tell me what time it is' },
-      { role: 'assistant', content: 'I\'ll explain time concepts and get the current time for you.' },
-      { role: 'user', content: 'Also tell me what time it is now in different formats' }
+      { role: 'user', content: 'Write a brief explanation of QR codes while creating one for me' },
+      { role: 'assistant', content: 'I\'ll explain QR codes and create one for you.' },
+      { role: 'user', content: 'Create a QR code for https://openagentic.org with high error correction' }
     ];
     
     const stream = await streamingAgent.stream(streamingMessages);
@@ -143,7 +143,7 @@ async function loggingExample() {
       name: 'No Logging',
       agent: createAgent({
         model: 'gpt-4o-mini',
-        tools: [timestampTool],
+        tools: [qrcodeTool],
         enableDebugLogging: false,
         logLevel: 'none' as const,
       })
@@ -152,7 +152,7 @@ async function loggingExample() {
       name: 'Basic Logging',
       agent: createAgent({
         model: 'gpt-4o-mini',
-        tools: [timestampTool],
+        tools: [qrcodeTool],
         enableDebugLogging: true,
         logLevel: 'basic' as const,
       })
@@ -161,7 +161,7 @@ async function loggingExample() {
       name: 'Detailed Logging',
       agent: createAgent({
         model: 'gpt-4o-mini',
-        tools: [timestampTool],
+        tools: [qrcodeTool],
         enableDebugLogging: true,
         logLevel: 'detailed' as const,
       })
@@ -173,7 +173,7 @@ async function loggingExample() {
       console.log(`\n⏱️ Testing ${name}...`);
       const startTime = Date.now();
       
-      const result = await agent.execute('What time is it right now?');
+      const result = await agent.execute('Create a QR code for https://example.com');
       
       const duration = Date.now() - startTime;
       console.log(`✅ ${name} completed in ${duration}ms`, {
@@ -195,7 +195,7 @@ async function loggingExample() {
   
   const errorAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool, httpTool],
+    tools: [qrcodeTool, githubTool],
     systemPrompt: 'You are an assistant that will demonstrate error handling.',
     enableDebugLogging: true,
     logLevel: 'detailed',
@@ -205,14 +205,14 @@ async function loggingExample() {
     console.log('\n🔄 Testing error scenarios with enhanced logging...\n');
     
     // This should succeed
-    const goodResult = await errorAgent.execute('What time is it?');
-    console.log('✅ Good timestamp result:', goodResult.success);
+    const goodResult = await errorAgent.execute('Create a QR code for https://example.com');
+    console.log('✅ Good QR generation result:', goodResult.success);
     
     // Reset for next test
     errorAgent.reset();
     
     // This might cause an error or be handled gracefully
-    const edgeCaseResult = await errorAgent.execute('Check if invalid-website-12345.com is accessible');
+    const edgeCaseResult = await errorAgent.execute('Fetch content from a non-existent GitHub repository: invalid/repo-does-not-exist');
     console.log('⚠️ Edge case result:', {
       success: edgeCaseResult.success,
       hasError: !!edgeCaseResult.error,
@@ -242,12 +242,12 @@ async function loggingExample() {
     console.log('\n🔧 Demonstrating tool management with logging...\n');
     
     // Add tools dynamically
-    toolAgent.addTool(timestampTool);
-    toolAgent.addTool(httpTool);
+    toolAgent.addTool(qrcodeTool);
+    toolAgent.addTool(githubTool);
     
     console.log('🔧 Available tools:', toolAgent.getAllTools().map(t => t.toolId));
     
-    const result = await toolAgent.execute('What time is it and check if google.com is accessible');
+    const result = await toolAgent.execute('Create a QR code for https://github.com and fetch a README file');
     
     console.log('✅ Tool management result:', {
       success: result.success,
@@ -256,8 +256,8 @@ async function loggingExample() {
     });
     
     // Remove a tool
-    toolAgent.removeTool('timestamp');
-    console.log('🗑️ Removed timestamp tool');
+    toolAgent.removeTool('qr_code_generator');
+    console.log('🗑️ Removed QR code tool');
     
   } catch (error) {
     console.error('❌ Tool management error:', error);

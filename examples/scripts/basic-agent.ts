@@ -1,23 +1,23 @@
 import 'dotenv/config';
 
-import { createAgent, timestampTool, httpTool } from '../../src';
+import { createAgent, qrcodeTool, githubTool } from '../../src';
 
 async function basicAgentExample() {
   console.log('🤖 OpenAgentic - Basic Agent Example\n');
 
   // =============================================================================
-  // EXAMPLE 1: Simple Timestamp Agent
+  // EXAMPLE 1: Simple QR Code Agent
   // =============================================================================
-  console.log('📝 Example 1: Simple Timestamp Agent');
+  console.log('📝 Example 1: Simple QR Code Generator Agent');
   
-  const timeAgent = createAgent({
+  const qrAgent = createAgent({
     model: 'gpt-4o-mini', // Auto-detects OpenAI provider
-    tools: [timestampTool],
-    systemPrompt: 'You are a helpful time assistant. Always provide clear time information.',
+    tools: [qrcodeTool],
+    systemPrompt: 'You are a helpful QR code assistant. Generate QR codes for users.',
   });
 
   try {
-    const result = await timeAgent.execute('What time is it right now? Also provide the timestamp in both human format and ISO format.');
+    const result = await qrAgent.execute('Create a QR code for the OpenAgentic website: https://openagentic.org. Make it size 512x512 with high error correction.');
     console.log('✅ Result:', result.result);
     console.log('🔧 Tools used:', result.toolCallsUsed);
     console.log('📊 Iterations:', result.iterations);
@@ -34,13 +34,13 @@ async function basicAgentExample() {
   
   const multiAgent = createAgent({
     model: 'claude-sonnet-4-20250514', // Auto-detects Anthropic provider
-    tools: [timestampTool, httpTool],
+    tools: [qrcodeTool, githubTool],
     systemPrompt: 'You are a versatile assistant with access to multiple tools. Use them as needed.',
   });
 
   try {
     const result = await multiAgent.execute(
-      'Get the current timestamp in human format, and check if httpbin.org/status/200 is accessible'
+      'Create a QR code for a GitHub repository and also fetch the README.md file from the openai/openai-node repository'
     );
     console.log('✅ Result:', result.result);
     console.log('🔧 Tools used:', result.toolCallsUsed);
@@ -58,15 +58,15 @@ async function basicAgentExample() {
   
   const customAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool],
-    systemPrompt: 'You are a time-aware assistant.',
+    tools: [qrcodeTool],
+    systemPrompt: 'You are a QR code specialist.',
     customLogic: async (input, context) => {
       // Custom pre-processing logic
       console.log('🔍 Custom logic: Processing input...');
       
-      if (input.toLowerCase().includes('birthday')) {
+      if (input.toLowerCase().includes('business card')) {
         return {
-          content: 'Custom logic detected birthday mention! Happy Birthday! 🎉 This was handled by custom logic without calling the AI model.',
+          content: 'Custom logic detected business card request! I recommend including contact info in vCard format. This was handled by custom logic without calling the AI model.',
           customHandled: true
         };
       }
@@ -77,7 +77,7 @@ async function basicAgentExample() {
   });
 
   try {
-    const result = await customAgent.execute('It\'s my birthday today!');
+    const result = await customAgent.execute('I need a QR code for my business card');
     console.log('✅ Result:', result.result);
     console.log('🔧 Custom logic used:', result.result?.includes('custom logic'));
   } catch (error) {
@@ -98,13 +98,13 @@ async function basicAgentExample() {
   });
 
   // Add tools dynamically
-  toolAgent.addTool(timestampTool);
-  toolAgent.addTool(httpTool);
+  toolAgent.addTool(qrcodeTool);
+  toolAgent.addTool(githubTool);
 
   console.log('🔧 Available tools count:', toolAgent.getAllTools().length);
 
   try {
-    const result = await toolAgent.execute('What time is it and can you check if google.com is accessible?');
+    const result = await toolAgent.execute('Generate a QR code for a website URL and fetch a README file from a GitHub repository');
     console.log('✅ Result:', result.result);
     
     // Remove a tool
@@ -127,7 +127,7 @@ async function basicAgentExample() {
   
   const switchingAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool],
+    tools: [qrcodeTool],
   });
 
   console.log('🔄 Initial model:', switchingAgent.getModelInfo().model);

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, timestampTool } from '../../src';
+import { createAgent, qrcodeTool } from '../../src';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { toOpenAgenticTool } from '../../src/tools/utils';
@@ -47,10 +47,15 @@ const rawGreetingTool = tool({
 });
 
 const greetingToolDetails: ToolDetails = {
-  toolId: 'greeting',
-  name: 'Greeting',
-  useCases: [],
-  logo: '',
+  toolId: 'greeting_generator',
+  name: 'Greeting Generator',
+  useCases: [
+    'Generate personalized greetings for different times of day',
+    'Create formal business greetings',
+    'Generate casual friendly messages',
+    'Create funny icebreaker greetings',
+  ],
+  logo: '👋',
 };
 
 const greetingTool = toOpenAgenticTool(rawGreetingTool, greetingToolDetails);
@@ -86,13 +91,13 @@ async function toolCreationExample() {
   
   const multiToolAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool, greetingTool],
-    systemPrompt: 'You are a versatile assistant with access to time and greeting tools.',
+    tools: [qrcodeTool, greetingTool],
+    systemPrompt: 'You are a versatile assistant with access to QR code generation and greeting tools.',
   });
 
   try {
     const result = await multiToolAgent.execute(
-      'Get the current timestamp and generate a casual afternoon greeting for Bob'
+      'Create a QR code for https://example.com and generate a casual afternoon greeting for Bob'
     );
     console.log('✅ Result:', result.result);
     console.log('🔧 Tools used:', result.toolCallsUsed);
@@ -110,7 +115,7 @@ async function toolCreationExample() {
   
   const organizedAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool, greetingTool],
+    tools: [qrcodeTool, greetingTool],
   });
 
   console.log('🔧 All tools:', organizedAgent.getAllTools().map(t => `${t.name} (${t.toolId})`));
@@ -119,13 +124,21 @@ async function toolCreationExample() {
   console.log('\n🔧 Tool Management:');
   console.log('Initial tool count:', organizedAgent.getAllTools().length);
   
-  organizedAgent.removeTool('greeting');
+  organizedAgent.removeTool('greeting_generator');
   console.log('After removing greeting tool:', organizedAgent.getAllTools().length);
   
   organizedAgent.addTool(greetingTool);
   console.log('After re-adding greeting tool:', organizedAgent.getAllTools().length);
 
   console.log('\n🎉 Custom tool creation examples completed successfully!');
+  
+  console.log('\n💡 Tool Creation Tips:');
+  console.log('- ✅ Use descriptive parameter schemas with Zod');
+  console.log('- ✅ Include comprehensive use cases in tool details');
+  console.log('- ✅ Provide clear parameter descriptions');
+  console.log('- ✅ Handle errors gracefully in execute functions');
+  console.log('- ✅ Return structured, consistent results');
+  console.log('- ✅ Use meaningful tool IDs and names');
 }
 
 if (require.main === module) {

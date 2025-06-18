@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createStreamingAgent, timestampTool } from '../../src';
+import { createStreamingAgent, qrcodeTool } from '../../src';
 
 async function streamingAgentExample() {
   console.log('📡 OpenAgentic - Streaming Agent Example\n');
@@ -41,7 +41,7 @@ async function streamingAgentExample() {
   
   const toolStreamingAgent = createStreamingAgent({
     model: 'gpt-4o-mini', // Auto-detects OpenAI provider
-    tools: [timestampTool],
+    tools: [qrcodeTool],
     systemPrompt: 'You are a helpful assistant that can use tools while streaming responses.',
   });
 
@@ -49,7 +49,7 @@ async function streamingAgentExample() {
     console.log('🔄 Streaming response with tool usage...\n');
     
     const stream = await toolStreamingAgent.stream(
-      'Write a brief explanation of time and tell me what time it is right now. Also explain what timestamps are used for.'
+      'Write a brief explanation of QR codes and create one for the website https://openagentic.org. Explain what QR codes are used for.'
     );
     
     let content = '';
@@ -80,7 +80,7 @@ async function streamingAgentExample() {
     console.log('🔄 Streaming code generation...\n');
     
     const stream = await codeAgent.stream(
-      'Write a simple JavaScript function to get the current timestamp. Keep it short and add comments.'
+      'Write a simple JavaScript function to generate a QR code data URL. Keep it short and add comments.'
     );
     
     let codeContent = '';
@@ -141,7 +141,7 @@ async function streamingAgentExample() {
   
   const advancedAgent = createStreamingAgent({
     model: 'claude-sonnet-4-20250514',
-    tools: [timestampTool],
+    tools: [qrcodeTool],
     systemPrompt: 'You are an advanced assistant with real-time capabilities.',
     maxIterations: 5,
   });
@@ -150,7 +150,7 @@ async function streamingAgentExample() {
     console.log('🔄 Advanced streaming with features...\n');
     
     const stream = await advancedAgent.stream(
-      'Explain time concepts while getting the current timestamp. Stream your explanation as you think through it.'
+      'Explain QR code technology while creating a QR code for https://github.com. Stream your explanation as you think through it.'
     );
     
     let finalContent = '';

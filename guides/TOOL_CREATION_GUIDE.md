@@ -1,9 +1,8 @@
-@ -0,0 +1,513 @@
 # OpenAgentic Tool Creation Guide
 
 ## Overview
 
-This guide explains how to create new tools for the OpenAgentic framework. Tools are self-contained components that extend AI agents with specific capabilities like calculations, HTTP requests, text-to-speech generation, and more.
+This guide explains how to create new tools for the OpenAgentic framework. Tools are self-contained components that extend AI agents with specific capabilities like QR code generation, GitHub repository access, news search, and more.
 
 ## Tool Architecture
 
@@ -40,7 +39,6 @@ const toolDetails: ToolDetails = {
   toolId: 'my_tool',
   name: 'My Tool',
   useCases: [],
-  parameters: {},
   logo: '',
 };
 
@@ -129,7 +127,6 @@ const toolDetails: ToolDetails = {
   toolId: 'unique_tool_id',           // Unique identifier
   name: 'Human Readable Name',        // Display name
   useCases: [],                       // Array of use case strings
-  parameters: {},                     // Additional parameter info
   logo: '',                          // Logo URL or path
   internal?: boolean,                 // Optional: mark as internal tool
 };
@@ -143,169 +140,215 @@ Convert and export using the utility function:
 export const myTool = toOpenAgenticTool(rawMyTool, toolDetails);
 ```
 
-## Complete Example: ElevenLabs TTS Tool
+## Complete Example: QR Code Tool
 
-Here's a complete implementation of an ElevenLabs Text-to-Speech tool:
+Here's a complete implementation of a QR code generation tool:
 
 ```typescript
 import { tool } from 'ai';
 import { z } from 'zod';
+import * as QRCode from 'qrcode';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 
-const rawElevenLabsTTSTool = tool({
-  description: 'Generate high-quality text-to-speech audio using ElevenLabs API',
+// Error correction levels for QR codes
+const ERROR_CORRECTION_LEVELS = ['L', 'M', 'Q', 'H'] as const;
+
+const rawQRCodeTool = tool({
+  description: 'Generate QR codes with customizable appearance and error correction levels for various use cases',
   parameters: z.object({
     text: z.string()
       .min(1)
-      .max(5000)
-      .describe('Text to convert to speech (max 5000 characters)'),
+      .max(4000)
+      .describe('The text to encode in the QR code (required, max 4000 characters)'),
     
-    voiceId: z.string()
+    size: z.number()
+      .int()
+      .min(100)
+      .max(2000)
       .optional()
-      .default('21m00Tcm4TlvDq8ikWAM')
-      .describe('ElevenLabs voice ID (default: Rachel)'),
-    
-    modelId: z.string()
+      .default(512)
+      .describe('The size of the QR code in pixels (default: 512, min: 100, max: 2000)'),
+      
+    errorCorrectionLevel: z.enum(['L', 'M', 'Q', 'H'])
       .optional()
-      .default('eleven_monolingual_v1')
-      .describe('ElevenLabs model ID'),
-    
-    stability: z.number()
-      .min(0)
-      .max(1)
+      .default('M')
+      .describe('Error correction level (L=Low ~7%, M=Medium ~15%, Q=Quartile ~25%, H=High ~30%, default: M)'),
+      
+    darkColor: z.string()
       .optional()
-      .default(0.5)
-      .describe('Voice stability (0-1, default: 0.5)'),
-    
-    similarityBoost: z.number()
-      .min(0)
-      .max(1)
+      .default('#000000')
+      .describe('Color of dark modules in hex format (default: #000000)'),
+      
+    lightColor: z.string()
       .optional()
-      .default(0.5)
-      .describe('Similarity boost (0-1, default: 0.5)'),
-    
-    style: z.number()
-      .min(0)
-      .max(1)
-      .optional()
-      .default(0)
-      .describe('Style setting (0-1, default: 0)'),
-    
-    useSpeakerBoost: z.boolean()
-      .optional()
-      .default(true)
-      .describe('Use speaker boost for better quality'),
+      .default('#FFFFFF')
+      .describe('Color of light modules in hex format (default: #FFFFFF)')
   }),
   
   execute: async ({ 
-    text, 
-    voiceId = '21m00Tcm4TlvDq8ikWAM', 
-    modelId = 'eleven_monolingual_v1',
-    stability = 0.5,
-    similarityBoost = 0.5,
-    style = 0,
-    useSpeakerBoost = true
+    text,
+    size = 512,
+    errorCorrectionLevel = 'M',
+    darkColor = '#000000',
+    lightColor = '#FFFFFF'
   }) => {
-    // Validate API key
-    const apiKey = process.env.ELEVENLABS_API_KEY;
-    if (!apiKey) {
-      throw new Error('ELEVENLABS_API_KEY environment variable is required');
-    }
-
     // Validate text input
     if (!text || text.trim().length === 0) {
       throw new Error('Text cannot be empty');
     }
 
-    if (text.length > 5000) {
-      throw new Error('Text exceeds maximum length of 5000 characters');
+    if (text.length > 4000) {
+      throw new Error('Text exceeds maximum length of 4000 characters');
     }
 
+    // Validate size
+    if (size < 100) {
+      throw new Error('Size must be at least 100 pixels');
+    }
+
+    if (size > 2000) {
+      throw new Error('Size cannot exceed 2000 pixels');
+    }
+
+    // Validate colors (basic hex validation)
+    const hexColorRegex = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/;
+    
+    if (!hexColorRegex.test(darkColor)) {
+      throw new Error(`Invalid dark color format: ${darkColor}. Please use hex format like #000000`);
+    }
+
+    if (!hexColorRegex.test(lightColor)) {
+      throw new Error(`Invalid light color format: ${lightColor}. Please use hex format like #FFFFFF`);
+    }
+
+    // Validate error correction level
+    if (!ERROR_CORRECTION_LEVELS.includes(errorCorrectionLevel)) {
+      throw new Error(`Invalid error correction level: ${errorCorrectionLevel}. Must be one of: L, M, Q, H`);
+    }
+
+    // Start logging
+    console.log('📱 QR Code Tool - Generation started:', {
+      textLength: text.length,
+      text: text.substring(0, 100) + (text.length > 100 ? '...' : ''),
+      size,
+      errorCorrectionLevel,
+      darkColor,
+      lightColor,
+    });
+
     try {
-      // Prepare request body
-      const requestBody = {
-        text: text.trim(),
-        model_id: modelId,
-        voice_settings: {
-          stability,
-          similarity_boost: similarityBoost,
-          style,
-          use_speaker_boost: useSpeakerBoost,
+      // Generate QR code buffer
+      const qrCodeBuffer = await QRCode.toBuffer(text, {
+        type: 'png',
+        width: size,
+        errorCorrectionLevel,
+        color: {
+          dark: darkColor,
+          light: lightColor,
         },
-      };
+        margin: 2, // Add small margin around QR code
+      });
 
-      // Make API request
-      const response = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`,
-        {
-          method: 'POST',
-          headers: {
-            'Accept': 'audio/mpeg',
-            'Content-Type': 'application/json',
-            'xi-api-key': apiKey,
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      // Convert buffer to base64 data URL
+      const qrCodeDataUrl = `data:image/png;base64,${qrCodeBuffer.toString('base64')}`;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`ElevenLabs API error: ${response.status} - ${errorText}`);
-      }
+      // Log completion
+      console.log('✅ QR Code Tool - Generation completed:', {
+        textLength: text.length,
+        size,
+        errorCorrectionLevel,
+        bufferSize: qrCodeBuffer.length,
+        hasCustomColors: darkColor !== '#000000' || lightColor !== '#FFFFFF',
+        dataUrlLength: qrCodeDataUrl.length,
+      });
 
-      // Get audio data
-      const audioBuffer = await response.arrayBuffer();
-      const audioBase64 = Buffer.from(audioBuffer).toString('base64');
-
-      // Calculate audio duration estimate (rough approximation)
-      const wordsPerMinute = 150;
-      const wordCount = text.split(/\s+/).length;
-      const estimatedDurationSeconds = Math.ceil((wordCount / wordsPerMinute) * 60);
-
+      // Return structured result
       return {
         success: true,
-        audioData: audioBase64,
-        audioFormat: 'audio/mpeg',
-        audioSize: audioBuffer.byteLength,
-        estimatedDuration: estimatedDurationSeconds,
-        text: text.trim(),
-        voiceId,
-        modelId,
-        settings: {
-          stability,
-          similarityBoost,
-          style,
-          useSpeakerBoost,
+        qrCodeDataUrl,
+        encodedText: text,
+        size,
+        errorCorrectionLevel,
+        darkColor,
+        lightColor,
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          textLength: text.length,
+          bufferSize: qrCodeBuffer.length,
+          dimensions: `${size}x${size}`,
+          hasCustomColors: darkColor !== '#000000' || lightColor !== '#FFFFFF',
         },
-        generatedAt: new Date().toISOString(),
       };
+
     } catch (error) {
-      throw new Error(`TTS generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      console.error('❌ QR Code Tool - Generation failed:', {
+        textLength: text.length,
+        size,
+        errorCorrectionLevel,
+        darkColor,
+        lightColor,
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      // Handle specific error types
+      if (error instanceof Error) {
+        // Text too complex for error correction level
+        if (error.message.includes('too big') || error.message.includes('capacity')) {
+          throw new Error(`Text is too complex for error correction level ${errorCorrectionLevel}. Try using a higher error correction level (Q or H) or reduce the text length.`);
+        }
+        
+        // Invalid data errors
+        if (error.message.includes('invalid') || error.message.includes('malformed')) {
+          throw new Error('Text contains invalid characters for QR code generation. Please check your input.');
+        }
+        
+        // Buffer generation errors
+        if (error.message.includes('buffer') || error.message.includes('memory')) {
+          throw new Error('Failed to generate QR code buffer. The requested size may be too large.');
+        }
+        
+        // Color format errors
+        if (error.message.includes('color') || error.message.includes('hex')) {
+          throw new Error('Invalid color format. Please use hex colors like #000000 or #FFFFFF.');
+        }
+        
+        // Size errors
+        if (error.message.includes('size') || error.message.includes('width')) {
+          throw new Error(`Invalid size parameter: ${size}. Size must be between 100 and 2000 pixels.`);
+        }
+        
+        // Encoding errors
+        if (error.message.includes('encoding') || error.message.includes('base64')) {
+          throw new Error('Failed to encode QR code image. Please try again.');
+        }
+      }
+
+      // Generic error fallback
+      throw new Error(`QR code generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   },
 });
 
 const toolDetails: ToolDetails = {
-  toolId: 'elevenlabs_tts',
-  name: 'ElevenLabs TTS',
+  toolId: 'qr_code_generator',
+  name: 'QR Code Generator',
   useCases: [
-    'Convert text to high-quality speech',
-    'Generate voiceovers for content',
-    'Create audio from written content',
-    'Produce speech in multiple voices',
+    'Generate QR codes for website URLs',
+    'Create QR codes for contact information (vCard)',
+    'Generate WiFi network sharing QR codes',
+    'Create QR codes for text messages',
+    'Generate QR codes for social media profiles',
+    'Create custom-colored QR codes for branding',
+    'Generate QR codes for app download links',
+    'Create QR codes for payment information',
+    'Generate QR codes for event tickets',
+    'Create QR codes for location coordinates',
   ],
-  parameters: {
-    text: 'Text to convert to speech',
-    voiceId: 'ElevenLabs voice identifier',
-    modelId: 'TTS model to use',
-    stability: 'Voice stability setting',
-    similarityBoost: 'Voice similarity boost',
-  },
-  logo: 'https://elevenlabs.io/favicon.ico',
+  logo: 'https://www.openagentic.org/tools/qrcode.svg',
 };
 
-export const elevenLabsTTSTool = toOpenAgenticTool(rawElevenLabsTTSTool, toolDetails);
+export const qrcodeTool = toOpenAgenticTool(rawQRCodeTool, toolDetails);
 ```
 
 ## Best Practices
@@ -403,9 +446,9 @@ parameters: z.object({
 
 ### Utility Tools
 Self-contained tools that don't require AI:
-- Calculator (mathematical operations)
-- HTTP client (API requests)
-- Timestamp (date/time operations)
+- QR Code generator (visual encoding)
+- GitHub repository access (code retrieval)
+- News search (information gathering)
 - File operations
 - Data transformations
 
@@ -476,7 +519,7 @@ export { myTool } from './my-tool';
 
 // Add to collections
 import { myTool } from './my-tool';
-export const utilityTools = [httpTool, calculatorTool, timestampTool, myTool];
+export const utilityTools = [qrcodeTool, githubTool, newsdataTool, myTool];
 ```
 
 2. Update the main exports in `src/index.ts` if needed.
@@ -511,4 +554,4 @@ Creating tools for OpenAgentic is straightforward once you understand the patter
 
 The framework handles the rest, including parameter validation, error propagation, and integration with AI agents.
 
-Start with simple tools and gradually add more complex functionality as needed. Remember to test thoroughly and provide clear documentation for other developers. 
+Start with simple tools and gradually add more complex functionality as needed. Remember to test thoroughly and provide clear documentation for other developers.

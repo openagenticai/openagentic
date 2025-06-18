@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { createAgent, createStreamingAgent, timestampTool, httpTool } from '../src';
+import { createAgent, createStreamingAgent, qrcodeTool, githubTool } from '../src';
 import type { AIModel } from '../src/types';
 
 describe('OpenAgentic Simplified API', () => {
@@ -12,19 +12,21 @@ describe('OpenAgentic Simplified API', () => {
     });
 
     it('should export utility tools', () => {
-      expect(timestampTool).toBeDefined();
-      expect(timestampTool.toolId).toBeDefined();
-      expect(timestampTool.description).toBeDefined();
-      expect(timestampTool.execute).toBeDefined();
+      expect(qrcodeTool).toBeDefined();
+      expect(qrcodeTool.toolId).toBe('qr_code_generator');
+      expect(qrcodeTool.description).toBeDefined();
+      expect(qrcodeTool.execute).toBeDefined();
       
-      expect(httpTool).toBeDefined();
-      expect(httpTool.toolId).toBeDefined();
+      expect(githubTool).toBeDefined();
+      expect(githubTool.toolId).toBe('github_contents');
+      expect(githubTool.description).toBeDefined();
+      expect(githubTool.execute).toBeDefined();
     });
 
     it('should create an agent instance', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [timestampTool],
+        tools: [qrcodeTool],
         systemPrompt: 'You are a helpful assistant.',
       });
 
@@ -39,7 +41,7 @@ describe('OpenAgentic Simplified API', () => {
     it('should create a streaming agent instance', () => {
       const agent = createStreamingAgent({
         model: 'claude-sonnet-4-20250514',
-        tools: [timestampTool],
+        tools: [qrcodeTool],
         systemPrompt: 'You are a streaming assistant.',
       });
 
@@ -70,32 +72,32 @@ describe('OpenAgentic Simplified API', () => {
     it('should manage tools correctly', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [timestampTool],
+        tools: [qrcodeTool],
       });
 
       expect(agent.getAllTools()).toHaveLength(1);
       
-      agent.addTool(httpTool);
+      agent.addTool(githubTool);
       expect(agent.getAllTools()).toHaveLength(2);
       
-      const retrievedTool = agent.getTool('timestamp');
+      const retrievedTool = agent.getTool('qr_code_generator');
       expect(retrievedTool).toBeDefined();
-      expect(retrievedTool?.toolId).toBe('timestamp');
+      expect(retrievedTool?.toolId).toBe('qr_code_generator');
       
-      agent.removeTool('timestamp');
+      agent.removeTool('qr_code_generator');
       expect(agent.getAllTools()).toHaveLength(1);
-      expect(agent.getTool('timestamp')).toBeUndefined();
+      expect(agent.getTool('qr_code_generator')).toBeUndefined();
     });
 
     it('should prevent duplicate tool registration', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [timestampTool],
+        tools: [qrcodeTool],
       });
 
       expect(() => {
-        agent.addTool(timestampTool);
-      }).toThrow('Tool with name timestamp already exists');
+        agent.addTool(qrcodeTool);
+      }).toThrow('Tool with name qr_code_generator already exists');
     });
 
     it('should switch models', () => {
@@ -137,15 +139,15 @@ describe('OpenAgentic Simplified API', () => {
 
     it('should verify tool structure', () => {
       // Test that tools have the expected structure
-      expect(timestampTool.toolId).toBe('timestamp');
-      expect(timestampTool.description).toBeDefined();
-      expect(timestampTool.execute).toBeDefined();
-      expect(typeof timestampTool.execute).toBe('function');
+      expect(qrcodeTool.toolId).toBe('qr_code_generator');
+      expect(qrcodeTool.description).toBeDefined();
+      expect(qrcodeTool.execute).toBeDefined();
+      expect(typeof qrcodeTool.execute).toBe('function');
       
-      expect(httpTool.toolId).toBeDefined();
-      expect(httpTool.description).toBeDefined();
-      expect(httpTool.execute).toBeDefined();
-      expect(typeof httpTool.execute).toBe('function');
+      expect(githubTool.toolId).toBe('github_contents');
+      expect(githubTool.description).toBeDefined();
+      expect(githubTool.execute).toBeDefined();
+      expect(typeof githubTool.execute).toBe('function');
     });
   });
 });

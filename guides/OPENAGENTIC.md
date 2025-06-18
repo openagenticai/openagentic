@@ -19,7 +19,7 @@ OpenAgentic provides a comprehensive framework for creating AI-powered agents th
 - **Complete independence** - no shared utilities or dependencies
 - **Consistent interface** with JSONSchema parameter validation
 - **Tool categories**: Utility tools (no AI), AI tools (@ai-sdk), Custom tools
-- **Built-in tools**: Calculator, HTTP requests, timestamps, and more
+- **Built-in tools**: QR Code generator, GitHub access, news search, and more
 
 ### 🔄 Dual Execution Modes
 - **Standard execution**: `createAgent()` for non-streaming, complete responses
@@ -50,34 +50,34 @@ npm install openagentic
 ### Basic Usage
 
 ```typescript
-import { createAgent, calculatorTool, httpTool } from 'openagentic';
+import { createAgent, qrcodeTool, githubTool } from 'openagentic';
 
 // Create a standard agent
 const agent = createAgent({
   model: 'gpt-4o-mini', // Auto-detects OpenAI provider
-  tools: [calculatorTool, httpTool],
+  tools: [qrcodeTool, githubTool],
   systemPrompt: 'You are a helpful assistant.',
 });
 
 // Execute a task
-const result = await agent.execute('What is 15 * 24 and what is the current time?');
+const result = await agent.execute('Create a QR code for https://openagentic.org and fetch the README from openai/openai-node');
 console.log(result.result);
 ```
 
 ### Streaming Responses
 
 ```typescript
-import { createStreamingAgent, calculatorTool } from 'openagentic';
+import { createStreamingAgent, qrcodeTool } from 'openagentic';
 
 // Create a streaming agent
 const streamingAgent = createStreamingAgent({
-  model: 'claude-4-sonnet-20250514', // Auto-detects Anthropic provider
-  tools: [calculatorTool],
+  model: 'claude-sonnet-4-20250514', // Auto-detects Anthropic provider
+  tools: [qrcodeTool],
   systemPrompt: 'You are a helpful assistant.',
 });
 
 // Stream responses in real-time
-const stream = await streamingAgent.stream('Write a short story and calculate 5 * 7');
+const stream = await streamingAgent.stream('Write a short explanation of QR codes and create one for https://github.com');
 
 for await (const chunk of stream.textStream) {
   process.stdout.write(chunk);
@@ -157,9 +157,12 @@ OpenAgentic includes several self-contained tools:
 
 ```typescript
 import { 
-  calculatorTool,    // Mathematical calculations
-  httpTool,          // HTTP requests
-  timestampTool,     // Timestamp operations
+  qrcodeTool,        // QR code generation
+  githubTool,        // GitHub repository access
+  newsdataTool,      // News search
+  openaiImageTool,   // DALL-E image generation
+  elevenlabsTool,    // Text-to-speech
+  videoGenerationTool, // Video generation
 } from 'openagentic';
 ```
 
@@ -201,7 +204,7 @@ OpenAgentic auto-detects providers based on model names:
 - **Environment**: `OPENAI_API_KEY`
 
 #### Anthropic
-- **Models**: `claude-4-opus-20250514`, `claude-4-sonnet-20250514`
+- **Models**: `claude-opus-4-20250514`, `claude-sonnet-4-20250514`
 - **Environment**: `ANTHROPIC_API_KEY`
 
 #### Google
@@ -306,86 +309,6 @@ const weatherTool = createTool({
 });
 ```
 
-### S3 File Upload Examples
-
-#### Upload Image with Generated Filename
-
-```typescript
-import { uploadImageToS3, generateImageFileName } from 'openagentic';
-
-// Generate unique filename
-const fileName = generateImageFileName('user profile picture', 'jpg');
-
-// Upload image
-const imageUrl = await uploadImageToS3(
-  imageBuffer,
-  fileName,
-  'image/jpeg',
-  'User uploaded profile picture'
-);
-```
-
-#### Upload HTML Website
-
-```typescript
-import { uploadHtmlToS3, generateHtmlFileName } from 'openagentic';
-
-const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head><title>My Page</title></head>
-<body><h1>Hello World!</h1></body>
-</html>
-`;
-
-const fileName = generateHtmlFileName('landing page', 'html');
-const htmlUrl = await uploadHtmlToS3(htmlContent, fileName);
-```
-
-#### Batch Upload Multiple Files
-
-```typescript
-import { batchUploadToS3 } from 'openagentic';
-
-const files = [
-  {
-    buffer: imageBuffer,
-    fileName: 'image1.jpg',
-    options: { directory: 'images', description: 'Product photo' }
-  },
-  {
-    buffer: audioBuffer,
-    fileName: 'audio1.mp3',
-    options: { directory: 'audio', description: 'Voice recording' }
-  }
-];
-
-const results = await batchUploadToS3(files);
-console.log('Upload results:', results);
-```
-
-### Model Configuration
-
-Use specific model configurations:
-
-```typescript
-import type { AIModel } from 'openagentic';
-
-const customModel: AIModel = {
-  provider: 'openai',
-  model: 'gpt-4o-mini',
-  apiKey: 'your-api-key',
-  temperature: 0.5,
-  maxTokens: 2000,
-  topP: 0.9,
-};
-
-const agent = createAgent({
-  model: customModel,
-  tools: [calculatorTool],
-});
-```
-
 ### Tool Management
 
 Dynamically manage tools:
@@ -393,18 +316,18 @@ Dynamically manage tools:
 ```typescript
 const agent = createAgent({
   model: 'gpt-4o-mini',
-  tools: [calculatorTool],
+  tools: [qrcodeTool],
 });
 
 // Add tools
-agent.addTool(httpTool);
-agent.addTool(timestampTool);
+agent.addTool(githubTool);
+agent.addTool(newsdataTool);
 
 // List tools
 console.log('All tools:', agent.getAllTools().map(t => t.name));
 
 // Remove tools
-agent.removeTool('calculator');
+agent.removeTool('qr_code_generator');
 ```
 
 ## File Organization
@@ -413,63 +336,60 @@ S3 uploads are automatically organized into directories:
 
 ```
 your-bucket/
-├── images/         # Image files (.jpg, .png, .gif, etc.)
-├── audio/          # Audio files (.mp3, .wav, .ogg, etc.)
-├── videos/         # Video files (.mp4, .avi, .mov, etc.)
-├── documents/      # Document files (.pdf, .doc, .txt, etc.)
-├── websites/       # HTML files (.html, .htm)
-└── uploads/        # Generic files
+├── openagentic/
+│   ├── images/         # Image files (.jpg, .png, .gif, etc.)
+│   ├── audio/          # Audio files (.mp3, .wav, .ogg, etc.)
+│   ├── videos/         # Video files (.mp4, .avi, .mov, etc.)
+│   ├── documents/      # Document files (.pdf, .doc, .txt, etc.)
+│   ├── websites/       # HTML files (.html, .htm)
+│   └── uploads/        # Generic files
 ```
 
 ## Examples
 
-### Basic Calculator Agent
+### Basic QR Code Agent
 
 ```typescript
-import { createAgent, calculatorTool } from 'openagentic';
+import { createAgent, qrcodeTool } from 'openagentic';
 
-const mathAgent = createAgent({
+const qrAgent = createAgent({
   model: 'gpt-4o-mini',
-  tools: [calculatorTool],
-  systemPrompt: 'You are a mathematics expert.',
+  tools: [qrcodeTool],
+  systemPrompt: 'You are a QR code specialist.',
 });
 
-const result = await mathAgent.execute('Calculate the square root of 144 plus 5 times 3');
+const result = await qrAgent.execute('Create a QR code for https://openagentic.org with high error correction');
 console.log(result.result);
 ```
 
-### File Upload Agent
+### GitHub Repository Agent
 
 ```typescript
-import { createAgent, httpTool } from 'openagentic';
-import { uploadImageToS3, generateImageFileName } from 'openagentic';
+import { createAgent, githubTool } from 'openagentic';
 
-const uploadAgent = createAgent({
+const githubAgent = createAgent({
   model: 'gpt-4o-mini',
-  tools: [httpTool],
-  systemPrompt: 'You can help users upload files to S3.',
+  tools: [githubTool],
+  systemPrompt: 'You can help users access GitHub repositories.',
 });
 
-// In practice, you'd get imageBuffer from user upload or generation
-const fileName = generateImageFileName('ai generated artwork', 'png');
-const imageUrl = await uploadImageToS3(imageBuffer, fileName);
-
-console.log('Uploaded to:', imageUrl);
+const result = await githubAgent.execute('Fetch the README.md file from the openai/openai-node repository');
+console.log(result.result);
 ```
 
 ### Multi-Tool Agent
 
 ```typescript
-import { createAgent, calculatorTool, httpTool, timestampTool } from 'openagentic';
+import { createAgent, qrcodeTool, githubTool, newsdataTool } from 'openagentic';
 
 const multiAgent = createAgent({
-  model: 'claude-4-sonnet-20250514',
-  tools: [calculatorTool, httpTool, timestampTool],
+  model: 'claude-sonnet-4-20250514',
+  tools: [qrcodeTool, githubTool, newsdataTool],
   systemPrompt: 'You are a versatile assistant with access to multiple tools.',
 });
 
 const result = await multiAgent.execute(
-  'Calculate 25 * 16, get the current timestamp, and check if httpbin.org is accessible'
+  'Create a QR code for https://github.com, fetch a README file, and search for AI news'
 );
 console.log(result.result);
 ```
@@ -480,7 +400,7 @@ console.log(result.result);
 import { createStreamingAgent } from 'openagentic';
 
 const storyAgent = createStreamingAgent({
-  model: 'claude-4-sonnet-20250514',
+  model: 'claude-sonnet-4-20250514',
   systemPrompt: 'You are a creative writing assistant.',
 });
 
@@ -553,9 +473,9 @@ openagentic/
 │   │   └── manager.ts           # Provider management
 │   ├── tools/
 │   │   ├── index.ts             # Tool exports
-│   │   ├── calculator.ts        # Calculator tool
-│   │   ├── http.ts              # HTTP tool
-│   │   └── timestamp.ts         # Timestamp tool
+│   │   ├── qrcode.ts            # QR code tool
+│   │   ├── github.ts            # GitHub tool
+│   │   └── newsdata.ts          # News search tool
 │   ├── utils/
 │   │   ├── index.ts             # Utility exports
 │   │   └── s3.ts                # AWS S3 utilities

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, createStreamingAgent, timestampTool } from '../../src';
+import { createAgent, createStreamingAgent, qrcodeTool } from '../../src';
 import type { CoreMessage } from '../../src/types';
 
 async function messageArrayExample() {
@@ -13,7 +13,7 @@ async function messageArrayExample() {
   
   const agent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool],
+    tools: [qrcodeTool],
     systemPrompt: 'You are a helpful assistant with access to tools.',
   });
 
@@ -21,9 +21,9 @@ async function messageArrayExample() {
     // Simulate a conversation history
     const conversationHistory: CoreMessage[] = [
       { role: 'system', content: 'You are a helpful assistant with access to tools.' },
-      { role: 'user', content: 'Hello! What time is it?' },
-      { role: 'assistant', content: 'I can help you check the current time!' },
-      { role: 'user', content: 'Now also tell me what the timestamp looks like in ISO format' }
+      { role: 'user', content: 'Hello! I need to create a QR code.' },
+      { role: 'assistant', content: 'I can help you create QR codes! What would you like to encode?' },
+      { role: 'user', content: 'Create a QR code for https://openagentic.org with size 512x512' }
     ];
 
     console.log('🔄 Executing with conversation history...');
@@ -45,14 +45,14 @@ async function messageArrayExample() {
   
   const comparisonAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool],
-    systemPrompt: 'You are a time assistant.',
+    tools: [qrcodeTool],
+    systemPrompt: 'You are a QR code generator.',
   });
 
   try {
     // Test with string input (original behavior)
     console.log('🔤 Testing string input:');
-    const stringResult = await comparisonAgent.execute('What time is it right now?');
+    const stringResult = await comparisonAgent.execute('Create a QR code for https://example.com');
     console.log('Result:', stringResult.result);
     
     // Reset for fresh state
@@ -61,9 +61,9 @@ async function messageArrayExample() {
     // Test with message array (new behavior)
     console.log('\n📝 Testing message array input:');
     const messageArray: CoreMessage[] = [
-      { role: 'user', content: 'I need to know the current time' },
-      { role: 'assistant', content: 'I\'d be happy to help you with the current time!' },
-      { role: 'user', content: 'What time is it right now?' }
+      { role: 'user', content: 'I need help creating QR codes' },
+      { role: 'assistant', content: 'I\'d be happy to help you generate QR codes!' },
+      { role: 'user', content: 'Create a QR code for https://example.com' }
     ];
     
     const arrayResult = await comparisonAgent.execute(messageArray);
@@ -86,16 +86,16 @@ async function messageArrayExample() {
   
   const streamingAgent = createStreamingAgent({
     model: 'claude-sonnet-4-20250514',
-    tools: [timestampTool],
+    tools: [qrcodeTool],
     systemPrompt: 'You are a helpful streaming assistant.',
   });
 
   try {
     // Create a conversation with context
     const streamingMessages: CoreMessage[] = [
-      { role: 'user', content: 'Hi, I\'m working on a project that needs timestamps' },
-      { role: 'assistant', content: 'I\'d be happy to help you with timestamps for your project!' },
-      { role: 'user', content: 'Get the current time and tell me about different timestamp formats' }
+      { role: 'user', content: 'Hi, I\'m working on a project that needs QR codes' },
+      { role: 'assistant', content: 'I\'d be happy to help you with QR code generation for your project!' },
+      { role: 'user', content: 'Create a QR code for https://github.com with high error correction level' }
     ];
 
     console.log('🔄 Streaming response with conversation context...\n');
@@ -123,18 +123,18 @@ async function messageArrayExample() {
   
   const conversationAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [timestampTool],
+    tools: [qrcodeTool],
     systemPrompt: 'You are a helpful assistant that remembers conversation context.',
   });
 
   try {
     // Build up a complex conversation
     const complexConversation: CoreMessage[] = [
-      { role: 'user', content: 'I need to track some time information for my project' },
-      { role: 'assistant', content: 'I\'d be happy to help with time tracking for your project!' },
-      { role: 'user', content: 'First, what time is it right now?' },
-      { role: 'assistant', content: 'Let me get the current time for you.' },
-      { role: 'user', content: 'Now can you explain what that timestamp means and show it in different formats?' }
+      { role: 'user', content: 'I need to create QR codes for my business' },
+      { role: 'assistant', content: 'I\'d be happy to help with QR codes for your business!' },
+      { role: 'user', content: 'First, create a QR code for my website: https://mybusiness.com' },
+      { role: 'assistant', content: 'I\'ll create that QR code for your website.' },
+      { role: 'user', content: 'Now make it size 1024x1024 with the highest error correction level' }
     ];
 
     console.log('🔄 Processing complex conversation...');
@@ -159,7 +159,7 @@ async function messageArrayExample() {
     const chatMessages = [
       { role: 'user' as const, content: 'Hello' },
       { role: 'assistant' as const, content: 'Hi there! How can I help you?' },
-      { role: 'user' as const, content: 'What time is it and explain timestamp formats' }
+      { role: 'user' as const, content: 'Help me create a QR code for my website' }
     ];
 
     // Convert to CoreMessage format (this is what convertToCoreMessages would do)
@@ -170,7 +170,7 @@ async function messageArrayExample() {
 
     const integrationAgent = createAgent({
       model: 'gpt-4o-mini',
-      tools: [timestampTool],
+      tools: [qrcodeTool],
       systemPrompt: 'You are a helpful chat assistant.',
     });
 
