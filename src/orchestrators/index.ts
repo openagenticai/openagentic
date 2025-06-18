@@ -8,6 +8,9 @@ export * from './registry';
 // Prompt-based orchestrator utilities
 export { PromptBasedOrchestratorClass, createPromptBasedOrchestrator } from './prompt-based';
 
+// Custom logic orchestrator utilities  
+export { CustomLogicOrchestratorClass, createCustomLogicOrchestrator } from './custom-logic';
+
 // Built-in orchestrators
 export { videoCreatorOrchestrator } from './video-creator';
 
