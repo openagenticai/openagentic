@@ -11,13 +11,18 @@ export { PromptBasedOrchestratorClass, createPromptBasedOrchestrator } from './p
 // Custom logic orchestrator utilities  
 export { CustomLogicOrchestratorClass, createCustomLogicOrchestrator } from './custom-logic';
 
+// Multi-AI orchestrator utilities
+export { MultiAIOrchestrator } from './multi-ai';
+
 // Built-in orchestrators
 export { videoCreatorOrchestrator } from './video-creator';
+export { codeAssessmentOrchestrator } from './code-assessment';
 
 // Helper function to ensure all built-in orchestrators are loaded
 export function loadBuiltInOrchestrators(): void {
   // Import orchestrators to trigger their registration
   require('./video-creator');
+  require('./code-assessment');
   
   console.log('🎭 All built-in orchestrators loaded');
 }
