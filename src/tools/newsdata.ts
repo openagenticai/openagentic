@@ -174,7 +174,7 @@ const rawNewsDataTool = tool({
       // Parse response
       let data: NewsDataIOResponse;
       try {
-        data = await response.json();
+        data = await response.json() as NewsDataIOResponse;
       } catch (error) {
         throw new Error(`Failed to parse NewsData IO response: ${error instanceof Error ? error.message : String(error)}`);
       }
