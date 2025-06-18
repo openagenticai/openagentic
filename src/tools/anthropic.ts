@@ -81,7 +81,7 @@ const rawAnthropicTool = tool({
 
     // Validate model
     if (!SUPPORTED_MODELS.includes(model as any)) {
-      throw new Error(`Model "${model_id}" not in supported list`);
+      throw new Error(`Model "${model}" not in supported list`);
     }
 
     // Start logging
