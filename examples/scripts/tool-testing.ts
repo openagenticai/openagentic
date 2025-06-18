@@ -59,7 +59,7 @@ const TEST_CASES: TestCase[] = [
     description: 'Anthropic Claude technical explanation',
     parameters: {
       prompt: 'Explain quantum computing in exactly 3 sentences.',
-      model: 'claude-3-5-haiku-20241022',
+      model: 'claude-sonnet-4-20250514',
       temperature: 0.3,
       maxTokens: 150
     },
