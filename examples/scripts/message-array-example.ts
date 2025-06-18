@@ -1,7 +1,7 @@
 import 'dotenv/config';
 
-import { createAgent, createStreamingAgent, calculatorTool, timestampTool } from '../src';
-import type { CoreMessage } from '../src/types';
+import { createAgent, createStreamingAgent, calculatorTool, timestampTool } from '../../src';
+import type { CoreMessage } from '../../src/types';
 
 async function messageArrayExample() {
   console.log('🤖 OpenAgentic - Message Array Support Example\n');
