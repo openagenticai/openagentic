@@ -344,7 +344,7 @@ const toolDetails: ToolDetails = {
     'Find news in multiple languages',
     'Get formatted news summaries with links',
   ],
-  logo: 'https://www.openagentic.org/tools/newsdata.svg',
+  logo: 'https://www.openagentic.org/tools/newsdataio.svg',
 };
 
 export const newsdataTool = toOpenAgenticTool(rawNewsDataTool, toolDetails);
