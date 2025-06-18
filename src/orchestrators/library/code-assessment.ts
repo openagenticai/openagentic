@@ -250,7 +250,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
     const codeContext = this.prepareCodeContext(codeData);
 
     // Define analysis prompts
-    const claudePrompt = `
+    const systemPrompt = `
 Perform a comprehensive code quality analysis of this ${codeData.repository} repository:
 
 ${codeContext}
@@ -279,41 +279,12 @@ As an expert code reviewer, analyze:
 
 Provide specific examples and actionable recommendations for improvement.`;
 
-    const geminiPrompt = `
-Conduct a deep technical analysis of this ${codeData.repository} repository:
-
-${codeContext}
-
-As a technical architect, evaluate:
-
-1. **Technical Architecture**
-   - System design and component architecture
-   - Data flow and integration patterns
-   - Scalability and performance architecture
-
-2. **Technology Stack Assessment**
-   - Technology choices and their appropriateness
-   - Dependencies and their management
-   - Version compatibility and updates
-
-3. **Implementation Quality**
-   - Algorithm efficiency and optimization
-   - Resource usage and memory management
-   - Concurrency and threading considerations
-
-4. **Operational Readiness**
-   - Deployment and configuration management
-   - Monitoring and observability
-   - Error handling and recovery
-
-Focus on technical depth and provide specific technical recommendations.`;
-
     console.log('🤖 Running parallel analysis with Claude and Gemini');
 
     try {
       // Execute both analyses in parallel
       const parallelResults = await this.runInParallel(
-        claudePrompt,
+        systemPrompt,
         [
           'claude-sonnet-4-20250514',
           'gemini-1.5-pro'
