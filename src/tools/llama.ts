@@ -17,21 +17,19 @@ const SUPPORTED_MODELS = [
 // Zod schema for response validation
 const LlamaResponseSchema = z.object({
   id: z.string().optional(),
-  model: z.string().optional(),
-  created: z.number().optional(),
-  choices: z.array(z.object({
-    index: z.number().optional(),
-    message: z.object({
-      role: z.string(),
-      content: z.string()
-    }),
-    finish_reason: z.string().nullable().optional()
-  })).optional(),
-  usage: z.object({
-    prompt_tokens: z.number().optional(),
-    completion_tokens: z.number().optional(),
-    total_tokens: z.number().optional()
-  }).optional()
+  completion_message: z.object({
+    role: z.string(),
+    stop_reason: z.string().optional(),
+    content: z.object({
+      type: z.string(),
+      text: z.string()
+    })
+  }),
+  metrics: z.array(z.object({
+    metric: z.string(),
+    value: z.number(),
+    unit: z.string()
+  })).optional()
 }).passthrough();
 
 const rawLlamaTool = tool({
@@ -191,18 +189,30 @@ const rawLlamaTool = tool({
         validatedData = responseData as z.infer<typeof LlamaResponseSchema>;
       }
 
-      // Extract text content
-      const text = validatedData?.choices?.[0]?.message?.content || '';
+      // Extract text content from Llama API format
+      const text = validatedData.completion_message.content.text;
+      const finishReason = validatedData.completion_message.stop_reason || '';
       if (!text) {
         throw new Error('No content received from Llama API');
       }
 
+      // Parse usage information from Llama metrics format
+      const promptTokensMetric = validatedData.metrics?.find(m => m.metric === 'num_prompt_tokens');
+      const completionTokensMetric = validatedData.metrics?.find(m => m.metric === 'num_completion_tokens');
+      const totalTokensMetric = validatedData.metrics?.find(m => m.metric === 'num_total_tokens');
+      
+      const usage = {
+        promptTokens: promptTokensMetric?.value || 0,
+        completionTokens: completionTokensMetric?.value || 0,
+        totalTokens: totalTokensMetric?.value || 0,
+      };
+
       // Log completion
       console.log('✅ Llama Tool - Generation completed:', {
         model,
-        tokensUsed: validatedData.usage?.total_tokens || 0,
+        tokensUsed: usage.totalTokens,
         responseLength: text.length,
-        finishReason: validatedData.choices?.[0]?.finish_reason,
+        finishReason,
         messagesCount: messages.length,
       });
 
@@ -211,12 +221,8 @@ const rawLlamaTool = tool({
         success: true,
         text,
         model,
-        usage: {
-          promptTokens: validatedData.usage?.prompt_tokens || 0,
-          completionTokens: validatedData.usage?.completion_tokens || 0,
-          totalTokens: validatedData.usage?.total_tokens || 0,
-        },
-        finishReason: validatedData.choices?.[0]?.finish_reason,
+        usage,
+        finishReason,
         parameters: {
           temperature,
           maxTokens,
