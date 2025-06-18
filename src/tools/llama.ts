@@ -192,7 +192,7 @@ const rawLlamaTool = tool({
       }
 
       // Extract text content
-      const text = validatedData.choices?.[0]?.message?.content || '';
+      const text = validatedData?.choices?.[0]?.message?.content || '';
       if (!text) {
         throw new Error('No content received from Llama API');
       }
