@@ -141,7 +141,7 @@ const rawQRCodeTool = tool({
         errorCorrectionLevel,
         darkColor,
         lightColor,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -178,7 +178,7 @@ const rawQRCodeTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`QR code generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`QR code generation failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
