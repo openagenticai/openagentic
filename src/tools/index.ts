@@ -17,7 +17,7 @@ export { websearchTool } from './websearch';
 export { elevenlabsTool } from './elevenlabs';
 export { videoGenerationTool } from './video-generation';
 export { geminiTtsTool } from './gemini-tts';
-export { infusionLabsTool } from './infusion-labs';
+export { inceptionLabsTool } from './inception-labs';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -45,7 +45,7 @@ import { infusionLabsTool } from './infusion-labs';
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
-export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, infusionLabsTool];
+export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool];
 export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool];
 export const allTools = [...utilityTools, ...aiTools];
 
