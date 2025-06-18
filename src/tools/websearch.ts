@@ -96,7 +96,7 @@ const rawWebSearchTool = tool({
       console.error('❌ Web Search Tool - Search failed:', {
         query: query.trim(),
         model: WEB_SEARCH_MODEL,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -153,7 +153,7 @@ const rawWebSearchTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`Web search failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Web search failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
