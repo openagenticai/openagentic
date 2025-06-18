@@ -1,5 +1,5 @@
 import { streamText } from 'ai';
-import type { AIModel, CoreMessage, OpenAgenticTool, Message, LoggingConfig, LogLevel, ExecutionStats, BaseOrchestrator, OrchestratorContext, OrchestratorOptions } from './types';
+import type { AIModel, CoreMessage, OpenAgenticTool, Message, LoggingConfig, LogLevel, ExecutionStats, BaseOrchestrator, OrchestratorContext, OrchestratorOptions, PromptBasedOrchestrator } from './types';
 import { ProviderManager } from './providers/manager';
 import { resolveOrchestrator } from './orchestrators/registry';
 
@@ -75,7 +75,7 @@ export class StreamingOrchestrator {
       options.tools.forEach(tool => this.addTool(tool));
     }
     
-    // Add system prompt if provided
+    // Add system prompt if provided (orchestrator may override this)
     if (options.systemPrompt) {
       this.messages.push({
         role: 'system',
@@ -120,16 +120,12 @@ export class StreamingOrchestrator {
         orchestratorType: this.orchestrator?.type,
       });
 
-      // Note: Orchestrator delegation for streaming is more complex
-      // For now, we'll log if orchestrator is present but continue with standard flow
+      // If orchestrator is available, delegate to it
       if (this.orchestrator) {
-        this.log('⚠️', 'Orchestrator delegation not yet implemented for streaming', {
-          orchestratorId: this.orchestrator.id,
-          orchestratorType: this.orchestrator.type,
-        });
+        return await this.streamWithOrchestrator(input);
       }
 
-      // Handle different input types
+      // Handle different input types with standard execution
       if (typeof input === 'string') {
         return await this.streamWithString(input);
       } else if (Array.isArray(input)) {
@@ -151,6 +147,116 @@ export class StreamingOrchestrator {
       });
       
       throw error;
+    }
+  }
+
+  // Stream with orchestrator delegation
+  private async streamWithOrchestrator(input: string | CoreMessage[]): Promise<ReturnType<typeof streamText>> {
+    if (!this.orchestrator) {
+      throw new Error('Orchestrator not available');
+    }
+
+    this.log('🎭', 'Delegating streaming to orchestrator', {
+      orchestratorId: this.orchestrator.id,
+      orchestratorType: this.orchestrator.type,
+      orchestratorName: this.orchestrator.name,
+    });
+
+    try {
+      // For prompt-based orchestrators, we can handle them specially for streaming
+      if (this.orchestrator.type === 'prompt-based') {
+        return await this.streamWithPromptBasedOrchestrator(input, this.orchestrator as PromptBasedOrchestrator);
+      }
+
+      // For custom-logic orchestrators, streaming delegation is more complex
+      // We'll need to implement this based on specific needs
+      throw new Error(`Streaming with custom-logic orchestrators not yet implemented. Orchestrator: ${this.orchestrator.id}`);
+
+    } catch (error) {
+      this.log('❌', 'Orchestrator streaming failed', {
+        orchestratorId: this.orchestrator.id,
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
+  }
+
+  // Stream with prompt-based orchestrator (optimized path)
+  private async streamWithPromptBasedOrchestrator(
+    input: string | CoreMessage[],
+    orchestrator: PromptBasedOrchestrator
+  ): Promise<ReturnType<typeof streamText>> {
+    this.log('🎭', 'Streaming with prompt-based orchestrator', {
+      orchestratorId: orchestrator.id,
+      orchestratorName: orchestrator.name,
+      allowPromptOverride: this.orchestratorOptions.allowOrchestratorPromptOverride,
+      allowToolControl: this.orchestratorOptions.allowOrchestratorToolControl,
+    });
+
+    // Build context for orchestrator
+    const context: OrchestratorContext = {
+      model: this.model,
+      tools: Array.from(this.tools.values()),
+      messages: this.messages,
+      iterations: this.stepsExecuted,
+      maxIterations: this.maxIterations,
+      loggingConfig: this.loggingConfig,
+    };
+
+    // Filter tools if orchestrator specifies allowed tools
+    const promptOrchestrator = orchestrator as any;
+    let filteredTools = Array.from(this.tools.values());
+    
+    if (promptOrchestrator.allowedTools && Array.isArray(promptOrchestrator.allowedTools) && promptOrchestrator.allowedTools.length > 0) {
+      filteredTools = filteredTools.filter(tool => 
+        promptOrchestrator.allowedTools.includes(tool.toolId)
+      );
+
+      this.log('🎭', 'Filtered tools for orchestrator', {
+        available: Array.from(this.tools.values()).map(t => t.toolId),
+        allowed: promptOrchestrator.allowedTools,
+        using: filteredTools.map(t => t.toolId),
+        filtered: promptOrchestrator.allowedTools.filter((id: string) => !filteredTools.some(t => t.toolId === id)),
+      });
+
+      if (filteredTools.length === 0) {
+        throw new Error(`No allowed tools found for orchestrator ${orchestrator.id}. Required tools: ${promptOrchestrator.allowedTools.join(', ')}`);
+      }
+    }
+
+    // Get the system prompt from orchestrator
+    const finalSystemPrompt = orchestrator.buildSystemPrompt ? 
+      orchestrator.buildSystemPrompt(context) : 
+      orchestrator.getSystemPrompt();
+
+    // Create a new specialized streaming orchestrator with orchestrator's settings
+    const specializedOrchestrator = new StreamingOrchestrator({
+      model: this.model,
+      tools: filteredTools,
+      systemPrompt: finalSystemPrompt,
+      maxIterations: this.maxIterations,
+      enableDebugLogging: this.loggingConfig.enableDebugLogging,
+      logLevel: this.loggingConfig.logLevel,
+      enableStepLogging: this.loggingConfig.enableStepLogging,
+      enableToolLogging: this.loggingConfig.enableToolLogging,
+      enableTimingLogging: this.loggingConfig.enableTimingLogging,
+      enableStatisticsLogging: this.loggingConfig.enableStatisticsLogging,
+      onFinish: this.onFinishCallback,
+    });
+
+    this.log('🎭', 'Executing with specialized streaming orchestrator', {
+      filteredToolsCount: filteredTools.length,
+      filteredToolIds: filteredTools.map(t => t.toolId),
+      systemPromptPreview: finalSystemPrompt.substring(0, 100) + '...',
+    });
+
+    // Stream using the specialized orchestrator (without orchestrator to avoid infinite recursion)
+    if (typeof input === 'string') {
+      return await specializedOrchestrator.streamWithString(input);
+    } else {
+      return await specializedOrchestrator.streamWithMessages(input);
     }
   }
 
