@@ -20,7 +20,7 @@ import { calculatorTool } from './calculator';
 import { timestampTool } from './timestamp';
 import { openaiTool } from './openai';
 
-import { ToolDetails } from '../types'
+import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool];
@@ -35,6 +35,7 @@ export const allTools = [...utilityTools, ...aiTools];
  * Lightweight tool description interface for metadata-only use cases
  */
 export interface ToolDescription extends ToolDetails {
+  description: string;
   category: 'utility' | 'ai' | 'custom';
   parametersCount: number;
   parameterNames: string[];
@@ -83,6 +84,10 @@ function extractToolDescription(tool: any, category: 'utility' | 'ai' | 'custom'
     internal: tool.internal,
   };
 }
+
+// Generate tool descriptions for each category
+const utilityToolDescriptions = utilityTools.map(tool => extractToolDescription(tool, 'utility'));
+const aiToolDescriptions = aiTools.map(tool => extractToolDescription(tool, 'ai'));
 
 /**
  * Lightweight descriptions of all tools for metadata-only imports.
