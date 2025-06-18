@@ -1,10 +1,10 @@
 import 'dotenv/config';
 
-import { createAgent, calculatorTool } from '../src';
+import { createAgent, calculatorTool } from '../../src';
 import { tool } from 'ai';
 import { z } from 'zod';
-import { toOpenAgenticTool } from '../src/tools/utils';
-import type { ToolDetails } from '../src/types';
+import { toOpenAgenticTool } from '../../src/tools/utils';
+import type { ToolDetails } from '../../src/types';
 
 // =============================================================================
 // CUSTOM TOOL EXAMPLES
