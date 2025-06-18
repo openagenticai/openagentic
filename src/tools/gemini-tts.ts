@@ -219,7 +219,7 @@ const rawGeminiTTSTool = tool({
       // Extract audio data from SDK response
       const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       
-      if (!audioData) {
+      if (!audioData) { 
         throw new Error('No audio data received from Gemini TTS API via SDK');
       }
 
