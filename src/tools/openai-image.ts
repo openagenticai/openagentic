@@ -70,7 +70,7 @@ const rawOpenAIImageTool = tool({
 
     // Validate model
     if (!SUPPORTED_MODELS.includes(model as any)) {
-      console.warn(`Model "${model}" not in supported list, but proceeding anyway`);
+      throw new Error(`Model "${model}" not in supported list`);
     }
 
     // Validate size for model
