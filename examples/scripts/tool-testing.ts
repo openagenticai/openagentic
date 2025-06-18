@@ -1,7 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, allTools, allToolDescriptions } from '../src';
-import type { CoreMessage } from '../src/types';
+import { createAgent, allTools, allToolDescriptions } from '../../src';
 
 // =============================================================================
 // TYPES AND INTERFACES
