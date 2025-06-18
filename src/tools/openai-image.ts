@@ -1,6 +1,5 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { createOpenAI } from '@ai-sdk/openai';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 import { uploadImageToS3, generateImageFileName } from '../utils/s3';
@@ -110,11 +109,6 @@ const rawOpenAIImageTool = tool({
     });
 
     try {
-      // Initialize OpenAI client
-      const openai = createOpenAI({
-        apiKey,
-      });
-
       // Prepare request body for OpenAI Images API
       const requestBody: any = {
         model,
