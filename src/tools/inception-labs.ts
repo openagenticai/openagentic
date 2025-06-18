@@ -8,7 +8,7 @@ const SUPPORTED_MODELS = [
   'mercury-coder',
 ] as const;
 
-const rawInfusionLabsTool = tool({
+const rawInceptionLabsTool = tool({
   description: 'Generate high-quality code and technical content using Inception Labs Mercury Coder model with specialized coding capabilities',
   parameters: z.object({
     prompt: z.string()
