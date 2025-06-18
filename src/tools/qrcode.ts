@@ -16,10 +16,11 @@ const rawQRCodeTool = tool({
       .describe('The text to encode in the QR code (required, max 4000 characters)'),
     
     size: z.number()
-      .optional()
-      .default(512)
+      .int()
       .min(100)
       .max(2000)
+      .optional()
+      .default(512)
       .describe('The size of the QR code in pixels (default: 512, min: 100, max: 2000)'),
       
     errorCorrectionLevel: z.enum(['L', 'M', 'Q', 'H'])
