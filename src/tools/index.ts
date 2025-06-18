@@ -16,6 +16,7 @@ export { qrcodeTool } from './qrcode';
 export { websearchTool } from './websearch';
 export { elevenlabsTool } from './elevenlabs';
 export { videoGenerationTool } from './video-generation';
+export { geminiTtsTool } from './gemini-tts';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -37,12 +38,13 @@ import { qrcodeTool } from './qrcode';
 import { websearchTool } from './websearch';
 import { elevenlabsTool } from './elevenlabs';
 import { videoGenerationTool } from './video-generation';
+import { geminiTtsTool } from './gemini-tts';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool];
-export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, elevenlabsTool, videoGenerationTool];
+export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================

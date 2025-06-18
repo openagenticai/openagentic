@@ -125,7 +125,7 @@ const TEST_CASES: TestCase[] = [
     skipIfMissingEnv: ['OPENAI_API_KEY']
   },
 
-  // Utility Tools (removed calculator test case)
+  // Utility Tools
   {
     toolId: 'github_contents',
     description: 'GitHub repository content fetching',
@@ -198,6 +198,19 @@ const TEST_CASES: TestCase[] = [
       model: 'veo-2.0-generate-001'
     },
     expectedKeys: ['success', 'videoUrls', 'fileNames', 'videosGenerated'],
+    skipIfMissingEnv: ['GOOGLE_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
+  },
+  {
+    toolId: 'gemini_tts',
+    description: 'Google Gemini TTS speech generation',
+    parameters: {
+      text: 'Welcome to OpenAgentic! This is a test of the Gemini text-to-speech system.',
+      model: 'gemini-2.5-flash-preview-tts',
+      voice_name: 'Kore',
+      style_prompt: 'speak cheerfully',
+      output_format: 'wav'
+    },
+    expectedKeys: ['success', 'audioUrl', 'fileName', 'mode'],
     skipIfMissingEnv: ['GOOGLE_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
   }
 ];
@@ -510,6 +523,7 @@ Examples:
   npm run test:tools -- --tool qr_code_generator
   npm run test:tools -- --tool openai_text_generation
   npm run test:tools -- --tool github_contents
+  npm run test:tools -- --tool gemini_tts
 
 Environment Variables Required:
   # AI Providers
@@ -525,7 +539,7 @@ Environment Variables Required:
   GITHUB_TOKEN=your_github_token
   ELEVENLABS_API_KEY=your_elevenlabs_key
   
-  # S3 (for audio/video tools)
+  # S3 (for audio/video/image tools)
   AWS_ACCESS_KEY_ID=your_aws_key
   AWS_SECRET_ACCESS_KEY=your_aws_secret
   AWS_REGION=us-east-1
