@@ -251,7 +251,7 @@ const rawInceptionLabsTool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`Inception Labs text generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`Inception Labs text generation failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
