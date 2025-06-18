@@ -121,9 +121,11 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
     const repoIndex = words.findIndex(word => word.includes('repository') || word.includes('repo'));
     if (repoIndex !== -1 && repoIndex < words.length - 1) {
       const repoCandidate = words[repoIndex + 1];
-      const match = repoCandidate.match(/([^\/]+)\/([^\/]+)/);
-      if (match) {
-        return { owner: match[1], repo: match[2] };
+      if (repoCandidate) {
+        const match = repoCandidate.match(/([^\/]+)\/([^\/]+)/);
+        if (match && match[1] && match[2]) {
+          return { owner: match[1], repo: match[2] };
+        }
       }
     }
 
@@ -154,7 +156,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
       owner: repoInfo.owner,
       repo: repoInfo.repo,
       path: repoInfo.path || '',
-    });
+    }, { toolCallId: 'github-root', messages: [] });
 
     if (!rootResponse.success) {
       throw new Error(`Failed to fetch repository: ${rootResponse.error || 'Unknown error'}`);
@@ -382,7 +384,7 @@ ${[...new Set(codeData.files.map(f => f.path.split('.').pop()))].join(', ')}
   /**
    * Synthesize findings using GPT-4o
    */
-  private async synthesizeFindings(
+  private async synthesizeAnalysisFindings(
     analysisResults: { claude: ParallelAIResult; gemini: ParallelAIResult },
     codeData: { repository: string; files: any[]; totalLines: number }
   ): Promise<{ executiveSummary: string; detailedFindings: string; recommendations: string }> {
