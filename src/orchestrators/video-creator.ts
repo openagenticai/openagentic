@@ -1,3 +1,4 @@
+import { anthropicTool, geminiTool, videoGenerationTool, websearchTool } from '../tools';
 import { createPromptBasedOrchestrator } from './prompt-based';
 import { registerOrchestrator } from './registry';
 
