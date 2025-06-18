@@ -166,6 +166,10 @@ export abstract class CustomLogicOrchestratorClass implements CustomLogicOrchest
         parameters: this.sanitizeForLogging(parameters),
       });
 
+      if (!tool.execute) {
+        throw new Error(`Tool ${tool.toolId} does not have an execute method`);
+      }
+
       const result = await tool.execute(parameters, context);
 
       console.log(`✅ Tool execution completed: ${tool.toolId}`, {
