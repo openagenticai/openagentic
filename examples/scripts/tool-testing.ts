@@ -207,8 +207,7 @@ const TEST_CASES: TestCase[] = [
       text: 'Welcome to OpenAgentic! This is a test of the Gemini text-to-speech system.',
       model: 'gemini-2.5-flash-preview-tts',
       voice_name: 'Kore',
-      style_prompt: 'speak cheerfully',
-      output_format: 'wav'
+      style_prompt: 'speak cheerfully'
     },
     expectedKeys: ['success', 'audioUrl', 'fileName', 'mode'],
     skipIfMissingEnv: ['GOOGLE_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
