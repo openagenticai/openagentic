@@ -144,7 +144,9 @@ export class PromptBasedOrchestratorClass implements PromptBasedOrchestrator {
       });
 
       // Execute using the specialized orchestrator
-      const result = await specializedOrchestrator.execute(input);
+      const result = typeof input === 'string' 
+        ? await specializedOrchestrator.execute(input)
+        : await specializedOrchestrator.execute(input as CoreMessage[]);
 
       console.log(`🎭 ${this.name} - Orchestration completed`, {
         success: result.success,
