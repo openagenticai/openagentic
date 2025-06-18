@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { createAgent, createStreamingAgent, calculatorTool, httpTool, timestampTool } from '../src';
+import { createAgent, createStreamingAgent, timestampTool, httpTool } from '../src';
 import type { AIModel } from '../src/types';
 
 describe('OpenAgentic Simplified API', () => {
@@ -12,22 +12,19 @@ describe('OpenAgentic Simplified API', () => {
     });
 
     it('should export utility tools', () => {
-      expect(calculatorTool).toBeDefined();
-      expect(calculatorTool.toolId).toBe('calculator');
-      expect(calculatorTool.description).toBeDefined();
-      expect(calculatorTool.execute).toBeDefined();
+      expect(timestampTool).toBeDefined();
+      expect(timestampTool.toolId).toBeDefined();
+      expect(timestampTool.description).toBeDefined();
+      expect(timestampTool.execute).toBeDefined();
       
       expect(httpTool).toBeDefined();
       expect(httpTool.toolId).toBeDefined();
-      
-      expect(timestampTool).toBeDefined();
-      expect(timestampTool.toolId).toBeDefined();
     });
 
     it('should create an agent instance', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [timestampTool],
         systemPrompt: 'You are a helpful assistant.',
       });
 
@@ -41,7 +38,7 @@ describe('OpenAgentic Simplified API', () => {
 
     it('should create a streaming agent instance', () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
+        model: 'claude-sonnet-4-20250514',
         tools: [timestampTool],
         systemPrompt: 'You are a streaming assistant.',
       });
@@ -73,7 +70,7 @@ describe('OpenAgentic Simplified API', () => {
     it('should manage tools correctly', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [timestampTool],
       });
 
       expect(agent.getAllTools()).toHaveLength(1);
@@ -81,24 +78,24 @@ describe('OpenAgentic Simplified API', () => {
       agent.addTool(httpTool);
       expect(agent.getAllTools()).toHaveLength(2);
       
-      const retrievedTool = agent.getTool('calculator');
+      const retrievedTool = agent.getTool('timestamp');
       expect(retrievedTool).toBeDefined();
-      expect(retrievedTool?.toolId).toBe('calculator');
+      expect(retrievedTool?.toolId).toBe('timestamp');
       
-      agent.removeTool('calculator');
+      agent.removeTool('timestamp');
       expect(agent.getAllTools()).toHaveLength(1);
-      expect(agent.getTool('calculator')).toBeUndefined();
+      expect(agent.getTool('timestamp')).toBeUndefined();
     });
 
     it('should prevent duplicate tool registration', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [timestampTool],
       });
 
       expect(() => {
-        agent.addTool(calculatorTool);
-      }).toThrow('Tool with name calculator already exists');
+        agent.addTool(timestampTool);
+      }).toThrow('Tool with name timestamp already exists');
     });
 
     it('should switch models', () => {
@@ -107,7 +104,7 @@ describe('OpenAgentic Simplified API', () => {
       });
 
       expect(() => {
-        agent.switchModel('claude-4-sonnet-20250514');
+        agent.switchModel('claude-sonnet-4-20250514');
       }).not.toThrow();
 
       const modelInfo = agent.getModelInfo();
@@ -140,15 +137,15 @@ describe('OpenAgentic Simplified API', () => {
 
     it('should verify tool structure', () => {
       // Test that tools have the expected structure
-      expect(calculatorTool.toolId).toBe('calculator');
-      expect(calculatorTool.description).toBeDefined();
-      expect(calculatorTool.execute).toBeDefined();
-      expect(typeof calculatorTool.execute).toBe('function');
-      
-      expect(timestampTool.toolId).toBeDefined();
+      expect(timestampTool.toolId).toBe('timestamp');
       expect(timestampTool.description).toBeDefined();
       expect(timestampTool.execute).toBeDefined();
       expect(typeof timestampTool.execute).toBe('function');
+      
+      expect(httpTool.toolId).toBeDefined();
+      expect(httpTool.description).toBeDefined();
+      expect(httpTool.execute).toBeDefined();
+      expect(typeof httpTool.execute).toBe('function');
     });
   });
 });

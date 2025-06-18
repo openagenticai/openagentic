@@ -125,15 +125,7 @@ const TEST_CASES: TestCase[] = [
     skipIfMissingEnv: ['OPENAI_API_KEY']
   },
 
-  // Utility Tools
-  {
-    toolId: 'calculator',
-    description: 'Mathematical calculation with complex expression',
-    parameters: {
-      expression: '(15 + 25) * 2 - 10'
-    },
-    expectedKeys: ['result', 'expression', 'type']
-  },
+  // Utility Tools (removed calculator test case)
   {
     toolId: 'github_contents',
     description: 'GitHub repository content fetching',
@@ -515,7 +507,7 @@ Usage:
   npm run test:tools -- --help         # Show this help
 
 Examples:
-  npm run test:tools -- --tool calculator
+  npm run test:tools -- --tool qr_code_generator
   npm run test:tools -- --tool openai_text_generation
   npm run test:tools -- --tool github_contents
 

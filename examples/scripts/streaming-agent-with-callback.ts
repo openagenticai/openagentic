@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createStreamingAgent, calculatorTool, timestampTool } from '../../src';
+import { createStreamingAgent, timestampTool } from '../../src';
 
 async function streamingAgentWithCallbackExample() {
   console.log('📡 OpenAgentic - Streaming Agent with onFinish Callback Example\n');
@@ -12,8 +12,8 @@ async function streamingAgentWithCallbackExample() {
   
   const basicAgent = createStreamingAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool],
-    systemPrompt: 'You are a helpful mathematical assistant.',
+    tools: [timestampTool],
+    systemPrompt: 'You are a helpful time assistant.',
     enableDebugLogging: true,
     logLevel: 'basic',
     onFinish: (result) => {
@@ -30,7 +30,7 @@ async function streamingAgentWithCallbackExample() {
   try {
     console.log('🔄 Starting basic streaming with callback...\n');
     
-    const stream = await basicAgent.stream('Calculate 15 * 24 and explain the result');
+    const stream = await basicAgent.stream('What time is it right now and explain what timestamps are');
     
     let content = '';
     for await (const chunk of stream.textStream) {
@@ -101,7 +101,7 @@ async function streamingAgentWithCallbackExample() {
   
   const errorAgent = createStreamingAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool],
+    tools: [timestampTool],
     systemPrompt: 'You are a helpful assistant.',
     enableDebugLogging: true,
     logLevel: 'detailed',
@@ -120,7 +120,7 @@ async function streamingAgentWithCallbackExample() {
   try {
     console.log('🔄 Starting streaming with error-prone callback...\n');
     
-    const stream = await errorAgent.stream('Calculate 5 + 5');
+    const stream = await errorAgent.stream('What time is it?');
     
     let content = '';
     for await (const chunk of stream.textStream) {
@@ -145,8 +145,8 @@ async function streamingAgentWithCallbackExample() {
   
   const dataAgent = createStreamingAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, timestampTool],
-    systemPrompt: 'You are a helpful assistant that can calculate and tell time.',
+    tools: [timestampTool],
+    systemPrompt: 'You are a helpful assistant that can check time.',
     enableDebugLogging: true,
     logLevel: 'basic',
     onFinish: (result) => {
@@ -168,9 +168,9 @@ async function streamingAgentWithCallbackExample() {
     console.log('🔄 Running multiple streams for data collection...\n');
     
     const queries = [
-      'Calculate 10 * 10',
       'What time is it?',
-      'Calculate the square root of 144',
+      'Tell me about timestamps',
+      'Explain time zones',
     ];
 
     for (let i = 0; i < queries.length; i++) {
@@ -206,8 +206,8 @@ async function streamingAgentWithCallbackExample() {
   
   const integrationAgent = createStreamingAgent({
     model: 'claude-sonnet-4-20250514',
-    tools: [calculatorTool],
-    systemPrompt: 'You are a helpful calculator assistant.',
+    tools: [timestampTool],
+    systemPrompt: 'You are a helpful time assistant.',
     enableDebugLogging: true,
     logLevel: 'basic',
     onFinish: async (result) => {
@@ -236,7 +236,7 @@ async function streamingAgentWithCallbackExample() {
   try {
     console.log('🔄 Starting streaming with external integration...\n');
     
-    const stream = await integrationAgent.stream('Calculate 25 * 4 and explain the process');
+    const stream = await integrationAgent.stream('What time is it and explain the process');
     
     let content = '';
     for await (const chunk of stream.textStream) {

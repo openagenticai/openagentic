@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, createStreamingAgent, calculatorTool, timestampTool, httpTool } from '../../src';
+import { createAgent, createStreamingAgent, timestampTool, httpTool } from '../../src';
 import type { CoreMessage } from '../../src/types';
 
 async function loggingExample() {
@@ -13,7 +13,7 @@ async function loggingExample() {
   
   const basicAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, timestampTool],
+    tools: [timestampTool],
     systemPrompt: 'You are a helpful assistant with access to tools.',
     enableDebugLogging: true,
     logLevel: 'basic',
@@ -22,7 +22,7 @@ async function loggingExample() {
   try {
     console.log('\n🔄 Executing with basic logging...\n');
     
-    const result = await basicAgent.execute('Calculate 15 * 8 and tell me the current time');
+    const result = await basicAgent.execute('Tell me the current time in both human format and ISO format');
     
     console.log('\n✅ Basic logging result:', {
       success: result.success,
@@ -44,7 +44,7 @@ async function loggingExample() {
   
   const detailedAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, timestampTool, httpTool],
+    tools: [timestampTool, httpTool],
     systemPrompt: 'You are a helpful assistant with detailed logging.',
     enableDebugLogging: true,
     logLevel: 'detailed',
@@ -58,9 +58,9 @@ async function loggingExample() {
     console.log('\n🔄 Executing with detailed logging...\n');
     
     const conversationHistory: CoreMessage[] = [
-      { role: 'user', content: 'I need to do some calculations and check something online' },
-      { role: 'assistant', content: 'I can help you with calculations and web requests!' },
-      { role: 'user', content: 'Calculate 25 * 16, then check if httpbin.org/status/200 is accessible' }
+      { role: 'user', content: 'I need to check the time and test a website' },
+      { role: 'assistant', content: 'I can help you check the time and test website accessibility!' },
+      { role: 'user', content: 'Get the current timestamp and check if httpbin.org/status/200 is accessible' }
     ];
     
     const result = await detailedAgent.execute(conversationHistory);
@@ -85,8 +85,8 @@ async function loggingExample() {
   console.log('📝 Example 3: Streaming Agent with Comprehensive Logging');
   
   const streamingAgent = createStreamingAgent({
-    model: 'claude-4-sonnet-20250514',
-    tools: [calculatorTool, timestampTool],
+    model: 'claude-sonnet-4-20250514',
+    tools: [timestampTool],
     systemPrompt: 'You are a helpful streaming assistant with comprehensive logging.',
     enableDebugLogging: true,
     logLevel: 'detailed',
@@ -101,9 +101,9 @@ async function loggingExample() {
     console.log('\n🔄 Streaming with comprehensive logging...\n');
     
     const streamingMessages: CoreMessage[] = [
-      { role: 'user', content: 'Write a brief explanation of mathematics while calculating 7 * 9' },
-      { role: 'assistant', content: 'I\'ll explain mathematics and do that calculation for you.' },
-      { role: 'user', content: 'Also tell me what time it is now' }
+      { role: 'user', content: 'Write a brief explanation of time and tell me what time it is' },
+      { role: 'assistant', content: 'I\'ll explain time concepts and get the current time for you.' },
+      { role: 'user', content: 'Also tell me what time it is now in different formats' }
     ];
     
     const stream = await streamingAgent.stream(streamingMessages);
@@ -143,7 +143,7 @@ async function loggingExample() {
       name: 'No Logging',
       agent: createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [timestampTool],
         enableDebugLogging: false,
         logLevel: 'none' as const,
       })
@@ -152,7 +152,7 @@ async function loggingExample() {
       name: 'Basic Logging',
       agent: createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [timestampTool],
         enableDebugLogging: true,
         logLevel: 'basic' as const,
       })
@@ -161,7 +161,7 @@ async function loggingExample() {
       name: 'Detailed Logging',
       agent: createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [timestampTool],
         enableDebugLogging: true,
         logLevel: 'detailed' as const,
       })
@@ -173,7 +173,7 @@ async function loggingExample() {
       console.log(`\n⏱️ Testing ${name}...`);
       const startTime = Date.now();
       
-      const result = await agent.execute('Calculate the square root of 144');
+      const result = await agent.execute('What time is it right now?');
       
       const duration = Date.now() - startTime;
       console.log(`✅ ${name} completed in ${duration}ms`, {
@@ -195,7 +195,7 @@ async function loggingExample() {
   
   const errorAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, httpTool],
+    tools: [timestampTool, httpTool],
     systemPrompt: 'You are an assistant that will demonstrate error handling.',
     enableDebugLogging: true,
     logLevel: 'detailed',
@@ -205,14 +205,14 @@ async function loggingExample() {
     console.log('\n🔄 Testing error scenarios with enhanced logging...\n');
     
     // This should succeed
-    const goodResult = await errorAgent.execute('Calculate 5 + 5');
-    console.log('✅ Good calculation result:', goodResult.success);
+    const goodResult = await errorAgent.execute('What time is it?');
+    console.log('✅ Good timestamp result:', goodResult.success);
     
     // Reset for next test
     errorAgent.reset();
     
     // This might cause an error or be handled gracefully
-    const edgeCaseResult = await errorAgent.execute('Calculate the square root of -1');
+    const edgeCaseResult = await errorAgent.execute('Check if invalid-website-12345.com is accessible');
     console.log('⚠️ Edge case result:', {
       success: edgeCaseResult.success,
       hasError: !!edgeCaseResult.error,
@@ -242,12 +242,12 @@ async function loggingExample() {
     console.log('\n🔧 Demonstrating tool management with logging...\n');
     
     // Add tools dynamically
-    toolAgent.addTool(calculatorTool);
     toolAgent.addTool(timestampTool);
+    toolAgent.addTool(httpTool);
     
     console.log('🔧 Available tools:', toolAgent.getAllTools().map(t => t.toolId));
     
-    const result = await toolAgent.execute('Calculate 10 * 10 and tell me the current time');
+    const result = await toolAgent.execute('What time is it and check if google.com is accessible');
     
     console.log('✅ Tool management result:', {
       success: result.success,
@@ -256,8 +256,8 @@ async function loggingExample() {
     });
     
     // Remove a tool
-    toolAgent.removeTool('calculator');
-    console.log('🗑️ Removed calculator tool');
+    toolAgent.removeTool('timestamp');
+    console.log('🗑️ Removed timestamp tool');
     
   } catch (error) {
     console.error('❌ Tool management error:', error);

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createStreamingAgent, calculatorTool, timestampTool } from '../../src';
+import { createStreamingAgent, timestampTool } from '../../src';
 
 async function streamingAgentExample() {
   console.log('📡 OpenAgentic - Streaming Agent Example\n');
@@ -11,7 +11,7 @@ async function streamingAgentExample() {
   console.log('📝 Example 1: Basic Streaming Response');
   
   const storyAgent = createStreamingAgent({
-    model: 'claude-4-sonnet-20250514', // Auto-detects Anthropic provider
+    model: 'claude-sonnet-4-20250514', // Auto-detects Anthropic provider
     systemPrompt: 'You are a creative writing assistant. Be engaging and descriptive.',
   });
 
@@ -41,7 +41,7 @@ async function streamingAgentExample() {
   
   const toolStreamingAgent = createStreamingAgent({
     model: 'gpt-4o-mini', // Auto-detects OpenAI provider
-    tools: [calculatorTool, timestampTool],
+    tools: [timestampTool],
     systemPrompt: 'You are a helpful assistant that can use tools while streaming responses.',
   });
 
@@ -49,7 +49,7 @@ async function streamingAgentExample() {
     console.log('🔄 Streaming response with tool usage...\n');
     
     const stream = await toolStreamingAgent.stream(
-      'Write a brief explanation of mathematics and calculate 7 * 8. Also, tell me the current timestamp.'
+      'Write a brief explanation of time and tell me what time it is right now. Also explain what timestamps are used for.'
     );
     
     let content = '';
@@ -80,7 +80,7 @@ async function streamingAgentExample() {
     console.log('🔄 Streaming code generation...\n');
     
     const stream = await codeAgent.stream(
-      'Write a simple JavaScript function to check if a number is prime. Keep it short and add comments.'
+      'Write a simple JavaScript function to get the current timestamp. Keep it short and add comments.'
     );
     
     let codeContent = '';
@@ -104,7 +104,7 @@ async function streamingAgentExample() {
   
   const providers = [
     { name: 'OpenAI', model: 'gpt-4o-mini' },
-    { name: 'Anthropic', model: 'claude-4-sonnet-20250514' },
+    { name: 'Anthropic', model: 'claude-sonnet-4-20250514' },
     { name: 'Google', model: 'gemini-1.5-pro' },
   ];
 
@@ -140,8 +140,8 @@ async function streamingAgentExample() {
   console.log('📝 Example 5: Advanced Streaming Features');
   
   const advancedAgent = createStreamingAgent({
-    model: 'claude-4-sonnet-20250514',
-    tools: [calculatorTool],
+    model: 'claude-sonnet-4-20250514',
+    tools: [timestampTool],
     systemPrompt: 'You are an advanced assistant with real-time capabilities.',
     maxIterations: 5,
   });
@@ -150,7 +150,7 @@ async function streamingAgentExample() {
     console.log('🔄 Advanced streaming with features...\n');
     
     const stream = await advancedAgent.stream(
-      'Explain quantum computing concepts while calculating 2^10. Stream your explanation as you think through it.'
+      'Explain time concepts while getting the current timestamp. Stream your explanation as you think through it.'
     );
     
     let finalContent = '';

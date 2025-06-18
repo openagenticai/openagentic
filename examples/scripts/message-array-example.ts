@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, createStreamingAgent, calculatorTool, timestampTool } from '../../src';
+import { createAgent, createStreamingAgent, timestampTool } from '../../src';
 import type { CoreMessage } from '../../src/types';
 
 async function messageArrayExample() {
@@ -13,7 +13,7 @@ async function messageArrayExample() {
   
   const agent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, timestampTool],
+    tools: [timestampTool],
     systemPrompt: 'You are a helpful assistant with access to tools.',
   });
 
@@ -21,9 +21,9 @@ async function messageArrayExample() {
     // Simulate a conversation history
     const conversationHistory: CoreMessage[] = [
       { role: 'system', content: 'You are a helpful assistant with access to tools.' },
-      { role: 'user', content: 'Hello! What is 5 + 3?' },
-      { role: 'assistant', content: 'I can help you with that calculation. Let me compute 5 + 3 for you.' },
-      { role: 'user', content: 'Now also tell me what time it is and multiply the previous result by 2' }
+      { role: 'user', content: 'Hello! What time is it?' },
+      { role: 'assistant', content: 'I can help you check the current time!' },
+      { role: 'user', content: 'Now also tell me what the timestamp looks like in ISO format' }
     ];
 
     console.log('🔄 Executing with conversation history...');
@@ -45,14 +45,14 @@ async function messageArrayExample() {
   
   const comparisonAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool],
-    systemPrompt: 'You are a math tutor.',
+    tools: [timestampTool],
+    systemPrompt: 'You are a time assistant.',
   });
 
   try {
     // Test with string input (original behavior)
     console.log('🔤 Testing string input:');
-    const stringResult = await comparisonAgent.execute('What is 12 * 8?');
+    const stringResult = await comparisonAgent.execute('What time is it right now?');
     console.log('Result:', stringResult.result);
     
     // Reset for fresh state
@@ -61,9 +61,9 @@ async function messageArrayExample() {
     // Test with message array (new behavior)
     console.log('\n📝 Testing message array input:');
     const messageArray: CoreMessage[] = [
-      { role: 'user', content: 'I need help with multiplication' },
-      { role: 'assistant', content: 'I\'d be happy to help you with multiplication problems!' },
-      { role: 'user', content: 'What is 12 * 8?' }
+      { role: 'user', content: 'I need to know the current time' },
+      { role: 'assistant', content: 'I\'d be happy to help you with the current time!' },
+      { role: 'user', content: 'What time is it right now?' }
     ];
     
     const arrayResult = await comparisonAgent.execute(messageArray);
@@ -85,17 +85,17 @@ async function messageArrayExample() {
   console.log('📝 Example 3: Streaming Agent with Message Array');
   
   const streamingAgent = createStreamingAgent({
-    model: 'claude-4-sonnet-20250514',
-    tools: [calculatorTool, timestampTool],
+    model: 'claude-sonnet-4-20250514',
+    tools: [timestampTool],
     systemPrompt: 'You are a helpful streaming assistant.',
   });
 
   try {
     // Create a conversation with context
     const streamingMessages: CoreMessage[] = [
-      { role: 'user', content: 'Hi, I\'m working on a math problem' },
-      { role: 'assistant', content: 'I\'d be happy to help you with your math problem!' },
-      { role: 'user', content: 'Calculate 15 * 24 and tell me the current time' }
+      { role: 'user', content: 'Hi, I\'m working on a project that needs timestamps' },
+      { role: 'assistant', content: 'I\'d be happy to help you with timestamps for your project!' },
+      { role: 'user', content: 'Get the current time and tell me about different timestamp formats' }
     ];
 
     console.log('🔄 Streaming response with conversation context...\n');
@@ -123,18 +123,18 @@ async function messageArrayExample() {
   
   const conversationAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, timestampTool],
+    tools: [timestampTool],
     systemPrompt: 'You are a helpful assistant that remembers conversation context.',
   });
 
   try {
     // Build up a complex conversation
     const complexConversation: CoreMessage[] = [
-      { role: 'user', content: 'I need to calculate some values for my project' },
-      { role: 'assistant', content: 'I\'d be happy to help with calculations for your project!' },
-      { role: 'user', content: 'First, what is 25 * 16?' },
-      { role: 'assistant', content: 'Let me calculate that for you. 25 * 16 = 400.' },
-      { role: 'user', content: 'Now take that result and divide it by 8, then tell me what time it is' }
+      { role: 'user', content: 'I need to track some time information for my project' },
+      { role: 'assistant', content: 'I\'d be happy to help with time tracking for your project!' },
+      { role: 'user', content: 'First, what time is it right now?' },
+      { role: 'assistant', content: 'Let me get the current time for you.' },
+      { role: 'user', content: 'Now can you explain what that timestamp means and show it in different formats?' }
     ];
 
     console.log('🔄 Processing complex conversation...');
@@ -159,7 +159,7 @@ async function messageArrayExample() {
     const chatMessages = [
       { role: 'user' as const, content: 'Hello' },
       { role: 'assistant' as const, content: 'Hi there! How can I help you?' },
-      { role: 'user' as const, content: 'Calculate 7 * 9 and tell me the time' }
+      { role: 'user' as const, content: 'What time is it and explain timestamp formats' }
     ];
 
     // Convert to CoreMessage format (this is what convertToCoreMessages would do)
@@ -170,7 +170,7 @@ async function messageArrayExample() {
 
     const integrationAgent = createAgent({
       model: 'gpt-4o-mini',
-      tools: [calculatorTool, timestampTool],
+      tools: [timestampTool],
       systemPrompt: 'You are a helpful chat assistant.',
     });
 

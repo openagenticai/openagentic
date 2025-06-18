@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, calculatorTool } from '../../src';
+import { createAgent, timestampTool } from '../../src';
 import { tool } from 'ai';
 import { z } from 'zod';
 import { toOpenAgenticTool } from '../../src/tools/utils';
@@ -50,7 +50,6 @@ const greetingToolDetails: ToolDetails = {
   toolId: 'greeting',
   name: 'Greeting',
   useCases: [],
-  parameters: {},
   logo: '',
 };
 
@@ -87,13 +86,13 @@ async function toolCreationExample() {
   
   const multiToolAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, greetingTool],
-    systemPrompt: 'You are a versatile assistant with access to calculation and greeting tools.',
+    tools: [timestampTool, greetingTool],
+    systemPrompt: 'You are a versatile assistant with access to time and greeting tools.',
   });
 
   try {
     const result = await multiToolAgent.execute(
-      'Calculate 15 * 8 and generate a casual afternoon greeting for Bob'
+      'Get the current timestamp and generate a casual afternoon greeting for Bob'
     );
     console.log('✅ Result:', result.result);
     console.log('🔧 Tools used:', result.toolCallsUsed);
@@ -111,7 +110,7 @@ async function toolCreationExample() {
   
   const organizedAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool, greetingTool],
+    tools: [timestampTool, greetingTool],
   });
 
   console.log('🔧 All tools:', organizedAgent.getAllTools().map(t => `${t.name} (${t.toolId})`));
@@ -120,7 +119,7 @@ async function toolCreationExample() {
   console.log('\n🔧 Tool Management:');
   console.log('Initial tool count:', organizedAgent.getAllTools().length);
   
-  organizedAgent.removeTool('greeting_generator');
+  organizedAgent.removeTool('greeting');
   console.log('After removing greeting tool:', organizedAgent.getAllTools().length);
   
   organizedAgent.addTool(greetingTool);
