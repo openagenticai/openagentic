@@ -194,7 +194,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
             owner: repoInfo.owner,
             repo: repoInfo.repo,
             path: file.path,
-          });
+          }, { toolCallId: 'github-file', messages: [] });
 
           if (fileResponse.success && fileResponse.type === 'file') {
             const content = fileResponse.file.content || '';
