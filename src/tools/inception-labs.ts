@@ -192,7 +192,7 @@ const rawInceptionLabsTool = tool({
       console.error('❌ Inception Labs Tool - Generation failed:', {
         model,
         promptLength: prompt.length,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
