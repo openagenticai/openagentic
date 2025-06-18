@@ -183,12 +183,12 @@ const rawLlamaTool = tool({
       }
 
       // Validate response with Zod schema
-      let validatedData;
+      let validatedData: z.infer<typeof LlamaResponseSchema>;
       try {
         validatedData = LlamaResponseSchema.parse(responseData);
       } catch (error) {
         console.warn('⚠️ Response validation failed, proceeding with raw data:', error);
-        validatedData = responseData;
+        validatedData = responseData as z.infer<typeof LlamaResponseSchema>;
       }
 
       // Extract text content
