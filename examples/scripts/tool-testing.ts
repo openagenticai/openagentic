@@ -450,12 +450,24 @@ class ToolTester {
   async saveResults(summary: TestSummary, filename?: string): Promise<string> {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const defaultFilename = `tool-test-results-${timestamp}.json`;
+    const resultsDir = 'results';
     const finalFilename = filename || defaultFilename;
+    const fullPath = `${resultsDir}/${finalFilename}`;
 
     try {
       const fs = await import('fs/promises');
-      await fs.writeFile(finalFilename, JSON.stringify(summary, null, 2));
-      return finalFilename;
+      const path = await import('path');
+      
+      // Create results directory if it doesn't exist
+      try {
+        await fs.access(resultsDir);
+      } catch {
+        await fs.mkdir(resultsDir, { recursive: true });
+        console.log(`📁 Created results directory: ${resultsDir}`);
+      }
+      
+      await fs.writeFile(fullPath, JSON.stringify(summary, null, 2));
+      return fullPath;
     } catch (error) {
       console.error('❌ Failed to save results:', error);
       return '';
