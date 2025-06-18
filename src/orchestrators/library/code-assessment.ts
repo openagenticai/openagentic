@@ -49,7 +49,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
 
       // Step 3: Synthesize findings with GPT-4o
       console.log('🧩 Step 3: Synthesizing findings with GPT-4o');
-      const synthesis = await this.synthesizeFindings(analysisResults, codeData);
+      const synthesis = await this.synthesizeAnalysisFindings(analysisResults, codeData);
 
       // Step 4: Generate comprehensive report
       console.log('📄 Step 4: Generating comprehensive report');
@@ -99,7 +99,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
   private parseRepositoryInfo(input: string): { owner: string; repo: string; path?: string } {
     // Match GitHub URL patterns
     const githubUrlMatch = input.match(/github\.com\/([^\/]+)\/([^\/\s]+)(?:\/(?:tree|blob)\/[^\/]+\/(.*))?/);
-    if (githubUrlMatch) {
+    if (githubUrlMatch && githubUrlMatch[1] && githubUrlMatch[2]) {
       return {
         owner: githubUrlMatch[1],
         repo: githubUrlMatch[2].replace(/\.git$/, ''),
@@ -109,7 +109,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
 
     // Match owner/repo pattern
     const ownerRepoMatch = input.match(/\b([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)\b/);
-    if (ownerRepoMatch) {
+    if (ownerRepoMatch && ownerRepoMatch[1] && ownerRepoMatch[2]) {
       return {
         owner: ownerRepoMatch[1],
         repo: ownerRepoMatch[2],
@@ -143,7 +143,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
     structure: any;
   }> {
     const githubTool = context.tools.find(tool => tool.toolId === 'github_contents');
-    if (!githubTool) {
+    if (!githubTool || !githubTool.execute) {
       throw new Error('GitHub tool not available. Please ensure github_contents tool is included.');
     }
 
