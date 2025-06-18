@@ -1,6 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import OpenAI from 'openai';
+import { generateText } from 'ai';
+import { createOpenAI } from '@ai-sdk/openai';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 
@@ -43,25 +44,22 @@ const rawWebSearchTool = tool({
     });
 
     try {
-      // Initialize OpenAI client
-      const client = new OpenAI({
+      // Initialize OpenAI client using AI SDK
+      const openai = createOpenAI({
         apiKey,
       });
 
-      // Make web search request
-      const response = await client.chat.completions.create({
-        model: WEB_SEARCH_MODEL,
-        messages: [
-          {
-            role: 'user',
-            content: `Search the web for: ${query.trim()}`,
-          },
-        ],
-      });
+      // Prepare generation config for web search
+      const generateConfig: any = {
+        model: openai(WEB_SEARCH_MODEL),
+        prompt: `Search the web for: ${query.trim()}`,
+      };
+
+      // Generate text using web search model
+      const { text, usage, finishReason } = await generateText(generateConfig);
 
       // Extract result
-      const result = response.choices[0]?.message?.content;
-      if (!result) {
+      if (!text) {
         throw new Error('No search results returned from OpenAI web search');
       }
 
@@ -69,26 +67,27 @@ const rawWebSearchTool = tool({
       console.log('✅ Web Search Tool - Search completed:', {
         query: query.trim(),
         model: WEB_SEARCH_MODEL,
-        tokensUsed: response.usage?.total_tokens || 0,
-        resultLength: result.length,
-        finishReason: response.choices[0]?.finish_reason,
+        tokensUsed: usage?.totalTokens || 0,
+        resultLength: text.length,
+        finishReason,
       });
 
       // Return structured result
       return {
         success: true,
-        result,
+        result: text,
         query: query.trim(),
         model: WEB_SEARCH_MODEL,
         usage: {
-          promptTokens: response.usage?.prompt_tokens || 0,
-          completionTokens: response.usage?.completion_tokens || 0,
-          totalTokens: response.usage?.total_tokens || 0,
+          promptTokens: usage?.promptTokens || 0,
+          completionTokens: usage?.completionTokens || 0,
+          totalTokens: usage?.totalTokens || 0,
         },
+        finishReason,
         metadata: {
           searchedAt: new Date().toISOString(),
           queryLength: query.length,
-          resultLength: result.length,
+          resultLength: text.length,
           hasRealTimeData: true,
         },
       };
