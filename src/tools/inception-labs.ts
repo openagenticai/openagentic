@@ -273,7 +273,7 @@ const toolDetails: ToolDetails = {
     'Generate test cases and quality assurance strategies',
     'Create technical specifications and requirements',
   ],
-  logo: '🔬',
+  logo: 'https://www.openagentic.org/tools/inception-labs.png',
 };
 
 export const inceptionLabsTool = toOpenAgenticTool(rawInceptionLabsTool, toolDetails);
