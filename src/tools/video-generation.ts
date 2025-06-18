@@ -173,7 +173,8 @@ const rawVideoGenerationTool = tool({
         console.log(`📥 Downloading video ${i + 1} from SDK response: ${videoUri}`);
 
         // Download video from Google's temporary URL
-        const videoResponse = await fetch(videoUri);
+        const geminiUrlWithKey = `${videoUri}&key=${apiKey}`;
+        const videoResponse = await fetch(geminiUrlWithKey);
         if (!videoResponse.ok) {
           throw new Error(`Failed to download video ${i + 1}: ${videoResponse.status} - ${videoResponse.statusText}`);
         }
