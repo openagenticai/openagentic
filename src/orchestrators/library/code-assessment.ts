@@ -1,6 +1,6 @@
-import { MultiAIOrchestrator, type ParallelAIResult, type ToolChainResult, type AnalysisAggregation } from './multi-ai';
-import type { OrchestratorContext, CoreMessage, OpenAgenticTool } from '../types';
-import { registerOrchestrator } from './registry';
+import { MultiAIOrchestrator, type ParallelAIResult, type ToolChainResult, type AnalysisAggregation } from '../multi-ai';
+import type { OrchestratorContext, CoreMessage, OpenAgenticTool } from '../../types';
+import { registerOrchestrator } from '../registry';
 
 /**
  * Code Assessment Orchestrator
