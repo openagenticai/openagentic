@@ -164,7 +164,7 @@ const rawVideoGenerationTool = tool({
 
       for (let i = 0; i < videos.length; i++) {
         const video = videos[i];
-        const videoUri = video.video?.uri; // SDK response structure
+        const videoUri = video?.video?.uri; // SDK response structure
 
         if (!videoUri) {
           throw new Error(`No video URI in generated video ${i + 1}`);
