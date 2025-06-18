@@ -217,19 +217,15 @@ const rawGeminiTTSTool = tool({
       });
 
       // Extract audio data from SDK response
-      const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       
-      if (!audioData || !audioData.data) {
+      if (!audioData) {
         throw new Error('No audio data received from Gemini TTS API via SDK');
-      }
-
-      if (audioData.mimeType !== 'audio/pcm') {
-        throw new Error(`Unexpected audio format received: ${audioData.mimeType}. Expected audio/pcm`);
       }
 
       // Convert base64 PCM data to buffer
       console.log('🔄 Converting PCM to WAV format...');
-      const pcmBuffer = Buffer.from(audioData.data, 'base64');
+      const pcmBuffer = Buffer.from(audioData, 'base64');
       
       // Convert PCM to WAV with proper headers
       const wavBuffer = createWavFile(pcmBuffer, 1, 24000, 16);
