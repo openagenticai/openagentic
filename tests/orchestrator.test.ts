@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { createAgent, createStreamingAgent, calculatorTool, httpTool, timestampTool } from '../src';
+import { createAgent, createStreamingAgent, qrcodeTool, githubTool } from '../src';
 import type { AIModel } from '../src/types';
 
 describe('OpenAgentic Simplified API', () => {
@@ -12,22 +12,21 @@ describe('OpenAgentic Simplified API', () => {
     });
 
     it('should export utility tools', () => {
-      expect(calculatorTool).toBeDefined();
-      expect(calculatorTool.toolId).toBe('calculator');
-      expect(calculatorTool.description).toBeDefined();
-      expect(calculatorTool.execute).toBeDefined();
+      expect(qrcodeTool).toBeDefined();
+      expect(qrcodeTool.toolId).toBe('qr_code_generator');
+      expect(qrcodeTool.description).toBeDefined();
+      expect(qrcodeTool.execute).toBeDefined();
       
-      expect(httpTool).toBeDefined();
-      expect(httpTool.toolId).toBeDefined();
-      
-      expect(timestampTool).toBeDefined();
-      expect(timestampTool.toolId).toBeDefined();
+      expect(githubTool).toBeDefined();
+      expect(githubTool.toolId).toBe('github_contents');
+      expect(githubTool.description).toBeDefined();
+      expect(githubTool.execute).toBeDefined();
     });
 
     it('should create an agent instance', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
         systemPrompt: 'You are a helpful assistant.',
       });
 
@@ -41,8 +40,8 @@ describe('OpenAgentic Simplified API', () => {
 
     it('should create a streaming agent instance', () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
-        tools: [timestampTool],
+        model: 'claude-sonnet-4-20250514',
+        tools: [qrcodeTool],
         systemPrompt: 'You are a streaming assistant.',
       });
 
@@ -73,32 +72,32 @@ describe('OpenAgentic Simplified API', () => {
     it('should manage tools correctly', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       expect(agent.getAllTools()).toHaveLength(1);
       
-      agent.addTool(httpTool);
+      agent.addTool(githubTool);
       expect(agent.getAllTools()).toHaveLength(2);
       
-      const retrievedTool = agent.getTool('calculator');
+      const retrievedTool = agent.getTool('qr_code_generator');
       expect(retrievedTool).toBeDefined();
-      expect(retrievedTool?.toolId).toBe('calculator');
+      expect(retrievedTool?.toolId).toBe('qr_code_generator');
       
-      agent.removeTool('calculator');
+      agent.removeTool('qr_code_generator');
       expect(agent.getAllTools()).toHaveLength(1);
-      expect(agent.getTool('calculator')).toBeUndefined();
+      expect(agent.getTool('qr_code_generator')).toBeUndefined();
     });
 
     it('should prevent duplicate tool registration', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       expect(() => {
-        agent.addTool(calculatorTool);
-      }).toThrow('Tool with name calculator already exists');
+        agent.addTool(qrcodeTool);
+      }).toThrow('Tool with name qr_code_generator already exists');
     });
 
     it('should switch models', () => {
@@ -107,7 +106,7 @@ describe('OpenAgentic Simplified API', () => {
       });
 
       expect(() => {
-        agent.switchModel('claude-4-sonnet-20250514');
+        agent.switchModel('claude-sonnet-4-20250514');
       }).not.toThrow();
 
       const modelInfo = agent.getModelInfo();
@@ -140,15 +139,15 @@ describe('OpenAgentic Simplified API', () => {
 
     it('should verify tool structure', () => {
       // Test that tools have the expected structure
-      expect(calculatorTool.toolId).toBe('calculator');
-      expect(calculatorTool.description).toBeDefined();
-      expect(calculatorTool.execute).toBeDefined();
-      expect(typeof calculatorTool.execute).toBe('function');
+      expect(qrcodeTool.toolId).toBe('qr_code_generator');
+      expect(qrcodeTool.description).toBeDefined();
+      expect(qrcodeTool.execute).toBeDefined();
+      expect(typeof qrcodeTool.execute).toBe('function');
       
-      expect(timestampTool.toolId).toBeDefined();
-      expect(timestampTool.description).toBeDefined();
-      expect(timestampTool.execute).toBeDefined();
-      expect(typeof timestampTool.execute).toBe('function');
+      expect(githubTool.toolId).toBe('github_contents');
+      expect(githubTool.description).toBeDefined();
+      expect(githubTool.execute).toBeDefined();
+      expect(typeof githubTool.execute).toBe('function');
     });
   });
 });

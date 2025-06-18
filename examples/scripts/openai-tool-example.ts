@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import { createAgent, openaiTool, calculatorTool } from '../src';
+import { createAgent, openaiTool, qrcodeTool } from '../../src';
 
 async function openaiToolExample() {
   console.log('🤖 OpenAI Tool Example\n');
@@ -90,12 +90,12 @@ async function openaiToolExample() {
   try {
     const agent = createAgent({
       model: 'gpt-4o-mini',
-      tools: [openaiTool, calculatorTool],
-      systemPrompt: 'You are a helpful assistant that can generate text using OpenAI models and perform calculations.',
+      tools: [openaiTool, qrcodeTool],
+      systemPrompt: 'You are a helpful assistant that can generate text using OpenAI models and create QR codes.',
     });
 
     const result = await agent.execute(
-      'Use the OpenAI tool to generate a creative product description for a "smart garden" device, then calculate what the price would be if it costs $50 to make and we want a 40% profit margin.'
+      'Use the OpenAI tool to generate a creative product description for a "smart garden" device, then create a QR code for the product website https://smartgarden.example.com'
     );
 
     console.log('✅ Agent Result:');
@@ -144,7 +144,7 @@ async function openaiToolExample() {
   
   try {
     const result = await openaiTool.execute({
-      prompt: 'Write a Python function that calculates the Fibonacci sequence up to n terms. Include comments and error handling.',
+      prompt: 'Write a Python function that generates QR codes using the qrcode library. Include comments and error handling.',
       model: 'gpt-4o',
       temperature: 0.2,
       maxTokens: 800,

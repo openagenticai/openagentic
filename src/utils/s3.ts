@@ -23,7 +23,7 @@ export interface UploadResult {
 }
 
 export interface UploadOptions {
-  directory?: string;
+  directory?: S3Directory;
   description?: string;
   metadata?: Record<string, string>;
   cacheControl?: string;
@@ -39,13 +39,14 @@ export enum FileType {
   GENERIC = 'upload'
 }
 
+const DIRECTORY_PREFIX = 'openagentic/';
 export enum S3Directory {
-  IMAGES = 'images',
-  AUDIO = 'audio', 
-  VIDEOS = 'videos',
-  DOCUMENTS = 'documents',
-  WEBSITES = 'websites',
-  UPLOADS = 'uploads'
+  IMAGES = DIRECTORY_PREFIX + 'images',
+  AUDIO = DIRECTORY_PREFIX + 'audio', 
+  VIDEOS = DIRECTORY_PREFIX + 'videos',
+  DOCUMENTS = DIRECTORY_PREFIX + 'documents',
+  WEBSITES = DIRECTORY_PREFIX + 'websites',
+  UPLOADS = DIRECTORY_PREFIX + 'uploads'
 }
 
 // =============================================================================
@@ -766,7 +767,7 @@ export async function testS3Connection(): Promise<boolean> {
       Buffer.from(testContent),
       testFileName,
       'text/plain',
-      'test'
+      S3Directory.UPLOADS
     );
     
     console.log('✅ S3 connection test successful');

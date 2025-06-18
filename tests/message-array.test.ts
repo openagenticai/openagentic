@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { createAgent, createStreamingAgent, calculatorTool } from '../src';
+import { createAgent, createStreamingAgent, qrcodeTool } from '../src';
 import type { CoreMessage } from '../src/types';
 
 describe('Message Array Support', () => {
@@ -13,7 +13,7 @@ describe('Message Array Support', () => {
     it('should accept string input (original behavior)', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       expect(agent).toBeDefined();
@@ -29,13 +29,13 @@ describe('Message Array Support', () => {
     it('should accept CoreMessage array input (new behavior)', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       const messages: CoreMessage[] = [
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
-        { role: 'user', content: 'Calculate 2 + 2' }
+        { role: 'user', content: 'Create a QR code for me' }
       ];
 
       expect(agent).toBeDefined();
@@ -51,7 +51,7 @@ describe('Message Array Support', () => {
     it('should reject invalid input types', async () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       // Test invalid input types
@@ -67,7 +67,7 @@ describe('Message Array Support', () => {
     it('should handle empty message arrays', async () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       const emptyMessages: CoreMessage[] = [];
@@ -81,7 +81,7 @@ describe('Message Array Support', () => {
     it('should handle messages with different content types', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       const messages: CoreMessage[] = [
@@ -101,8 +101,8 @@ describe('Message Array Support', () => {
   describe('Streaming Agent', () => {
     it('should accept string input (original behavior)', () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
-        tools: [calculatorTool],
+        model: 'claude-sonnet-4-20250514',
+        tools: [qrcodeTool],
       });
 
       expect(agent).toBeDefined();
@@ -117,14 +117,14 @@ describe('Message Array Support', () => {
 
     it('should accept CoreMessage array input (new behavior)', () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
-        tools: [calculatorTool],
+        model: 'claude-sonnet-4-20250514',
+        tools: [qrcodeTool],
       });
 
       const messages: CoreMessage[] = [
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi there!' },
-        { role: 'user', content: 'Calculate 2 + 2' }
+        { role: 'user', content: 'Create a QR code for me' }
       ];
 
       expect(agent).toBeDefined();
@@ -139,8 +139,8 @@ describe('Message Array Support', () => {
 
     it('should reject invalid input types', async () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
-        tools: [calculatorTool],
+        model: 'claude-sonnet-4-20250514',
+        tools: [qrcodeTool],
       });
 
       // Test invalid input types
@@ -155,8 +155,8 @@ describe('Message Array Support', () => {
 
     it('should handle complex message structures', () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
-        tools: [calculatorTool],
+        model: 'claude-sonnet-4-20250514',
+        tools: [qrcodeTool],
       });
 
       const complexMessages: CoreMessage[] = [
@@ -166,11 +166,11 @@ describe('Message Array Support', () => {
         },
         { 
           role: 'user', 
-          content: 'Calculate something' 
+          content: 'Create a QR code for me' 
         },
         { 
           role: 'assistant', 
-          content: 'I can help with calculations' 
+          content: 'I can help with QR code generation' 
         },
         { 
           role: 'tool',
@@ -179,7 +179,7 @@ describe('Message Array Support', () => {
         },
         { 
           role: 'user', 
-          content: 'What is 5 + 5?' 
+          content: 'Make it for https://example.com' 
         }
       ];
 
@@ -195,14 +195,14 @@ describe('Message Array Support', () => {
     it('should handle system messages in message arrays', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       const messagesWithSystem: CoreMessage[] = [
         { role: 'system', content: 'Custom system prompt' },
         { role: 'user', content: 'Hello' },
         { role: 'assistant', content: 'Hi!' },
-        { role: 'user', content: 'Calculate 1 + 1' }
+        { role: 'user', content: 'Create a QR code for https://example.com' }
       ];
 
       // Should handle system messages without throwing
@@ -215,7 +215,7 @@ describe('Message Array Support', () => {
     it('should preserve conversation context', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
         systemPrompt: 'You are a helpful assistant.',
       });
 
@@ -238,20 +238,20 @@ describe('Message Array Support', () => {
 
     it('should handle tool messages correctly', () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
-        tools: [calculatorTool],
+        model: 'claude-sonnet-4-20250514',
+        tools: [qrcodeTool],
       });
 
       const messagesWithTools: CoreMessage[] = [
-        { role: 'user', content: 'Calculate 2 + 2' },
-        { role: 'assistant', content: 'I\'ll calculate that for you.' },
+        { role: 'user', content: 'Create a QR code for me' },
+        { role: 'assistant', content: 'I\'ll create that QR code for you.' },
         { 
           role: 'tool', 
-          content: '{"result": 4}',
-          toolCallId: 'calc-123'
+          content: '{"result": "qr_code_data"}',
+          toolCallId: 'qr-123'
         },
-        { role: 'assistant', content: 'The result is 4.' },
-        { role: 'user', content: 'Now calculate 3 + 3' }
+        { role: 'assistant', content: 'Here is your QR code.' },
+        { role: 'user', content: 'Can you make another one?' }
       ];
 
       // Should handle tool messages without throwing
@@ -265,7 +265,7 @@ describe('Message Array Support', () => {
     it('should have proper TypeScript overloads', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       // These should compile without TypeScript errors
@@ -278,8 +278,8 @@ describe('Message Array Support', () => {
 
     it('should have proper streaming TypeScript overloads', () => {
       const agent = createStreamingAgent({
-        model: 'claude-4-sonnet-20250514',
-        tools: [calculatorTool],
+        model: 'claude-sonnet-4-20250514',
+        tools: [qrcodeTool],
       });
 
       // These should compile without TypeScript errors
@@ -297,7 +297,7 @@ describe('Message Array Support', () => {
       const aiSDKMessages = [
         { role: 'user' as const, content: 'Hello' },
         { role: 'assistant' as const, content: 'Hi there!' },
-        { role: 'user' as const, content: 'Help me calculate something' }
+        { role: 'user' as const, content: 'Help me create a QR code' }
       ];
 
       // Convert to CoreMessage format
@@ -308,7 +308,7 @@ describe('Message Array Support', () => {
 
       const agent = createAgent({
         model: 'gpt-4o-mini',
-        tools: [calculatorTool],
+        tools: [qrcodeTool],
       });
 
       // Should work seamlessly with converted messages

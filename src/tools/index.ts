@@ -3,10 +3,21 @@
 // =============================================================================
 
 // Import all individual tools
-export { httpTool } from './http';
-export { calculatorTool } from './calculator';
-export { timestampTool } from './timestamp';
 export { openaiTool } from './openai';
+export { openaiImageTool } from './openai-image';
+export { anthropicTool } from './anthropic';
+export { geminiTool } from './gemini';
+export { githubTool } from './github';
+export { grokTool } from './grok';
+export { llamaTool } from './llama';
+export { newsdataTool } from './newsdata';
+export { perplexityTool } from './perplexity';
+export { qrcodeTool } from './qrcode';
+export { websearchTool } from './websearch';
+export { elevenlabsTool } from './elevenlabs';
+export { videoGenerationTool } from './video-generation';
+export { geminiTtsTool } from './gemini-tts';
+export { inceptionLabsTool } from './inception-labs';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -15,16 +26,27 @@ export { toOpenAgenticTool } from './utils';
 // TOOL COLLECTIONS
 // =============================================================================
 
-import { httpTool } from './http';
-import { calculatorTool } from './calculator';
-import { timestampTool } from './timestamp';
 import { openaiTool } from './openai';
+import { openaiImageTool } from './openai-image';
+import { anthropicTool } from './anthropic';
+import { geminiTool } from './gemini';
+import { githubTool } from './github';
+import { grokTool } from './grok';
+import { llamaTool } from './llama';
+import { newsdataTool } from './newsdata';
+import { perplexityTool } from './perplexity';
+import { qrcodeTool } from './qrcode';
+import { websearchTool } from './websearch';
+import { elevenlabsTool } from './elevenlabs';
+import { videoGenerationTool } from './video-generation';
+import { geminiTtsTool } from './gemini-tts';
+import { inceptionLabsTool } from './inception-labs';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
-export const aiTools = [openaiTool];
-export const utilityTools = [httpTool, calculatorTool, timestampTool];
+export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool];
+export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================

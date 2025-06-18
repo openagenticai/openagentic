@@ -87,7 +87,7 @@ const rawOpenAITool = tool({
 
     // Validate model
     if (!SUPPORTED_MODELS.includes(model as any)) {
-      console.warn(`Model "${model}" not in supported list, but proceeding anyway`);
+      throw new Error(`Model "${model}" not in supported list`);
     }
 
     // Start logging
@@ -166,7 +166,7 @@ const rawOpenAITool = tool({
       console.error('❌ OpenAI Tool - Generation failed:', {
         model,
         promptLength: prompt.length,
-        error: error instanceof Error ? error.message : String(error),
+        error: error instanceof Error ? error.message : JSON.stringify(error),
       });
 
       // Handle specific error types
@@ -198,7 +198,7 @@ const rawOpenAITool = tool({
       }
 
       // Generic error fallback
-      throw new Error(`OpenAI text generation failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw new Error(`OpenAI text generation failed: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   },
 });
@@ -219,7 +219,7 @@ const toolDetails: ToolDetails = {
     'Generate product descriptions',
     'Write emails and communications',
   ],
-  logo: 'https://openai.com/favicon.ico',
+  logo: 'https://www.openagentic.org/tools/openai.svg',
 };
 
 export const openaiTool = toOpenAgenticTool(rawOpenAITool, toolDetails);

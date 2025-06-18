@@ -1,23 +1,23 @@
 import 'dotenv/config';
 
-import { createAgent, calculatorTool, httpTool, timestampTool } from '../src';
+import { createAgent, qrcodeTool, githubTool } from '../../src';
 
 async function basicAgentExample() {
   console.log('🤖 OpenAgentic - Basic Agent Example\n');
 
   // =============================================================================
-  // EXAMPLE 1: Simple Calculator Agent
+  // EXAMPLE 1: Simple QR Code Agent
   // =============================================================================
-  console.log('📝 Example 1: Simple Calculator Agent');
+  console.log('📝 Example 1: Simple QR Code Generator Agent');
   
-  const mathAgent = createAgent({
+  const qrAgent = createAgent({
     model: 'gpt-4o-mini', // Auto-detects OpenAI provider
-    tools: [calculatorTool],
-    systemPrompt: 'You are a helpful mathematics assistant. Always show your calculations clearly.',
+    tools: [qrcodeTool],
+    systemPrompt: 'You are a helpful QR code assistant. Generate QR codes for users.',
   });
 
   try {
-    const result = await mathAgent.execute('What is 15 * 24? Also calculate the square root of 144.');
+    const result = await qrAgent.execute('Create a QR code for the OpenAgentic website: https://openagentic.org. Make it size 512x512 with high error correction.');
     console.log('✅ Result:', result.result);
     console.log('🔧 Tools used:', result.toolCallsUsed);
     console.log('📊 Iterations:', result.iterations);
@@ -33,14 +33,14 @@ async function basicAgentExample() {
   console.log('📝 Example 2: Multi-Tool Agent');
   
   const multiAgent = createAgent({
-    model: 'claude-4-sonnet-20250514', // Auto-detects Anthropic provider
-    tools: [calculatorTool, httpTool, timestampTool],
+    model: 'claude-sonnet-4-20250514', // Auto-detects Anthropic provider
+    tools: [qrcodeTool, githubTool],
     systemPrompt: 'You are a versatile assistant with access to multiple tools. Use them as needed.',
   });
 
   try {
     const result = await multiAgent.execute(
-      'Calculate 25 * 16, get the current timestamp in human format, and check if httpbin.org/status/200 is accessible'
+      'Create a QR code for a GitHub repository and also fetch the README.md file from the openai/openai-node repository'
     );
     console.log('✅ Result:', result.result);
     console.log('🔧 Tools used:', result.toolCallsUsed);
@@ -58,15 +58,15 @@ async function basicAgentExample() {
   
   const customAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool],
-    systemPrompt: 'You are a mathematical problem solver.',
+    tools: [qrcodeTool],
+    systemPrompt: 'You are a QR code specialist.',
     customLogic: async (input, context) => {
       // Custom pre-processing logic
       console.log('🔍 Custom logic: Processing input...');
       
-      if (input.toLowerCase().includes('fibonacci')) {
+      if (input.toLowerCase().includes('business card')) {
         return {
-          content: 'Custom logic detected Fibonacci! The 10th Fibonacci number is 55. This was handled by custom logic without calling the AI model.',
+          content: 'Custom logic detected business card request! I recommend including contact info in vCard format. This was handled by custom logic without calling the AI model.',
           customHandled: true
         };
       }
@@ -77,7 +77,7 @@ async function basicAgentExample() {
   });
 
   try {
-    const result = await customAgent.execute('Calculate the 10th fibonacci number');
+    const result = await customAgent.execute('I need a QR code for my business card');
     console.log('✅ Result:', result.result);
     console.log('🔧 Custom logic used:', result.result?.includes('custom logic'));
   } catch (error) {
@@ -98,19 +98,19 @@ async function basicAgentExample() {
   });
 
   // Add tools dynamically
-  toolAgent.addTool(calculatorTool);
-  toolAgent.addTool(timestampTool);
+  toolAgent.addTool(qrcodeTool);
+  toolAgent.addTool(githubTool);
 
   console.log('🔧 Available tools count:', toolAgent.getAllTools().length);
 
   try {
-    const result = await toolAgent.execute('What is 100 / 5 and what time is it?');
+    const result = await toolAgent.execute('Generate a QR code for a website URL and fetch a README file from a GitHub repository');
     console.log('✅ Result:', result.result);
     
     // Remove a tool
-    const toolNames = Object.keys(toolAgent.getAllTools());
-    if (toolNames.length > 0) {
-      toolAgent.removeTool(toolNames[0]);
+    const availableTools = toolAgent.getAllTools();
+    if (availableTools.length > 0) {
+      toolAgent.removeTool(availableTools[0].toolId);
       console.log('🗑️ Removed first tool');
       console.log('🔧 Remaining tools count:', toolAgent.getAllTools().length);
     }
@@ -127,13 +127,13 @@ async function basicAgentExample() {
   
   const switchingAgent = createAgent({
     model: 'gpt-4o-mini',
-    tools: [calculatorTool],
+    tools: [qrcodeTool],
   });
 
   console.log('🔄 Initial model:', switchingAgent.getModelInfo().model);
 
   // Switch to a different provider
-  switchingAgent.switchModel('claude-4-sonnet-20250514');
+  switchingAgent.switchModel('claude-sonnet-4-20250514');
   console.log('🔄 Switched to:', switchingAgent.getModelInfo().model);
 
   // Switch to Google's model
