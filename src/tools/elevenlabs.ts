@@ -222,7 +222,7 @@ const rawElevenLabsTool = tool({
         const audioResponse = await client.textToSpeech.convert(finalVoiceId, {
           text: text!.trim(),
           modelId: model_id,
-          outputFormat: output_format,
+          outputFormat: output_format as any,
         });
 
         // Convert response to buffer
@@ -274,7 +274,7 @@ const rawElevenLabsTool = tool({
           const audioResponse = await client.textToSpeech.convert(segment.voice_id, {
             text: segment.text,
             modelId: model_id,
-            outputFormat: output_format,
+            outputFormat: output_format as any,
           });
 
           // Convert response to buffer
