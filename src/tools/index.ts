@@ -14,6 +14,7 @@ export { grokTool } from './grok';
 export { llamaTool } from './llama';
 export { newsdataTool } from './newsdata';
 export { perplexityTool } from './perplexity';
+export { qrcodeTool } from './qrcode';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -33,12 +34,13 @@ import { grokTool } from './grok';
 import { llamaTool } from './llama';
 import { newsdataTool } from './newsdata';
 import { perplexityTool } from './perplexity';
+import { qrcodeTool } from './qrcode';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool];
-export const utilityTools = [httpTool, calculatorTool, timestampTool, githubTool, newsdataTool];
+export const utilityTools = [httpTool, calculatorTool, timestampTool, githubTool, newsdataTool, qrcodeTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================
