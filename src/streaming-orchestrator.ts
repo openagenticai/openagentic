@@ -1,12 +1,18 @@
 import { streamText } from 'ai';
-import type { AIModel, CoreMessage, OpenAgenticTool, Message, LoggingConfig, LogLevel, ExecutionStats } from './types';
+import type { AIModel, CoreMessage, OpenAgenticTool, Message, LoggingConfig, LogLevel, ExecutionStats, BaseOrchestrator, OrchestratorContext, OrchestratorOptions, PromptBasedOrchestrator, CustomLogicOrchestrator } from './types';
 import { ProviderManager } from './providers/manager';
+import { resolveOrchestrator } from './orchestrators/registry';
 
 export class StreamingOrchestrator {
   private model: AIModel;
   private tools = new Map<string, OpenAgenticTool>();
   private messages: Message[] = [];
   private maxIterations: number;
+  private customLogic?: (input: string, context: any) => Promise<any>;
+  
+  // Orchestrator support
+  private orchestrator?: BaseOrchestrator;
+  private orchestratorOptions: OrchestratorOptions;
   
   // Logging configuration
   private loggingConfig: LoggingConfig;
@@ -26,6 +32,7 @@ export class StreamingOrchestrator {
     tools?: OpenAgenticTool[];
     systemPrompt?: string;
     maxIterations?: number;
+    customLogic?: (input: string, context: any) => Promise<any>;
     enableDebugLogging?: boolean;
     logLevel?: LogLevel;
     enableStepLogging?: boolean;
@@ -34,10 +41,25 @@ export class StreamingOrchestrator {
     enableStatisticsLogging?: boolean;
     enableStreamingLogging?: boolean;
     onFinish?: (result: any) => void | Promise<void>;
-  }) {
+  } & OrchestratorOptions) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
     this.maxIterations = options.maxIterations || 10;
+    this.customLogic = options.customLogic;
+    
+    // Store orchestrator options
+    this.orchestratorOptions = {
+      orchestrator: options.orchestrator,
+      orchestratorId: options.orchestratorId,
+      orchestratorParams: options.orchestratorParams,
+      allowOrchestratorPromptOverride: options.allowOrchestratorPromptOverride ?? true,
+      allowOrchestratorToolControl: options.allowOrchestratorToolControl ?? true,
+    };
+    
+    // Resolve orchestrator if provided
+    this.orchestrator = resolveOrchestrator(
+      options.orchestrator || options.orchestratorId
+    );
     
     // Configure logging
     this.loggingConfig = {
@@ -57,7 +79,7 @@ export class StreamingOrchestrator {
       options.tools.forEach(tool => this.addTool(tool));
     }
     
-    // Add system prompt if provided
+    // Add system prompt if provided (orchestrator may override this)
     if (options.systemPrompt) {
       this.messages.push({
         role: 'system',
@@ -71,6 +93,10 @@ export class StreamingOrchestrator {
       maxIterations: this.maxIterations,
       loggingLevel: this.loggingConfig.logLevel,
       hasOnFinishCallback: !!this.onFinishCallback,
+      hasCustomLogic: !!this.customLogic,
+      hasOrchestrator: !!this.orchestrator,
+      orchestratorId: this.orchestrator?.id,
+      orchestratorType: this.orchestrator?.type,
     });
   }
 
@@ -95,9 +121,22 @@ export class StreamingOrchestrator {
         modelInfo: `${this.model.provider}/${this.model.model}`,
         toolsAvailable: this.tools.size,
         maxSteps: this.maxIterations,
+        hasCustomLogic: !!this.customLogic,
+        hasOrchestrator: !!this.orchestrator,
+        orchestratorType: this.orchestrator?.type,
       });
 
-      // Handle different input types
+      // If custom logic is provided, use it (takes precedence over orchestrator)
+      if (this.customLogic) {
+        return await this.streamWithCustomLogic(input);
+      }
+
+      // If orchestrator is available, delegate to it
+      if (this.orchestrator) {
+        return await this.streamWithOrchestrator(input);
+      }
+
+      // Handle different input types with standard execution
       if (typeof input === 'string') {
         return await this.streamWithString(input);
       } else if (Array.isArray(input)) {
@@ -119,6 +158,254 @@ export class StreamingOrchestrator {
       });
       
       throw error;
+    }
+  }
+
+  // Stream with custom logic
+  private async streamWithCustomLogic(input: string | CoreMessage[]): Promise<ReturnType<typeof streamText>> {
+    this.log('🔄', 'Executing streaming custom logic', { 
+      inputType: typeof input,
+      inputLength: typeof input === 'string' ? input.length : input.length,
+    });
+
+    try {
+      const context = {
+        messages: this.messages,
+        tools: this.getAllTools(),
+        model: this.model,
+        iterations: this.stepsExecuted,
+      };
+
+      // Convert input to string for custom logic (for now)
+      const stringInput = typeof input === 'string' ? input : 
+                         input.map(m => `${m.role}: ${m.content}`).join('\n');
+
+      const result = await this.customLogic!(stringInput, context);
+      
+      this.log('✅', 'Streaming custom logic completed', { 
+        resultType: typeof result,
+        hasContent: !!(result?.content || result),
+      });
+
+      // For streaming, we need to return a streamText-like object
+      // We'll create a mock stream that yields the custom logic result
+      const content = result.content || result || '';
+      
+      // Create a simple text stream from the custom logic result
+      const textStream = (async function* () {
+        // Simulate streaming by yielding the content in chunks
+        const chunkSize = 50;
+        for (let i = 0; i < content.length; i += chunkSize) {
+          yield content.slice(i, i + chunkSize);
+          // Small delay to simulate streaming
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      })();
+
+      // Return a streamText-compatible object
+      return {
+        textStream,
+        text: Promise.resolve(content),
+        finishReason: Promise.resolve('stop' as const),
+        usage: Promise.resolve({
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+        }),
+        object: Promise.resolve('chat.completion.chunk' as const),
+        experimental_providerMetadata: Promise.resolve(undefined),
+      } as unknown as ReturnType<typeof streamText>;
+
+    } catch (error) {
+      this.log('❌', 'Streaming custom logic failed', {
+        error: error instanceof Error ? error.message : JSON.stringify(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+      });
+      
+      throw error;
+    }
+  }
+
+  // Stream with orchestrator delegation
+  private async streamWithOrchestrator(input: string | CoreMessage[]): Promise<ReturnType<typeof streamText>> {
+    if (!this.orchestrator) {
+      throw new Error('Orchestrator not available');
+    }
+
+    this.log('🎭', 'Delegating streaming to orchestrator', {
+      orchestratorId: this.orchestrator.id,
+      orchestratorType: this.orchestrator.type,
+      orchestratorName: this.orchestrator.name,
+    });
+
+    try {
+      // For prompt-based orchestrators, we can handle them specially for streaming
+      if (this.orchestrator.type === 'prompt-based') {
+        return await this.streamWithPromptBasedOrchestrator(input, this.orchestrator as PromptBasedOrchestrator);
+      }
+
+      // For custom-logic orchestrators, handle streaming delegation
+      if (this.orchestrator.type === 'custom-logic') {
+        return await this.streamWithCustomLogicOrchestrator(input, this.orchestrator as CustomLogicOrchestrator);
+      }
+
+      throw new Error(`Unknown orchestrator type: ${this.orchestrator.type}`);
+
+    } catch (error) {
+      this.log('❌', 'Orchestrator streaming failed', {
+        orchestratorId: this.orchestrator.id,
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
+  }
+
+  // Stream with custom logic orchestrator
+  private async streamWithCustomLogicOrchestrator(
+    input: string | CoreMessage[],
+    orchestrator: CustomLogicOrchestrator
+  ): Promise<ReturnType<typeof streamText>> {
+    this.log('🎭', 'Streaming with custom logic orchestrator', {
+      orchestratorId: orchestrator.id,
+      orchestratorName: orchestrator.name,
+    });
+
+    try {
+      // Build context for orchestrator
+      const context: OrchestratorContext = {
+        model: this.model,
+        tools: Array.from(this.tools.values()),
+        messages: this.messages,
+        iterations: this.stepsExecuted,
+        maxIterations: this.maxIterations,
+        loggingConfig: this.loggingConfig,
+        orchestratorParams: this.orchestratorOptions.orchestratorParams,
+      };
+
+      // Execute custom logic (this returns an ExecutionResult, not a stream)
+      const result = await orchestrator.execute(input, context);
+
+      // Convert the result to a streaming format
+      const content = result.result || '';
+      
+      // Create a text stream from the execution result
+      const textStream = (async function* () {
+        // Simulate streaming by yielding the content in chunks
+        const chunkSize = 50;
+        for (let i = 0; i < content.length; i += chunkSize) {
+          yield content.slice(i, i + chunkSize);
+          // Small delay to simulate streaming
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      })();
+
+      this.log('✅', 'Custom logic orchestrator streaming completed', {
+        orchestratorId: orchestrator.id,
+        success: result.success,
+        contentLength: content.length,
+      });
+
+      // Return a streamText-compatible object
+      return {
+        textStream,
+        text: Promise.resolve(content),
+        finishReason: Promise.resolve('stop' as const),
+        usage: Promise.resolve({
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+        }),
+        object: Promise.resolve('chat.completion.chunk' as const),
+        experimental_providerMetadata: Promise.resolve(undefined),
+      } as unknown as ReturnType<typeof streamText>;
+
+    } catch (error) {
+      this.log('❌', 'Custom logic orchestrator streaming failed', {
+        orchestratorId: orchestrator.id,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      
+      throw error;
+    }
+  }
+
+  // Stream with prompt-based orchestrator (optimized path)
+  private async streamWithPromptBasedOrchestrator(
+    input: string | CoreMessage[],
+    orchestrator: PromptBasedOrchestrator
+  ): Promise<ReturnType<typeof streamText>> {
+    this.log('🎭', 'Streaming with prompt-based orchestrator', {
+      orchestratorId: orchestrator.id,
+      orchestratorName: orchestrator.name,
+      allowPromptOverride: this.orchestratorOptions.allowOrchestratorPromptOverride,
+      allowToolControl: this.orchestratorOptions.allowOrchestratorToolControl,
+    });
+
+    // Build context for orchestrator
+    const context: OrchestratorContext = {
+      model: this.model,
+      tools: Array.from(this.tools.values()),
+      messages: this.messages,
+      iterations: this.stepsExecuted,
+      maxIterations: this.maxIterations,
+      loggingConfig: this.loggingConfig,
+      orchestratorParams: this.orchestratorOptions.orchestratorParams,
+    };
+
+    // Filter tools if orchestrator specifies allowed tools
+    const promptOrchestrator = orchestrator as any;
+    let filteredTools = Array.from(this.tools.values());
+    
+    if (promptOrchestrator.allowedTools && Array.isArray(promptOrchestrator.allowedTools) && promptOrchestrator.allowedTools.length > 0) {
+      filteredTools = filteredTools.filter(tool => 
+        promptOrchestrator.allowedTools.includes(tool.toolId)
+      );
+
+      this.log('🎭', 'Filtered tools for orchestrator', {
+        available: Array.from(this.tools.values()).map(t => t.toolId),
+        allowed: promptOrchestrator.allowedTools,
+        using: filteredTools.map(t => t.toolId),
+        filtered: promptOrchestrator.allowedTools.filter((id: string) => !filteredTools.some(t => t.toolId === id)),
+      });
+
+      if (filteredTools.length === 0) {
+        throw new Error(`No allowed tools found for orchestrator ${orchestrator.id}. Required tools: ${promptOrchestrator.allowedTools.join(', ')}`);
+      }
+    }
+
+    // Get the system prompt from orchestrator
+    const finalSystemPrompt = orchestrator.buildSystemPrompt ? 
+      orchestrator.buildSystemPrompt(context) : 
+      orchestrator.getSystemPrompt();
+
+    // Create a new specialized streaming orchestrator with orchestrator's settings
+    const specializedOrchestrator = new StreamingOrchestrator({
+      model: this.model,
+      tools: filteredTools,
+      systemPrompt: finalSystemPrompt,
+      maxIterations: this.maxIterations,
+      enableDebugLogging: this.loggingConfig.enableDebugLogging,
+      logLevel: this.loggingConfig.logLevel,
+      enableStepLogging: this.loggingConfig.enableStepLogging,
+      enableToolLogging: this.loggingConfig.enableToolLogging,
+      enableTimingLogging: this.loggingConfig.enableTimingLogging,
+      enableStatisticsLogging: this.loggingConfig.enableStatisticsLogging,
+      onFinish: this.onFinishCallback,
+    });
+
+    this.log('🎭', 'Executing with specialized streaming orchestrator', {
+      filteredToolsCount: filteredTools.length,
+      filteredToolIds: filteredTools.map(t => t.toolId),
+      systemPromptPreview: finalSystemPrompt.substring(0, 100) + '...',
+    });
+
+    // Stream using the specialized orchestrator (without orchestrator to avoid infinite recursion)
+    if (typeof input === 'string') {
+      return await specializedOrchestrator.streamWithString(input);
+    } else {
+      return await specializedOrchestrator.streamWithMessages(input);
     }
   }
 
@@ -320,6 +607,32 @@ export class StreamingOrchestrator {
         error: 'Model info not available',
       };
     }
+  }
+
+  // Orchestrator management methods
+  public getOrchestrator(): BaseOrchestrator | undefined {
+    return this.orchestrator;
+  }
+
+  public setOrchestrator(orchestrator: string | BaseOrchestrator | undefined): void {
+    const resolvedOrchestrator = resolveOrchestrator(orchestrator);
+    
+    if (orchestrator && !resolvedOrchestrator) {
+      throw new Error(`Failed to resolve orchestrator: ${typeof orchestrator === 'string' ? orchestrator : 'invalid orchestrator object'}`);
+    }
+
+    const oldId = this.orchestrator?.id;
+    this.orchestrator = resolvedOrchestrator;
+    
+    this.log('🎭', 'Orchestrator changed', {
+      from: oldId || 'none',
+      to: this.orchestrator?.id || 'none',
+      type: this.orchestrator?.type,
+    });
+  }
+
+  public hasOrchestrator(): boolean {
+    return !!this.orchestrator;
   }
 
   // Utility methods

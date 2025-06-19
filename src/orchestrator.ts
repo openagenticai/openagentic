@@ -1,6 +1,7 @@
 import { generateText } from 'ai';
-import type { AIModel, Message, CoreMessage, ExecutionResult, OpenAgenticTool, LoggingConfig, LogLevel, ExecutionStats, StepInfo } from './types';
+import type { AIModel, Message, CoreMessage, ExecutionResult, OpenAgenticTool, LoggingConfig, LogLevel, ExecutionStats, StepInfo, BaseOrchestrator, OrchestratorContext, OrchestratorOptions, PromptBasedOrchestrator, CustomLogicOrchestrator } from './types';
 import { ProviderManager } from './providers/manager';
+import { resolveOrchestrator } from './orchestrators/registry';
 
 export class Orchestrator {
   private model: AIModel;
@@ -9,6 +10,10 @@ export class Orchestrator {
   private iterations = 0;
   private maxIterations: number;
   private customLogic?: (input: string, context: any) => Promise<any>;
+  
+  // Orchestrator support
+  private orchestrator?: BaseOrchestrator;
+  private orchestratorOptions: OrchestratorOptions;
   
   // Logging configuration
   private loggingConfig: LoggingConfig;
@@ -30,11 +35,25 @@ export class Orchestrator {
     enableToolLogging?: boolean;
     enableTimingLogging?: boolean;
     enableStatisticsLogging?: boolean;
-  }) {
+  } & OrchestratorOptions) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
     this.maxIterations = options.maxIterations || 10;
     this.customLogic = options.customLogic;
+    
+    // Store orchestrator options
+    this.orchestratorOptions = {
+      orchestrator: options.orchestrator,
+      orchestratorId: options.orchestratorId,
+      orchestratorParams: options.orchestratorParams,
+      allowOrchestratorPromptOverride: options.allowOrchestratorPromptOverride ?? true,
+      allowOrchestratorToolControl: options.allowOrchestratorToolControl ?? true,
+    };
+    
+    // Resolve orchestrator if provided
+    this.orchestrator = resolveOrchestrator(
+      options.orchestrator || options.orchestratorId
+    );
     
     // Configure logging
     this.loggingConfig = {
@@ -60,7 +79,7 @@ export class Orchestrator {
       });
     }
     
-    // Add system prompt if provided
+    // Add system prompt if provided (orchestrator may override this)
     if (options.systemPrompt) {
       this.messages.push({
         role: 'system',
@@ -73,6 +92,10 @@ export class Orchestrator {
       toolsCount: Object.keys(this.tools).length,
       maxIterations: this.maxIterations,
       loggingLevel: this.loggingConfig.logLevel,
+      hasCustomLogic: !!this.customLogic,
+      hasOrchestrator: !!this.orchestrator,
+      orchestratorId: this.orchestrator?.id,
+      orchestratorType: this.orchestrator?.type,
     });
   }
 
@@ -98,9 +121,22 @@ export class Orchestrator {
         modelInfo: `${this.model.provider}/${this.model.model}`,
         toolsAvailable: Object.keys(this.tools).length,
         maxSteps: this.maxIterations,
+        hasCustomLogic: !!this.customLogic,
+        hasOrchestrator: !!this.orchestrator,
+        orchestratorType: this.orchestrator?.type,
       });
 
-      // Handle different input types
+      // If custom logic is provided, use it (takes precedence over orchestrator)
+      if (this.customLogic) {
+        return await this.executeWithCustomLogic(input);
+      }
+
+      // If orchestrator is available, delegate to it
+      if (this.orchestrator) {
+        return await this.executeWithOrchestrator(input);
+      }
+
+      // Handle different input types with standard execution
       let result: ExecutionResult;
       if (typeof input === 'string') {
         result = await this.executeWithString(input);
@@ -148,13 +184,137 @@ export class Orchestrator {
     }
   }
 
-  // Execute with string input (original behavior)
-  private async executeWithString(input: string): Promise<ExecutionResult> {
-    // If custom logic is provided, use it
-    if (this.customLogic) {
-      return await this.executeWithCustomLogic(input);
+  // Execute with orchestrator delegation
+  private async executeWithOrchestrator(input: string | CoreMessage[]): Promise<ExecutionResult> {
+    if (!this.orchestrator) {
+      throw new Error('Orchestrator not available');
     }
 
+    this.log('🎭', 'Delegating to orchestrator', {
+      orchestratorId: this.orchestrator.id,
+      orchestratorType: this.orchestrator.type,
+      orchestratorName: this.orchestrator.name,
+    });
+
+    try {
+      // For prompt-based orchestrators, we can handle them specially
+      if (this.orchestrator.type === 'prompt-based') {
+        return await this.executeWithPromptBasedOrchestrator(input, this.orchestrator as PromptBasedOrchestrator);
+      }
+
+      // For custom-logic orchestrators, delegate completely
+      if (this.orchestrator.type === 'custom-logic') {
+        return await this.executeWithCustomLogicOrchestrator(input, this.orchestrator as CustomLogicOrchestrator);
+      }
+
+      throw new Error(`Unknown orchestrator type: ${this.orchestrator.type}`);
+
+    } catch (error) {
+      this.log('❌', 'Orchestrator execution failed', {
+        orchestratorId: this.orchestrator.id,
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
+  }
+
+  // Execute with custom logic orchestrator
+  private async executeWithCustomLogicOrchestrator(
+    input: string | CoreMessage[],
+    orchestrator: CustomLogicOrchestrator
+  ): Promise<ExecutionResult> {
+    this.log('🎭', 'Executing with custom logic orchestrator', {
+      orchestratorId: orchestrator.id,
+      orchestratorName: orchestrator.name,
+    });
+
+    try {
+      // Build orchestrator context
+      const context: OrchestratorContext = {
+        model: this.model,
+        tools: Object.values(this.tools),
+        messages: this.messages,
+        iterations: this.iterations,
+        maxIterations: this.maxIterations,
+        loggingConfig: this.loggingConfig,
+        orchestratorParams: this.orchestratorOptions.orchestratorParams,
+      };
+
+      // Initialize orchestrator if it has an initialize method
+      if (orchestrator.initialize) {
+        await orchestrator.initialize(context);
+      }
+
+      // Validate input if orchestrator has a validate method
+      if (orchestrator.validate) {
+        const isValid = await orchestrator.validate(input, context);
+        if (!isValid) {
+          throw new Error('Orchestrator validation failed');
+        }
+      }
+
+      // Execute with orchestrator
+      const result = await orchestrator.execute(input, context);
+
+      // Update our internal state based on orchestrator result
+      this.iterations = result.iterations || 0;
+      this.stepsExecuted = result.iterations || 0;
+
+      // Cleanup orchestrator if it has a cleanup method
+      if (orchestrator.cleanup) {
+        await orchestrator.cleanup(context);
+      }
+
+      this.log('✅', 'Custom logic orchestrator execution completed', {
+        orchestratorId: orchestrator.id,
+        success: result.success,
+        iterations: result.iterations,
+        toolCallsUsed: result.toolCallsUsed?.length || 0,
+      });
+
+      return result;
+    } catch (error) {
+      this.log('❌', 'Custom logic orchestrator execution failed', {
+        orchestratorId: orchestrator.id,
+        error: error instanceof Error ? error.message : String(error),
+        stackTrace: error instanceof Error ? error.stack : undefined,
+      });
+
+      throw error;
+    }
+  }
+
+  // Execute with prompt-based orchestrator (optimized path)
+  private async executeWithPromptBasedOrchestrator(
+    input: string | CoreMessage[],
+    orchestrator: PromptBasedOrchestrator
+  ): Promise<ExecutionResult> {
+    this.log('🎭', 'Executing with prompt-based orchestrator', {
+      orchestratorId: orchestrator.id,
+      orchestratorName: orchestrator.name,
+      allowPromptOverride: this.orchestratorOptions.allowOrchestratorPromptOverride,
+      allowToolControl: this.orchestratorOptions.allowOrchestratorToolControl,
+    });
+
+    // Build context for orchestrator
+    const context: OrchestratorContext = {
+      model: this.model,
+      tools: Object.values(this.tools),
+      messages: this.messages,
+      iterations: this.iterations,
+      maxIterations: this.maxIterations,
+      loggingConfig: this.loggingConfig,
+      orchestratorParams: this.orchestratorOptions.orchestratorParams,
+    };
+
+    // Use the orchestrator's execute method which handles tool filtering and prompt override
+    return await orchestrator.execute(input, context);
+  }
+
+  // Execute with string input (original behavior)
+  private async executeWithString(input: string): Promise<ExecutionResult> {
     const provider = await ProviderManager.createProvider(this.model);
 
     const generateConfig: any = {
@@ -409,6 +569,32 @@ export class Orchestrator {
     }
   }
 
+  // Orchestrator management methods
+  public getOrchestrator(): BaseOrchestrator | undefined {
+    return this.orchestrator;
+  }
+
+  public setOrchestrator(orchestrator: string | BaseOrchestrator | undefined): void {
+    const resolvedOrchestrator = resolveOrchestrator(orchestrator);
+    
+    if (orchestrator && !resolvedOrchestrator) {
+      throw new Error(`Failed to resolve orchestrator: ${typeof orchestrator === 'string' ? orchestrator : 'invalid orchestrator object'}`);
+    }
+
+    const oldId = this.orchestrator?.id;
+    this.orchestrator = resolvedOrchestrator;
+    
+    this.log('🎭', 'Orchestrator changed', {
+      from: oldId || 'none',
+      to: this.orchestrator?.id || 'none',
+      type: this.orchestrator?.type,
+    });
+  }
+
+  public hasOrchestrator(): boolean {
+    return !!this.orchestrator;
+  }
+
   // Utility methods
   public getMessages(): Message[] {
     return [...this.messages];
@@ -617,9 +803,12 @@ export class Orchestrator {
   }
 
   // Private methods
-  private async executeWithCustomLogic(input: string): Promise<ExecutionResult> {
+  private async executeWithCustomLogic(input: string | CoreMessage[]): Promise<ExecutionResult> {
     try {
-      this.log('🔄', 'Executing custom logic', { inputLength: input.length });
+      this.log('🔄', 'Executing custom logic', { 
+        inputType: typeof input,
+        inputLength: typeof input === 'string' ? input.length : input.length,
+      });
       
       const context = {
         messages: this.messages,
@@ -628,7 +817,11 @@ export class Orchestrator {
         iterations: this.iterations,
       };
 
-      const result = await this.customLogic!(input, context);
+      // Convert input to string for custom logic (for now)
+      const stringInput = typeof input === 'string' ? input : 
+                         input.map(m => `${m.role}: ${m.content}`).join('\n');
+
+      const result = await this.customLogic!(stringInput, context);
       
       this.log('✅', 'Custom logic completed', { 
         resultType: typeof result,

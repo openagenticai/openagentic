@@ -151,7 +151,7 @@ const rawElevenLabsTool = tool({
 
     // Validate output format
     if (!OUTPUT_FORMATS.includes(output_format as any)) {
-      console.warn(`Output format "${output_format}" not in supported list, but proceeding anyway`);
+      throw new Error(`Output format "${output_format}" not in supported list`);
     }
 
     // Helper function to select voice based on preferences
