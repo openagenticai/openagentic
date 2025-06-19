@@ -77,10 +77,7 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
     requiredTools: ['github_contents', 'anthropic_chat', 'gemini_chat', 'openai_text_generation'],
     expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
     skipIfMissingEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENAI_API_KEY'],
-    timeout: 180000, // 3 minutes for code analysis
-    orchestratorParams: {
-      additionalPaths: ['src/components', 'src/components/__tests__']
-    }
+    timeout: 180000, // 3 minutes for article creation
   },
 ];
 
