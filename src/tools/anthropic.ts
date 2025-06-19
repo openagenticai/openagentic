@@ -96,7 +96,7 @@ const rawAnthropicTool = tool({
       if (awsAccessKeyId && awsSecretAccessKey) {
         console.log('Using Bedrock');
         const bedrock = createAmazonBedrock({
-          region: 'us-east-1',
+          region: process.env.BEDROCK_REGION,
           accessKeyId: process.env.BEDROCK_ACCESS_KEY_ID,
           secretAccessKey: process.env.BEDROCK_SECRET_ACCESS_KEY,
         });
