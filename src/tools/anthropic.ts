@@ -2,6 +2,7 @@ import { tool } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 
@@ -11,7 +12,7 @@ const SUPPORTED_MODELS = [
   'claude-sonnet-4-20250514', 
   'claude-3-7-sonnet-latest',
   'claude-3-5-sonnet-latest',
-  'claude-3-5-haiku-latest'
+  // 'claude-3-5-haiku-latest'
 ] as const;
 
 const rawAnthropicTool = tool({
@@ -25,7 +26,7 @@ const rawAnthropicTool = tool({
     model: z.string()
       .optional()
       .default('claude-sonnet-4-20250514')
-      .describe('Claude model to use (claude-opus-4-20250514, claude-sonnet-4-20250514, claude-3-7-sonnet-latest, claude-3-5-sonnet-latest, claude-3-5-haiku-latest)'),
+      .describe('Claude model to use (claude-opus-4-20250514, claude-sonnet-4-20250514, claude-3-7-sonnet-latest, claude-3-5-sonnet-latest)'),
     
     maxTokens: z.number()
       .int()
@@ -64,12 +65,6 @@ const rawAnthropicTool = tool({
     topP,
     topK
   }) => {
-    // Validate API key
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      throw new Error('ANTHROPIC_API_KEY environment variable is required');
-    }
-
     // Validate prompt
     if (!prompt || prompt.trim().length === 0) {
       throw new Error('Prompt cannot be empty');
@@ -95,14 +90,43 @@ const rawAnthropicTool = tool({
     });
 
     try {
-      // Initialize Anthropic client
-      const anthropic = createAnthropic({
-        apiKey,
-      });
+      const awsAccessKeyId = process.env.BEDROCK_ACCESS_KEY_ID;
+      const awsSecretAccessKey = process.env.BEDROCK_SECRET_ACCESS_KEY;
+      let modelInstance: any;
+      if (awsAccessKeyId && awsSecretAccessKey) {
+        console.log('Using Bedrock');
+        const bedrock = createAmazonBedrock({
+          region: process.env.BEDROCK_REGION,
+          accessKeyId: process.env.BEDROCK_ACCESS_KEY_ID,
+          secretAccessKey: process.env.BEDROCK_SECRET_ACCESS_KEY,
+        });
+        // TODO: Add support for other Bedrock model versions
+        if(model.includes('sonnet')) {
+          modelInstance = bedrock('us.anthropic.claude-sonnet-4-20250514-v1:0');
+          console.log('Model: Claude Sonnet 4');
+        } else if(model.includes('opus')) {
+          modelInstance = bedrock('us.anthropic.claude-4-opus-20250514-v1:0');
+          console.log('Model: Claude Opus 4');
+        } else {
+          throw new Error(`Model "${model}" not supported`);
+        }
+      } else {
+        console.log('Using Anthropic');
+        // Validate API key
+        const apiKey = process.env.ANTHROPIC_API_KEY;
+        if (!apiKey) {
+          throw new Error('ANTHROPIC_API_KEY environment variable is required');
+        }
+        const anthropic = createAnthropic({
+          apiKey,
+        });
+        modelInstance = anthropic(model);
+        console.log('Model:', model);
+      }
 
       // Prepare generation config
       const generateConfig: any = {
-        model: anthropic(model),
+        model: modelInstance,
         prompt: prompt.trim(),
         maxTokens,
         temperature,

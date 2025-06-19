@@ -70,6 +70,15 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
       additionalPaths: ['src/components', 'src/components/__tests__']
     }
   },
+  {
+    orchestratorId: 'news_specialist',
+    description: 'News Specialist Orchestrator - Creates accurate news articles',
+    input: 'Please create an article covering the Starship 36 explosion at the Starbase launch facility shortly after 11pm on Wednesday June 18th, 2025 (0400 GMT Thursday, June 19th 2025).',
+    requiredTools: ['github_contents', 'anthropic_chat', 'gemini_chat', 'openai_text_generation'],
+    expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
+    skipIfMissingEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENAI_API_KEY'],
+    timeout: 180000, // 3 minutes for article creation
+  },
 ];
 
 // =============================================================================
