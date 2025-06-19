@@ -123,15 +123,10 @@ const rawAnthropicTool = tool({
         modelInstance = anthropic(model);
         console.log('Model:', model);
       }
-      
-      // Initialize Anthropic client
-      const anthropic = createAnthropic({
-        apiKey,
-      });
 
       // Prepare generation config
       const generateConfig: any = {
-        model: anthropic(model),
+        model: modelInstance,
         prompt: prompt.trim(),
         maxTokens,
         temperature,
