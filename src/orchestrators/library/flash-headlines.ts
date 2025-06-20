@@ -51,7 +51,7 @@ export class FlashHeadlinesOrchestrator extends MultiAIOrchestrator {
         summary: `Generated ${headlinesWithImages.length} news headlines with accompanying images`,
         metadata: {
           model: 'gemini-1.5-flash',
-          imageModel: 'gemini-2.0-flash-exp',
+          imageModel: 'gemini-2.0-flash-preview-image-generation',
           workflow: 'flash-headlines',
           totalHeadlines: headlinesWithImages.length,
         },
