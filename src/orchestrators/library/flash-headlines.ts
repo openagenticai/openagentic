@@ -286,7 +286,7 @@ ${topic ? `Focus on: ${topic}` : 'Mix of: politics, technology, business, sports
 
         const result = await geminiImageTool.execute({
           prompt: imagePrompt,
-          model: 'gemini-2.0-flash-exp',
+          model: 'gemini-2.0-flash-preview-image-generation',
           style: 'photorealistic',
           aspectRatio: '1:1', // 500x500 square format
           quality: 'standard',
