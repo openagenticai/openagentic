@@ -8,6 +8,7 @@ import { uploadImageToS3, generateImageFileName } from '../utils/s3';
 
 interface GeminiImageFile extends GeneratedFile {
   base64Data: string;
+  name: string;
 }
 
 // Supported Gemini models with image generation capabilities
