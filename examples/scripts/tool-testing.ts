@@ -234,6 +234,23 @@ const TEST_CASES: TestCase[] = [
     },
     expectedKeys: ['success', 'text', 'model', 'usage'],
     skipIfMissingEnv: ['INCEPTION_API_KEY']
+  },
+  {
+    toolId: 'html_composer',
+    description: 'Claude-powered HTML report generation',
+    parameters: {
+      title: 'OpenAgentic Framework Overview',
+      content: {
+        introduction: 'OpenAgentic is a TypeScript framework for building AI agents with self-contained tool orchestration.',
+        features: ['Simplified Agent Creation', 'Self-Contained Tools', 'Dual Execution Modes', 'Enterprise-Ready Features'],
+        conclusion: 'The framework provides a comprehensive solution for AI-powered applications.'
+      },
+      theme: 'tech',
+      includeStyles: true,
+      includeMetadata: true
+    },
+    expectedKeys: ['success', 'htmlUrl', 'fileName', 'htmlContent'],
+    skipIfMissingEnv: ['ANTHROPIC_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
   }
 ];
 
@@ -545,7 +562,7 @@ Examples:
   npm run test:tools -- --tool qr_code_generator
   npm run test:tools -- --tool openai_text_generation
   npm run test:tools -- --tool github_contents
-  npm run test:tools -- --tool gemini_image_generator
+  npm run test:tools -- --tool html_composer
 
 Environment Variables Required:
   # AI Providers
@@ -561,7 +578,7 @@ Environment Variables Required:
   GITHUB_TOKEN=your_github_token
   ELEVENLABS_API_KEY=your_elevenlabs_key
   
-  # S3 (for audio/video/image tools)
+  # S3 (for audio/video/image/html tools)
   AWS_ACCESS_KEY_ID=your_aws_key
   AWS_SECRET_ACCESS_KEY=your_aws_secret
   AWS_REGION=us-east-1
