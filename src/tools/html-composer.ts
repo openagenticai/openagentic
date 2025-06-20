@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import type { ToolDetails } from '../types';
-import { toOpenAgenticTool } from './utils';
+import { getAnthropicModelInstance, toOpenAgenticTool } from './utils';
 import { uploadHtmlToS3, generateHtmlFileName } from '../utils/s3';
 
 // Supported Claude models for HTML composition
@@ -67,6 +67,8 @@ function createHtmlGenerationPrompt(
   
   return `You are an expert web developer specializing in creating professional, accessible HTML reports. Generate a complete, production-ready HTML document with the following requirements:
 
+**CRITICAL: YOU MUST INCLUDE ALL THE PROVIDED CONTENT IN THE HTML BODY**
+
 **CONTENT TO FORMAT:**
 Title: ${title}
 Content: ${content}
@@ -89,6 +91,16 @@ Content: ${content}
 6. **Interactive elements**: smooth scrolling, hover states
 7. **Clean, readable formatting** optimized for reports
 
+**CONTENT FORMATTING INSTRUCTIONS:**
+- Take the provided content and format it into the HTML body
+- Create appropriate headings hierarchy (h1 for title, h2/h3 for sections)
+- If content is JSON, parse it and format appropriately
+- If content is text, break it into logical paragraphs and sections
+- Format lists, quotes, and data appropriately
+- Add timestamps and metadata where relevant
+- Include source attribution if present in content
+- Make the content readable and well-structured
+
 **CSS REQUIREMENTS (if includeStyles is true):**
 - Embedded CSS in <style> tags (no external stylesheets)
 - Mobile-first responsive design with breakpoints
@@ -96,17 +108,7 @@ Content: ${content}
 - Theme-appropriate color palette
 - Print styles (@media print)
 - Smooth transitions and hover effects
-- Dark/light mode considerations
 - Consistent spacing using a modular scale
-
-**CONTENT FORMATTING:**
-- Process the provided content intelligently
-- Create appropriate headings hierarchy (h1, h2, h3)
-- Format lists, quotes, and data appropriately
-- Add timestamps and metadata where relevant
-- Include source attribution if present in content
-- Create table of contents for longer content
-- Add call-to-action sections where appropriate
 
 **ACCESSIBILITY FEATURES:**
 - Proper heading hierarchy
@@ -125,10 +127,38 @@ Content: ${content}
 
 ${metaTagsSection}
 
+**EXAMPLE STRUCTURE:**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${title}</title>
+    <style>
+        /* Your embedded CSS here */
+    </style>
+</head>
+<body>
+    <header>
+        <h1>${title}</h1>
+    </header>
+    <main>
+        <article>
+            <!-- FORMAT THE PROVIDED CONTENT HERE -->
+            <!-- Convert the content parameter into well-structured HTML -->
+        </article>
+    </main>
+    <footer>
+        <p>Generated on [timestamp]</p>
+    </footer>
+</body>
+</html>
+
 **OUTPUT FORMAT:**
 Return ONLY the complete HTML document, starting with <!DOCTYPE html> and ending with </html>. 
 Do not include any explanatory text, markdown formatting, or code blocks.
 The HTML should be production-ready and immediately usable.
+MOST IMPORTANTLY: Include ALL the provided content in the body section, properly formatted.
 
 **QUALITY STANDARDS:**
 - Professional business document appearance
@@ -138,8 +168,9 @@ The HTML should be production-ready and immediately usable.
 - Mobile-responsive behavior
 - Print-optimized layouts
 - Fast loading performance
+- ALL PROVIDED CONTENT MUST BE VISIBLE IN THE HTML
 
-Generate the complete HTML document now:`;
+Generate the complete HTML document now, ensuring you include all the provided content:`;
 }
 
 /**
