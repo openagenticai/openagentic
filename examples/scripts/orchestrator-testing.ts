@@ -76,7 +76,7 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
     orchestratorId: 'news_specialist',
     description: 'News Specialist Orchestrator - Creates accurate news articles',
     input: 'Please create an article covering the Starship 36 explosion at the Starbase launch facility shortly after 11pm on Wednesday June 18th, 2025 (0400 GMT Thursday, June 19th 2025).',
-    requiredTools: ['perplexity_search', 'newsdata_search', 'web_search', 'gemini_chat', 'grok_chat', 'openai_image_generator', 'anthropic_chat', 'html_composer'],
+    requiredTools: ['perplexity_search', 'newsdata_search', 'gemini_chat', 'grok_chat', 'openai_image_generator', 'anthropic_chat', 'html_composer'],
     expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
     skipIfMissingEnv: ['PERPLEXITY_API_KEY', 'NEWSDATA_API_KEY', 'GOOGLE_API_KEY', 'XAI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'S3_BUCKET_NAME'],
     timeout: 240000, // 4 minutes for comprehensive article creation

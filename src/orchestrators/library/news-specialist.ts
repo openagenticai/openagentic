@@ -99,9 +99,8 @@ export class NewsSpecialistOrchestrator extends MultiAIOrchestrator {
     const newsTools = [
       'perplexity_search',
       'newsdata_search', 
-      'web_search',
+      'grok_chat',
       'gemini_chat',
-      'anthropic_chat'
     ].map(toolId => context.tools.find(tool => tool.toolId === toolId))
      .filter(tool => tool !== undefined);
 
@@ -234,6 +233,11 @@ Ensure your analysis is thorough, accurate, and professionally structured for ne
       console.log('⚠️ Image generation tool not available');
       return { imageUrls: [], success: false };
     }
+    // const geminiImageTool = context.tools.find(tool => tool.toolId === 'gemini_image_generator');
+    // if (!geminiImageTool?.execute) {
+    //   console.log('⚠️ Image generation tool not available');
+    //   return { imageUrls: [], success: false };
+    // }
 
     console.log('🖼️ Generating visual content for article');
 
@@ -251,6 +255,10 @@ Ensure your analysis is thorough, accurate, and professionally structured for ne
           size: '1024x1024',
           quality: 'standard',
           style: 'natural'
+          // model: 'gemini-2.0-flash-preview-image-generation',
+          // style: 'photorealistic',
+          // aspectRatio: '1:1',
+          // quality: 'standard'
         }, { toolCallId: `article-image-${index + 1}`, messages: [] });
         
         return result.success ? result.imageUrl : null;
