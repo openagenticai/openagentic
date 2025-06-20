@@ -162,10 +162,10 @@ const TEST_CASES: TestCase[] = [
   },
   {
     toolId: 'openai_image_generator',
-    description: 'OpenAI DALL-E image generation',
+    description: 'OpenAI image generation',
     parameters: {
       prompt: 'A futuristic cityscape at sunset with flying cars',
-      model: 'dall-e-3',
+      model: 'gpt-image-1',
       size: '1024x1024',
       quality: 'standard',
       style: 'vivid'

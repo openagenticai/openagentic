@@ -58,14 +58,28 @@ function getMetaTagsSection(title: string): string {
 function createHtmlGenerationPrompt(
   title: string,
   content: string,
+  imageUrls: string[],
   theme: string,
   includeStyles: boolean,
-  includeMetadata: boolean
+  includeMetadata: boolean,
+  designInstructions?: string
 ): string {
   const themeStyles = getThemeStyles(theme);
   const metaTagsSection = includeMetadata ? getMetaTagsSection(title) : '';
+  const imageSection = imageUrls.length > 0 ? `
+**IMAGES PROVIDED:**
+I have provided ${imageUrls.length} image(s) for you to analyze and integrate into the HTML report.
+The image URLs to use in your HTML <img> tags are:
+${imageUrls.map((url, index) => `- Image ${index + 1}: ${url}`).join('\n')}
+
+CRITICAL: You can see these images. Please:
+1. Analyze each image to understand its content
+2. Integrate them into the HTML using <img> tags with the URLs listed above
+3. Add appropriate captions based on what you see in each image
+4. Place them contextually within the content where they make sense
+5. Make the images responsive and visually appealing` : '';
   
-  return `You are an expert web developer specializing in creating professional, accessible HTML reports. Generate a complete, production-ready HTML document with the following requirements:
+  return `You are an expert web developer specializing in creating CLEAN, MODERN, PROFESSIONAL HTML reports. You can see any images I've provided and should integrate them naturally into the HTML. Generate a simple, elegant HTML document with the following requirements:
 
 **CRITICAL: YOU MUST INCLUDE ALL THE PROVIDED CONTENT IN THE HTML BODY**
 
@@ -73,23 +87,28 @@ function createHtmlGenerationPrompt(
 Title: ${title}
 Content: ${content}
 
+${imageSection}
+
+${designInstructions ? `**ADDITIONAL DESIGN INSTRUCTIONS:**
+${designInstructions}` : ''}
+
 **DESIGN REQUIREMENTS:**
+- Create a CLEAN, MODERN, MINIMAL design
 - Theme: ${theme} (${themeStyles})
 - Include embedded CSS: ${includeStyles}
-- Include meta tags: ${includeMetadata}
-- Optimized for iframe display and S3 hosting
-- Mobile-responsive design
-- Print-friendly styles
-- Accessibility (WCAG 2.1 AA compliance)
+- SIMPLIFIED layout - no complex grids, clean typography
+- Professional white/light background with good contrast
+- Modern sans-serif fonts (system fonts)
+- Generous white space and clean sections
 
 **HTML STRUCTURE REQUIREMENTS:**
-1. **Complete HTML5 document** with proper DOCTYPE
-2. **Semantic markup**: header, main, article, section, aside, footer
-3. **Responsive grid/flexbox layout**
-4. **Modern typography** with web-safe font stacks
-5. **Professional color scheme** matching the theme
-6. **Interactive elements**: smooth scrolling, hover states
-7. **Clean, readable formatting** optimized for reports
+1. **Simple HTML5 document** - clean and minimal
+2. **Basic semantic markup**: header, main, sections
+3. **Simple responsive layout** - no complex grids
+4. **Clean typography** with excellent readability
+5. **Minimal color palette** - whites, grays, one accent color
+6. **Images integrated naturally** throughout the content
+7. **Professional spacing** and clean sections
 
 **CONTENT FORMATTING INSTRUCTIONS:**
 - Take the provided content and format it into the HTML body
@@ -102,28 +121,19 @@ Content: ${content}
 - Make the content readable and well-structured
 
 **CSS REQUIREMENTS (if includeStyles is true):**
-- Embedded CSS in <style> tags (no external stylesheets)
-- Mobile-first responsive design with breakpoints
-- Professional typography (proper line-height, spacing, hierarchy)
-- Theme-appropriate color palette
-- Print styles (@media print)
-- Smooth transitions and hover effects
-- Consistent spacing using a modular scale
+- Simple embedded CSS - clean and minimal
+- System fonts (font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif)
+- Clean spacing with consistent margins/padding
+- Responsive images: max-width: 100%, height: auto
+- Professional colors: use #333 for text, #f8f9fa for backgrounds
+- Simple hover effects on interactive elements
 
-**ACCESSIBILITY FEATURES:**
-- Proper heading hierarchy
-- Alt text for any images
-- ARIA labels where needed
-- High contrast ratios
-- Keyboard navigation support
-- Screen reader optimization
-
-**IFRAME OPTIMIZATION:**
-- No external dependencies
-- Self-contained HTML document
-- Proper viewport meta tag
-- CSP-friendly inline styles only
-- Fast loading and rendering
+**IMAGE INTEGRATION REQUIREMENTS:**
+- Use proper <img> tags with alt text
+- Make images responsive (max-width: 100%)
+- Add subtle shadows or borders for professional look
+- Include captions below images
+- Space images throughout the content sections
 
 ${metaTagsSection}
 
@@ -135,7 +145,10 @@ ${metaTagsSection}
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title}</title>
     <style>
-        /* Your embedded CSS here */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+        img { max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin: 20px 0; }
+        .caption { font-style: italic; color: #666; margin-top: 5px; }
+        /* Simple, clean styles */
     </style>
 </head>
 <body>
@@ -143,10 +156,9 @@ ${metaTagsSection}
         <h1>${title}</h1>
     </header>
     <main>
-        <article>
-            <!-- FORMAT THE PROVIDED CONTENT HERE -->
-            <!-- Convert the content parameter into well-structured HTML -->
-        </article>
+        <!-- FORMAT THE PROVIDED CONTENT HERE -->
+        <!-- INTEGRATE THE PROVIDED IMAGES HERE WITH <img> TAGS -->
+        <!-- Convert the content parameter into well-structured HTML -->
     </main>
     <footer>
         <p>Generated on [timestamp]</p>
@@ -158,19 +170,22 @@ ${metaTagsSection}
 Return ONLY the complete HTML document, starting with <!DOCTYPE html> and ending with </html>. 
 Do not include any explanatory text, markdown formatting, or code blocks.
 The HTML should be production-ready and immediately usable.
-MOST IMPORTANTLY: Include ALL the provided content in the body section, properly formatted.
 
-**QUALITY STANDARDS:**
-- Professional business document appearance
-- Clean, modern design aesthetic
-- Excellent readability and typography
-- Consistent spacing and alignment
-- Mobile-responsive behavior
-- Print-optimized layouts
-- Fast loading performance
-- ALL PROVIDED CONTENT MUST BE VISIBLE IN THE HTML
+**CRITICAL REQUIREMENTS:**
+1. Include ALL the provided content in the body section, properly formatted
+2. INTEGRATE ALL PROVIDED IMAGES using <img> tags with proper styling
+3. Create a CLEAN, MINIMAL, MODERN design - no clutter
+4. Use simple, elegant styling with plenty of white space
+5. Make images responsive and visually appealing
+6. Add captions to images where appropriate
 
-Generate the complete HTML document now, ensuring you include all the provided content:`;
+**FINAL REMINDER:**
+- Keep the design SIMPLE and CLEAN
+- Focus on readability and professional appearance
+- Images should be integrated naturally into the content flow
+- Use minimal colors: whites, grays, and one accent color
+
+Generate the complete HTML document now:`;
 }
 
 /**
@@ -232,6 +247,11 @@ const rawHtmlComposerTool = tool({
     content: z.any()
       .describe('Structured content data - can be articles, insights, data objects, or any content to be formatted into HTML'),
     
+    imageUrls: z.array(z.string().url())
+      .optional()
+      .default([])
+      .describe('Array of image URLs to include in the report with proper integration'),
+    
     theme: z.enum(THEMES)
       .optional()
       .default('general')
@@ -247,6 +267,10 @@ const rawHtmlComposerTool = tool({
       .default(true)
       .describe('Whether to include meta tags and structured data (default: true)'),
     
+    designInstructions: z.string()
+      .optional()
+      .describe('Additional design instructions for the HTML generation'),
+    
     model: z.string()
       .optional()
       .default('claude-sonnet-4-20250514')
@@ -256,9 +280,11 @@ const rawHtmlComposerTool = tool({
   execute: async ({ 
     title,
     content,
+    imageUrls = [],
     theme = 'general',
     includeStyles = true,
     includeMetadata = true,
+    designInstructions,
     model = 'claude-sonnet-4-20250514'
   }) => {
     // Validate API key
@@ -296,6 +322,9 @@ const rawHtmlComposerTool = tool({
       model,
       contentType: typeof content,
       contentSize: typeof content === 'string' ? content.length : JSON.stringify(content).length,
+      imageCount: imageUrls.length,
+      hasImages: imageUrls.length > 0,
+      designInstructions: designInstructions ? 'provided' : 'none',
     });
 
     try {
@@ -313,21 +342,44 @@ const rawHtmlComposerTool = tool({
         contentPreview: contentText.substring(0, 300) + '...'
       });
       
-      // Create comprehensive HTML generation prompt
+      // Create comprehensive HTML generation prompt with image instructions
       const htmlPrompt = createHtmlGenerationPrompt(
         title.trim(),
         contentText,
+        imageUrls || [], // Pass imageUrls to generate proper image integration instructions
         theme,
         includeStyles,
-        includeMetadata
+        includeMetadata,
+        designInstructions
       );
 
       console.log('🤖 Generating HTML with Claude...');
 
-      // Generate HTML using Claude
+      // Prepare messages array with text and images
+      const messageContent: any[] = [
+        { type: 'text', text: htmlPrompt }
+      ];
+
+      // Add images to the message content so Claude can see them
+      if (imageUrls && imageUrls.length > 0) {
+        console.log(`📸 Adding ${imageUrls.length} images for Claude to analyze`);
+        imageUrls.forEach((imageUrl, index) => {
+          messageContent.push({
+            type: 'image',
+            image: imageUrl
+          });
+        });
+      }
+
+      // Generate HTML using Claude with images
       const result = await generateText({
         model: getAnthropicModelInstance(model),
-        prompt: htmlPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: messageContent
+          }
+        ],
         maxTokens: 4000,
         temperature: 0.3, // Lower temperature for consistent, structured output
       });

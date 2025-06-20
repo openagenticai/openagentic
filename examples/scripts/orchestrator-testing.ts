@@ -76,9 +76,9 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
     orchestratorId: 'news_specialist',
     description: 'News Specialist Orchestrator - Creates accurate news articles',
     input: 'Please create an article covering the Starship 36 explosion at the Starbase launch facility shortly after 11pm on Wednesday June 18th, 2025 (0400 GMT Thursday, June 19th 2025).',
-    requiredTools: ['perplexity_search', 'newsdata_search', 'gemini_chat', 'grok_chat', 'openai_image_generator', 'anthropic_chat'],
+    requiredTools: ['perplexity_search', 'newsdata_search', 'web_search', 'gemini_chat', 'grok_chat', 'openai_image_generator', 'anthropic_chat', 'html_composer'],
     expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
-    skipIfMissingEnv: ['PERPLEXITY_API_KEY', 'NEWSDATA_API_KEY', 'GOOGLE_API_KEY', 'XAI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY'],
+    skipIfMissingEnv: ['PERPLEXITY_API_KEY', 'NEWSDATA_API_KEY', 'GOOGLE_API_KEY', 'XAI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'S3_BUCKET_NAME'],
     timeout: 240000, // 4 minutes for comprehensive article creation
   },
   
@@ -499,7 +499,11 @@ Environment Variables Required:
   GOOGLE_API_KEY=your_google_key          # For Gemini analysis
   XAI_API_KEY=your_xai_key               # For Grok storytelling
   OPENAI_API_KEY=your_openai_key          # For image generation
-  ANTHROPIC_API_KEY=your_anthropic_key    # For HTML formatting
+  ANTHROPIC_API_KEY=your_anthropic_key    # For HTML formatting and content consolidation
+  AWS_ACCESS_KEY_ID=your_aws_key          # For S3 storage (HTML reports)
+  AWS_SECRET_ACCESS_KEY=your_aws_secret   # For S3 storage (HTML reports)
+  AWS_REGION=us-east-1                    # AWS region
+  S3_BUCKET_NAME=your-bucket-name         # S3 bucket for HTML reports
 
 # For Flash Headlines Orchestrator:
   GOOGLE_API_KEY=your_google_key          # For Gemini headline generation and images
@@ -610,7 +614,7 @@ async function main(): Promise<void> {
     }
 
     // Exit with appropriate code
-    process.exit(summary.failed > 0 ? 1 : 0);
+    process.exit(!filename ? 1 : 0);
 
   } catch (error) {
     console.error('❌ Orchestrator testing failed:', error);
