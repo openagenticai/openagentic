@@ -61,7 +61,7 @@ const rawGeminiImageTool = tool({
   
   execute: async ({ 
     prompt,
-    model = 'gemini-2.0-flash-exp',
+    model = 'gemini-2.0-flash-preview-image-generation',
     style,
     aspectRatio = '1:1',
     quality = 'standard'
