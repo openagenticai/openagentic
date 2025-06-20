@@ -17,6 +17,179 @@ const SUPPORTED_MODELS = [
 // Supported visual themes
 const THEMES = ['news', 'business', 'tech', 'general'] as const;
 
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Get theme-specific styling descriptions
+ */
+function getThemeStyles(theme: string): string {
+  const styles = {
+    news: 'Clean journalism style with serif headlines, blue accents, structured layout like major news websites',
+    business: 'Corporate professional design with blue/gray palette, sans-serif fonts, executive report aesthetics',
+    tech: 'Modern tech aesthetic with clean lines, tech blue/green colors, monospace code elements, startup feel',
+    general: 'Versatile professional design with balanced colors, readable typography, adaptable to any content'
+  };
+  
+  return styles[theme as keyof typeof styles] || styles.general;
+}
+
+/**
+ * Generate meta tags section for SEO and social sharing
+ */
+function getMetaTagsSection(title: string): string {
+  return `
+**META TAGS AND SEO (if includeMetadata is true):**
+- Complete meta tags including title, description, keywords
+- Open Graph tags for social sharing
+- Twitter Card meta tags
+- Structured data (JSON-LD) for search engines
+- Viewport meta tag for mobile
+- Character encoding and language tags
+- Cache control and HTTP headers simulation
+- Generator and author meta tags
+- Document title: "${title}"`;
+}
+
+/**
+ * Create comprehensive HTML generation prompt for Claude
+ */
+function createHtmlGenerationPrompt(
+  title: string,
+  content: string,
+  theme: string,
+  includeStyles: boolean,
+  includeMetadata: boolean
+): string {
+  const themeStyles = getThemeStyles(theme);
+  const metaTagsSection = includeMetadata ? getMetaTagsSection(title) : '';
+  
+  return `You are an expert web developer specializing in creating professional, accessible HTML reports. Generate a complete, production-ready HTML document with the following requirements:
+
+**CONTENT TO FORMAT:**
+Title: ${title}
+Content: ${content}
+
+**DESIGN REQUIREMENTS:**
+- Theme: ${theme} (${themeStyles})
+- Include embedded CSS: ${includeStyles}
+- Include meta tags: ${includeMetadata}
+- Optimized for iframe display and S3 hosting
+- Mobile-responsive design
+- Print-friendly styles
+- Accessibility (WCAG 2.1 AA compliance)
+
+**HTML STRUCTURE REQUIREMENTS:**
+1. **Complete HTML5 document** with proper DOCTYPE
+2. **Semantic markup**: header, main, article, section, aside, footer
+3. **Responsive grid/flexbox layout**
+4. **Modern typography** with web-safe font stacks
+5. **Professional color scheme** matching the theme
+6. **Interactive elements**: smooth scrolling, hover states
+7. **Clean, readable formatting** optimized for reports
+
+**CSS REQUIREMENTS (if includeStyles is true):**
+- Embedded CSS in <style> tags (no external stylesheets)
+- Mobile-first responsive design with breakpoints
+- Professional typography (proper line-height, spacing, hierarchy)
+- Theme-appropriate color palette
+- Print styles (@media print)
+- Smooth transitions and hover effects
+- Dark/light mode considerations
+- Consistent spacing using a modular scale
+
+**CONTENT FORMATTING:**
+- Process the provided content intelligently
+- Create appropriate headings hierarchy (h1, h2, h3)
+- Format lists, quotes, and data appropriately
+- Add timestamps and metadata where relevant
+- Include source attribution if present in content
+- Create table of contents for longer content
+- Add call-to-action sections where appropriate
+
+**ACCESSIBILITY FEATURES:**
+- Proper heading hierarchy
+- Alt text for any images
+- ARIA labels where needed
+- High contrast ratios
+- Keyboard navigation support
+- Screen reader optimization
+
+**IFRAME OPTIMIZATION:**
+- No external dependencies
+- Self-contained HTML document
+- Proper viewport meta tag
+- CSP-friendly inline styles only
+- Fast loading and rendering
+
+${metaTagsSection}
+
+**OUTPUT FORMAT:**
+Return ONLY the complete HTML document, starting with <!DOCTYPE html> and ending with </html>. 
+Do not include any explanatory text, markdown formatting, or code blocks.
+The HTML should be production-ready and immediately usable.
+
+**QUALITY STANDARDS:**
+- Professional business document appearance
+- Clean, modern design aesthetic
+- Excellent readability and typography
+- Consistent spacing and alignment
+- Mobile-responsive behavior
+- Print-optimized layouts
+- Fast loading performance
+
+Generate the complete HTML document now:`;
+}
+
+/**
+ * Extract and validate HTML content from Claude's response
+ */
+function extractAndValidateHtml(response: string): string | null {
+  try {
+    // Remove any markdown code blocks if present
+    let cleanResponse = response.trim();
+    cleanResponse = cleanResponse.replace(/```html\s*/, '').replace(/```\s*$/, '');
+    cleanResponse = cleanResponse.replace(/```\s*/, '');
+    
+    // Ensure we have a complete HTML document
+    if (!cleanResponse.includes('<!DOCTYPE html>') || !cleanResponse.includes('</html>')) {
+      // Try to find HTML content within the response
+      const htmlMatch = cleanResponse.match(/<!DOCTYPE html>.*?<\/html>/s);
+      if (htmlMatch) {
+        cleanResponse = htmlMatch[0];
+      } else {
+        return null;
+      }
+    }
+
+    // Basic HTML validation
+    const requiredTags = ['<html', '</html>', '<head', '</head>', '<body', '</body>'];
+    const hasAllRequiredTags = requiredTags.every(tag => cleanResponse.includes(tag));
+    
+    if (!hasAllRequiredTags) {
+      console.warn('⚠️ Generated HTML missing required tags');
+      return null;
+    }
+
+    // Check for minimum content
+    if (cleanResponse.length < 500) {
+      console.warn('⚠️ Generated HTML content too short');
+      return null;
+    }
+
+    return cleanResponse;
+
+  } catch (error) {
+    console.error('❌ HTML validation failed:', error);
+    return null;
+  }
+}
+
+// =============================================================================
+// MAIN TOOL DEFINITION
+// =============================================================================
+
 const rawHtmlComposerTool = tool({
   description: 'Generate professional HTML reports with modern styling using Claude, optimized for iframe display and S3 hosting',
   parameters: z.object({
@@ -104,7 +277,7 @@ const rawHtmlComposerTool = tool({
       const contentText = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
       
       // Create comprehensive HTML generation prompt
-      const htmlPrompt = this.createHtmlGenerationPrompt(
+      const htmlPrompt = createHtmlGenerationPrompt(
         title.trim(),
         contentText,
         theme,
@@ -127,7 +300,7 @@ const rawHtmlComposerTool = tool({
       }
 
       // Extract and validate HTML content
-      const htmlContent = this.extractAndValidateHtml(result.text);
+      const htmlContent = extractAndValidateHtml(result.text);
       
       if (!htmlContent) {
         throw new Error('No valid HTML content found in Claude response');
@@ -236,171 +409,6 @@ const rawHtmlComposerTool = tool({
 
       // Generic error fallback
       throw new Error(`HTML composition failed: ${error instanceof Error ? error.message : String(error)}`);
-    }
-  },
-
-  /**
-   * Create comprehensive HTML generation prompt for Claude
-   */
-  createHtmlGenerationPrompt(
-    title: string,
-    content: string,
-    theme: string,
-    includeStyles: boolean,
-    includeMetadata: boolean
-  ): string {
-    const themeStyles = this.getThemeStyles(theme);
-    const metaTagsSection = includeMetadata ? this.getMetaTagsSection(title) : '';
-    
-    return `You are an expert web developer specializing in creating professional, accessible HTML reports. Generate a complete, production-ready HTML document with the following requirements:
-
-**CONTENT TO FORMAT:**
-Title: ${title}
-Content: ${content}
-
-**DESIGN REQUIREMENTS:**
-- Theme: ${theme} (${themeStyles})
-- Include embedded CSS: ${includeStyles}
-- Include meta tags: ${includeMetadata}
-- Optimized for iframe display and S3 hosting
-- Mobile-responsive design
-- Print-friendly styles
-- Accessibility (WCAG 2.1 AA compliance)
-
-**HTML STRUCTURE REQUIREMENTS:**
-1. **Complete HTML5 document** with proper DOCTYPE
-2. **Semantic markup**: header, main, article, section, aside, footer
-3. **Responsive grid/flexbox layout**
-4. **Modern typography** with web-safe font stacks
-5. **Professional color scheme** matching the theme
-6. **Interactive elements**: smooth scrolling, hover states
-7. **Clean, readable formatting** optimized for reports
-
-**CSS REQUIREMENTS (if includeStyles is true):**
-- Embedded CSS in <style> tags (no external stylesheets)
-- Mobile-first responsive design with breakpoints
-- Professional typography (proper line-height, spacing, hierarchy)
-- Theme-appropriate color palette
-- Print styles (@media print)
-- Smooth transitions and hover effects
-- Dark/light mode considerations
-- Consistent spacing using a modular scale
-
-**CONTENT FORMATTING:**
-- Process the provided content intelligently
-- Create appropriate headings hierarchy (h1, h2, h3)
-- Format lists, quotes, and data appropriately
-- Add timestamps and metadata where relevant
-- Include source attribution if present in content
-- Create table of contents for longer content
-- Add call-to-action sections where appropriate
-
-**ACCESSIBILITY FEATURES:**
-- Proper heading hierarchy
-- Alt text for any images
-- ARIA labels where needed
-- High contrast ratios
-- Keyboard navigation support
-- Screen reader optimization
-
-**IFRAME OPTIMIZATION:**
-- No external dependencies
-- Self-contained HTML document
-- Proper viewport meta tag
-- CSP-friendly inline styles only
-- Fast loading and rendering
-
-${metaTagsSection}
-
-**OUTPUT FORMAT:**
-Return ONLY the complete HTML document, starting with <!DOCTYPE html> and ending with </html>. 
-Do not include any explanatory text, markdown formatting, or code blocks.
-The HTML should be production-ready and immediately usable.
-
-**QUALITY STANDARDS:**
-- Professional business document appearance
-- Clean, modern design aesthetic
-- Excellent readability and typography
-- Consistent spacing and alignment
-- Mobile-responsive behavior
-- Print-optimized layouts
-- Fast loading performance
-
-Generate the complete HTML document now:`;
-  },
-
-  /**
-   * Get theme-specific styling descriptions
-   */
-  getThemeStyles(theme: string): string {
-    const styles = {
-      news: 'Clean journalism style with serif headlines, blue accents, structured layout like major news websites',
-      business: 'Corporate professional design with blue/gray palette, sans-serif fonts, executive report aesthetics',
-      tech: 'Modern tech aesthetic with clean lines, tech blue/green colors, monospace code elements, startup feel',
-      general: 'Versatile professional design with balanced colors, readable typography, adaptable to any content'
-    };
-    
-    return styles[theme as keyof typeof styles] || styles.general;
-  },
-
-  /**
-   * Generate meta tags section for SEO and social sharing
-   */
-  getMetaTagsSection(title: string): string {
-    return `
-**META TAGS AND SEO (if includeMetadata is true):**
-- Complete meta tags including title, description, keywords
-- Open Graph tags for social sharing
-- Twitter Card meta tags
-- Structured data (JSON-LD) for search engines
-- Viewport meta tag for mobile
-- Character encoding and language tags
-- Cache control and HTTP headers simulation
-- Generator and author meta tags
-- Document title: "${title}"`;
-  },
-
-  /**
-   * Extract and validate HTML content from Claude's response
-   */
-  extractAndValidateHtml(response: string): string | null {
-    try {
-      // Remove any markdown code blocks if present
-      let cleanResponse = response.trim();
-      cleanResponse = cleanResponse.replace(/```html\s*/, '').replace(/```\s*$/, '');
-      cleanResponse = cleanResponse.replace(/```\s*/, '');
-      
-      // Ensure we have a complete HTML document
-      if (!cleanResponse.includes('<!DOCTYPE html>') || !cleanResponse.includes('</html>')) {
-        // Try to find HTML content within the response
-        const htmlMatch = cleanResponse.match(/<!DOCTYPE html>.*?<\/html>/s);
-        if (htmlMatch) {
-          cleanResponse = htmlMatch[0];
-        } else {
-          return null;
-        }
-      }
-
-      // Basic HTML validation
-      const requiredTags = ['<html', '</html>', '<head', '</head>', '<body', '</body>'];
-      const hasAllRequiredTags = requiredTags.every(tag => cleanResponse.includes(tag));
-      
-      if (!hasAllRequiredTags) {
-        console.warn('⚠️ Generated HTML missing required tags');
-        return null;
-      }
-
-      // Check for minimum content
-      if (cleanResponse.length < 500) {
-        console.warn('⚠️ Generated HTML content too short');
-        return null;
-      }
-
-      return cleanResponse;
-
-    } catch (error) {
-      console.error('❌ HTML validation failed:', error);
-      return null;
     }
   }
 });
