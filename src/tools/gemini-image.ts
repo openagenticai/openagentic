@@ -1,10 +1,14 @@
-import { tool } from 'ai';
+import { tool, type GeneratedFile } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 import { uploadImageToS3, generateImageFileName } from '../utils/s3';
+
+interface GeminiImageFile extends GeneratedFile {
+  base64Data: string;
+}
 
 // Supported Gemini models with image generation capabilities
 const SUPPORTED_MODELS = [
@@ -131,30 +135,19 @@ const rawGeminiImageTool = tool({
       // Find the first image file
       const imageFile = result.files.find(file => 
         file.mimeType && file.mimeType.startsWith('image/')
-      );
+      ) as GeminiImageFile;
 
       if (!imageFile) {
         throw new Error('No image file found in Gemini response. Only non-image files were generated.');
       }
 
-      if (!imageFile.url) {
-        throw new Error('Image file does not have a download URL');
-      }
-
-      console.log('📥 Downloading generated image from Gemini:', {
-        mimeType: imageFile.mimeType,
-        fileName: imageFile.name || 'generated-image',
-        url: imageFile.url.substring(0, 100) + '...',
-      });
-
-      // Download the image from Gemini's temporary URL
-      const imageResponse = await fetch(imageFile.url);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to download image from Gemini: ${imageResponse.status} - ${imageResponse.statusText}`);
+      // Convert base64 data to buffer
+      if (!imageFile.base64Data) {
+        throw new Error('No base64 data found in generated image file');
       }
 
       // Convert response to buffer
-      const imageBuffer = Buffer.from(await imageResponse.arrayBuffer());
+      const imageBuffer = Buffer.from(imageFile.base64Data, 'base64');
 
       if (imageBuffer.length === 0) {
         throw new Error('Downloaded image buffer is empty');
