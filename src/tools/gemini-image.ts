@@ -141,7 +141,6 @@ const rawGeminiImageTool = tool({
         throw new Error('No image file found in Gemini response. Only non-image files were generated.');
       }
 
-      // Convert base64 data to buffer
       if (!imageFile.base64Data) {
         throw new Error('No base64 data found in generated image file');
       }
