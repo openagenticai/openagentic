@@ -45,6 +45,12 @@ export function createAgent(options: {
   enableTimingLogging?: boolean;
   enableStatisticsLogging?: boolean;
   enableStreamingLogging?: boolean;
+  /** 
+   * API keys for various providers. Can include:
+   * - Provider keys: openai, anthropic, google, etc.
+   * - AWS credentials: awsAccessKeyId, awsSecretAccessKey, awsRegion, awsS3Bucket
+   * - Bedrock credentials: bedrockAccessKeyId, bedrockSecretAccessKey, bedrockRegion
+   */
   apiKeys?: ApiKeyMap;
 } & OrchestratorOptions): Orchestrator {
   // Set user API keys before creating orchestrator
@@ -71,6 +77,12 @@ export function createStreamingAgent(options: {
   enableStatisticsLogging?: boolean;
   enableStreamingLogging?: boolean;
   onFinish?: (result: any) => void | Promise<void>;
+  /** 
+   * API keys for various providers. Can include:
+   * - Provider keys: openai, anthropic, google, etc.
+   * - AWS credentials: awsAccessKeyId, awsSecretAccessKey, awsRegion, awsS3Bucket
+   * - Bedrock credentials: bedrockAccessKeyId, bedrockSecretAccessKey, bedrockRegion
+   */
   apiKeys?: ApiKeyMap;
 } & OrchestratorOptions) {
   // Set user API keys before creating orchestrator
