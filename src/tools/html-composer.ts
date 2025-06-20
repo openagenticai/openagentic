@@ -180,34 +180,34 @@ function extractAndValidateHtml(response: string): string | null {
   try {
     // Remove any markdown code blocks if present
     let cleanResponse = response.trim();
-    cleanResponse = cleanResponse.replace(/```html\s*/, '').replace(/```\s*$/, '');
-    cleanResponse = cleanResponse.replace(/```\s*/, '');
+    // cleanResponse = cleanResponse.replace(/```html\s*/, '').replace(/```\s*$/, '');
+    // cleanResponse = cleanResponse.replace(/```\s*/, '');
     
-    // Ensure we have a complete HTML document
-    if (!cleanResponse.includes('<!DOCTYPE html>') || !cleanResponse.includes('</html>')) {
-      // Try to find HTML content within the response
-      const htmlMatch = cleanResponse.match(/<!DOCTYPE html>.*?<\/html>/s);
-      if (htmlMatch) {
-        cleanResponse = htmlMatch[0];
-      } else {
-        return null;
-      }
-    }
+    // // Ensure we have a complete HTML document
+    // if (!cleanResponse.includes('<!DOCTYPE html>') || !cleanResponse.includes('</html>')) {
+    //   // Try to find HTML content within the response
+    //   const htmlMatch = cleanResponse.match(/<!DOCTYPE html>.*?<\/html>/s);
+    //   if (htmlMatch) {
+    //     cleanResponse = htmlMatch[0];
+    //   } else {
+    //     return null;
+    //   }
+    // }
 
-    // Basic HTML validation
-    const requiredTags = ['<html', '</html>', '<head', '</head>', '<body', '</body>'];
-    const hasAllRequiredTags = requiredTags.every(tag => cleanResponse.includes(tag));
+    // // Basic HTML validation
+    // const requiredTags = ['<html', '</html>', '<head', '</head>', '<body', '</body>'];
+    // const hasAllRequiredTags = requiredTags.every(tag => cleanResponse.includes(tag));
     
-    if (!hasAllRequiredTags) {
-      console.warn('⚠️ Generated HTML missing required tags');
-      return null;
-    }
+    // if (!hasAllRequiredTags) {
+    //   console.warn('⚠️ Generated HTML missing required tags');
+    //   return null;
+    // }
 
-    // Check for minimum content
-    if (cleanResponse.length < 500) {
-      console.warn('⚠️ Generated HTML content too short');
-      return null;
-    }
+    // // Check for minimum content
+    // if (cleanResponse.length < 500) {
+    //   console.warn('⚠️ Generated HTML content too short');
+    //   return null;
+    // }
 
     return cleanResponse;
 
@@ -306,6 +306,12 @@ const rawHtmlComposerTool = tool({
 
       // Prepare content for Claude
       const contentText = typeof content === 'string' ? content : JSON.stringify(content, null, 2);
+
+      console.log('📝 Content being sent to Claude:', {
+        originalContentType: typeof content,
+        contentTextLength: contentText.length,
+        contentPreview: contentText.substring(0, 300) + '...'
+      });
       
       // Create comprehensive HTML generation prompt
       const htmlPrompt = createHtmlGenerationPrompt(
@@ -320,7 +326,7 @@ const rawHtmlComposerTool = tool({
 
       // Generate HTML using Claude
       const result = await generateText({
-        model: anthropic(model),
+        model: getAnthropicModelInstance(model),
         prompt: htmlPrompt,
         maxTokens: 4000,
         temperature: 0.3, // Lower temperature for consistent, structured output
@@ -330,10 +336,20 @@ const rawHtmlComposerTool = tool({
         throw new Error('Claude returned empty HTML content');
       }
 
+      console.log('🔍 Claude response preview:', {
+        length: result.text.length,
+        text: result.text,
+        startsWithDoctype: result.text.trim().startsWith('<!DOCTYPE'),
+        containsHtml: result.text.includes('<html'),
+        containsBody: result.text.includes('<body'),
+        preview: result.text.substring(0, 200) + '...'
+      });
+
       // Extract and validate HTML content
       const htmlContent = extractAndValidateHtml(result.text);
       
       if (!htmlContent) {
+        console.error('❌ HTML extraction failed. Full Claude response:', result.text);
         throw new Error('No valid HTML content found in Claude response');
       }
 
