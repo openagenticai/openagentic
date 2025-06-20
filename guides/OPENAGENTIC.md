@@ -160,7 +160,7 @@ import {
   qrcodeTool,        // QR code generation
   githubTool,        // GitHub repository access
   newsdataTool,      // News search
-  openaiImageTool,   // DALL-E image generation
+  openaiImageTool,   // image generation
   elevenlabsTool,    // Text-to-speech
   videoGenerationTool, // Video generation
 } from 'openagentic';

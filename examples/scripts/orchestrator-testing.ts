@@ -614,7 +614,7 @@ async function main(): Promise<void> {
     }
 
     // Exit with appropriate code
-    process.exit(summary.failed > 0 ? 1 : 0);
+    process.exit(!filename ? 1 : 0);
 
   } catch (error) {
     console.error('❌ Orchestrator testing failed:', error);

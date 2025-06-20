@@ -70,6 +70,7 @@ export class NewsSpecialistOrchestrator extends MultiAIOrchestrator {
         recommendations: consolidatedReport.recommendations,
         visualContentUrls: visualContent.imageUrls,
         agentAnalysis: agentAnalysis.analysisContent, // Include agent's analysis
+        imagesIncluded: visualContent.imageUrls.length > 0, // Flag indicating images were included
         metadata: {
           topic: analysisParams.topic,
           analysisDepth: analysisParams.depth,
@@ -79,6 +80,8 @@ export class NewsSpecialistOrchestrator extends MultiAIOrchestrator {
           totalImages: visualContent.imageUrls.length,
           agentIterations: agentAnalysis.iterations,
           toolsUsed: agentAnalysis.toolsUsed,
+          htmlTheme: 'modern-news',
+          designEnhanced: true,
         },
       };
 
@@ -244,7 +247,7 @@ Ensure your analysis is thorough, accurate, and professionally structured for ne
         
         const result = await openaiImageTool.execute({
           prompt,
-          model: 'dall-e-3',
+          model: 'gpt-image-1',
           size: '1024x1024',
           quality: 'standard',
           style: 'natural'
@@ -270,18 +273,21 @@ Ensure your analysis is thorough, accurate, and professionally structured for ne
    * Create image prompts based on analysis content
    */
   private createImagePrompts(analysisContent: string): string[] {
-    const prompts = [
-      'Professional news photography style image representing current events and breaking news, journalistic quality, clean composition',
-      'Modern infographic style visualization of data and trends, professional news media aesthetic, clean and informative',
-    ];
+    const prompts = [];
+
+    // Add a hero image for the main story
+    prompts.push('Professional editorial illustration for breaking news story, modern news media design, clean and impactful, suitable for article header');
 
     // Add a specific image based on content if possible
     if (analysisContent && typeof analysisContent === 'string') {
       const contentKeywords = this.extractKeywords(analysisContent);
       if (contentKeywords.length > 0) {
-        prompts.push(`Professional news image representing ${contentKeywords.join(', ')}, photojournalistic style, high quality news photography`);
+        prompts.push(`Professional news photography representing ${contentKeywords.slice(0, 3).join(', ')}, photojournalistic style, high quality editorial image, clean composition`);
       }
     }
+
+    // Add an infographic-style image
+    prompts.push('Modern data visualization infographic for news analysis, professional news media aesthetic, clean charts and graphics, contemporary design');
 
     return prompts.slice(0, 3); // Maximum 3 images
   }
@@ -356,6 +362,7 @@ Format as a clear, professional news analysis report based on the comprehensive 
       consolidatedReport: reportText,
       agentIterations: agentAnalysis.iterations,
       agentToolCalls: agentAnalysis.toolCallDetails.length,
+      visualContent: visualContent, // Include visual content in consolidated report
       startTime: Date.now(),
     };
   }
@@ -399,9 +406,11 @@ Format as a clear, professional news analysis report based on the comprehensive 
           analysisType: 'AI-Driven News Analysis'
         }
       },
-      theme: 'news',
+      imageUrls: consolidatedReport.visualContent?.imageUrls || [], // Pass images separately for Claude to see
+      theme: 'news', // Simplified theme
       includeStyles: true,
-      includeMetadata: true
+      includeMetadata: true,
+      designInstructions: 'Create a clean, minimal, modern news report design. Use simple typography, generous white space, and integrate the provided images naturally throughout the content. Focus on readability and professional appearance with a contemporary aesthetic.'
     }, { toolCallId: 'html-report', messages: [] });
 
     if (!result.success || !result.htmlUrl) {

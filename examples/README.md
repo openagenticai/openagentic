@@ -82,7 +82,7 @@ The comprehensive tool testing script validates all 14 OpenAgentic tools:
 - `github_contents` - GitHub repository access
 - `newsdata_search` - News search with filtering
 - `qr_code_generator` - QR code generation
-- `openai_image_generator` - DALL-E image generation
+- `openai_image_generator` - Image generation
 - `elevenlabs_tts` - Text-to-speech conversion
 - `video_generator` - Google Veo video generation
 
@@ -134,7 +134,7 @@ See `.env.example` for complete setup instructions.
 - Performance monitoring and statistics
 
 ### 4. **File Generation & Storage**
-- Image generation with DALL-E
+- Image generation with OpenAI
 - Audio generation with ElevenLabs
 - Video generation with Google Veo
 - S3 upload and storage management
