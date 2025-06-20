@@ -13,8 +13,8 @@ interface GeminiImageFile extends GeneratedFile {
 
 // Supported Gemini models with image generation capabilities
 const SUPPORTED_MODELS = [
-  'gemini-2.0-flash-exp',
-  'gemini-2.0-flash-thinking-exp',
+  'gemini-2.0-flash-preview-image-generation',
+  // 'gemini-2.0-flash-thinking-exp',
 ] as const;
 
 // Supported image styles for Gemini
@@ -41,8 +41,8 @@ const rawGeminiImageTool = tool({
     
     model: z.string()
       .optional()
-      .default('gemini-2.0-flash-exp')
-      .describe('The Gemini model to use (gemini-2.0-flash-exp, gemini-2.0-flash-thinking-exp)'),
+      .default('gemini-2.0-flash-preview-image-generation')
+      .describe('The Gemini model to use (gemini-2.0-flash-preview-image-generation)'),
     
     style: z.enum(IMAGE_STYLES)
       .optional()
@@ -61,7 +61,7 @@ const rawGeminiImageTool = tool({
   
   execute: async ({ 
     prompt,
-    model = 'gemini-2.0-flash-exp',
+    model = 'gemini-2.0-flash-preview-image-generation',
     style,
     aspectRatio = '1:1',
     quality = 'standard'
