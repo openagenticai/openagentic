@@ -280,6 +280,10 @@ ${topic ? `Focus on: ${topic}` : 'Mix of: politics, technology, business, sports
         // Create descriptive prompt for news image
         const imagePrompt = this.createImagePrompt(headline.title, headline.subtitle);
 
+        if(!geminiImageTool.execute) {
+          throw new Error('Gemini Image tool not available. Please ensure gemini_image_generator tool is included.');
+        }
+
         const result = await geminiImageTool.execute({
           prompt: imagePrompt,
           model: 'gemini-2.0-flash-exp',
