@@ -5,6 +5,7 @@
 // Import all individual tools
 export { openaiTool } from './openai';
 export { openaiImageTool } from './openai-image';
+export { geminiImageTool } from './gemini-image';
 export { anthropicTool } from './anthropic';
 export { geminiTool } from './gemini';
 export { githubTool } from './github';
@@ -28,6 +29,7 @@ export { toOpenAgenticTool } from './utils';
 
 import { openaiTool } from './openai';
 import { openaiImageTool } from './openai-image';
+import { geminiImageTool } from './gemini-image';
 import { anthropicTool } from './anthropic';
 import { geminiTool } from './gemini';
 import { githubTool } from './github';
@@ -46,7 +48,7 @@ import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool];
-export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool];
+export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================

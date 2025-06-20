@@ -174,6 +174,19 @@ const TEST_CASES: TestCase[] = [
     skipIfMissingEnv: ['OPENAI_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
   },
   {
+    toolId: 'gemini_image_generator',
+    description: 'Google Gemini image generation with S3 upload',
+    parameters: {
+      prompt: 'A serene mountain landscape with a crystal clear lake reflecting the sky',
+      model: 'gemini-2.0-flash-exp',
+      style: 'photorealistic',
+      aspectRatio: '1:1',
+      quality: 'standard'
+    },
+    expectedKeys: ['success', 'imageUrl', 'fileName', 'model'],
+    skipIfMissingEnv: ['GOOGLE_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
+  },
+  {
     toolId: 'elevenlabs_tts',
     description: 'ElevenLabs text-to-speech conversion',
     parameters: {
@@ -532,7 +545,7 @@ Examples:
   npm run test:tools -- --tool qr_code_generator
   npm run test:tools -- --tool openai_text_generation
   npm run test:tools -- --tool github_contents
-  npm run test:tools -- --tool gemini_tts
+  npm run test:tools -- --tool gemini_image_generator
 
 Environment Variables Required:
   # AI Providers
