@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, type PutObjectCommandInput } from '@aws-sdk/client-s3';
+import { ProviderManager } from '../providers/manager';
 
 // =============================================================================
 // TYPES AND INTERFACES
@@ -57,35 +58,37 @@ let s3Client: S3Client | null = null;
 let s3Config: S3Config | null = null;
 
 /**
- * Validate S3 configuration from environment variables
- * @throws {Error} If required environment variables are missing
+ * Validate S3 configuration from environment variables or user-provided API keys
+ * @throws {Error} If required configuration is missing
  */
 export function validateS3Config(): void {
-  const requiredVars = [
-    'AWS_ACCESS_KEY_ID',
-    'AWS_SECRET_ACCESS_KEY', 
-    'AWS_REGION',
-    'S3_BUCKET_NAME'
+  const awsCredentials = ProviderManager.getAwsCredentials();
+  
+  const requiredFields = [
+    { field: 'accessKeyId', value: awsCredentials.accessKeyId },
+    { field: 'secretAccessKey', value: awsCredentials.secretAccessKey },
+    { field: 'region', value: awsCredentials.region },
+    { field: 'bucketName', value: awsCredentials.bucketName },
   ];
 
-  const missing = requiredVars.filter(varName => !process.env[varName]);
+  const missing = requiredFields.filter(({ value }) => !value).map(({ field }) => field);
   
   if (missing.length > 0) {
     throw new Error(
-      `Missing required environment variables: ${missing.join(', ')}\n` +
-      'Please ensure all AWS S3 configuration variables are set:\n' +
-      '- AWS_ACCESS_KEY_ID\n' +
-      '- AWS_SECRET_ACCESS_KEY\n' +
-      '- AWS_REGION\n' +
-      '- S3_BUCKET_NAME'
+      `Missing required AWS configuration: ${missing.join(', ')}\n` +
+      'Please ensure all AWS S3 configuration is provided via apiKeys or environment variables:\n' +
+      '- awsAccessKeyId (or AWS_ACCESS_KEY_ID)\n' +
+      '- awsSecretAccessKey (or AWS_SECRET_ACCESS_KEY)\n' +
+      '- awsRegion (or AWS_REGION)\n' +
+      '- awsS3Bucket (or S3_BUCKET_NAME)'
     );
   }
 
   s3Config = {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    region: process.env.AWS_REGION!,
-    bucketName: process.env.S3_BUCKET_NAME!,
+    accessKeyId: awsCredentials.accessKeyId!,
+    secretAccessKey: awsCredentials.secretAccessKey!,
+    region: awsCredentials.region!,
+    bucketName: awsCredentials.bucketName!,
   };
 
   // Initialize S3 client
