@@ -153,6 +153,42 @@ export class ProviderManager {
   }
 
   /**
+   * Get AWS credentials from user API keys or environment variables
+   */
+  static getAwsCredentials(): {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    region?: string;
+    bucketName?: string;
+  } {
+    const userKeys = this.userApiKeys;
+    
+    return {
+      accessKeyId: userKeys?.awsAccessKeyId || process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: userKeys?.awsSecretAccessKey || process.env.AWS_SECRET_ACCESS_KEY,
+      region: userKeys?.awsRegion || process.env.AWS_REGION,
+      bucketName: userKeys?.awsS3Bucket || process.env.S3_BUCKET_NAME,
+    };
+  }
+
+  /**
+   * Get AWS Bedrock credentials from user API keys or environment variables
+   */
+  static getBedrockCredentials(): {
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    region?: string;
+  } {
+    const userKeys = this.userApiKeys;
+    
+    return {
+      accessKeyId: userKeys?.bedrockAccessKeyId || process.env.BEDROCK_ACCESS_KEY_ID,
+      secretAccessKey: userKeys?.bedrockSecretAccessKey || process.env.BEDROCK_SECRET_ACCESS_KEY,
+      region: userKeys?.bedrockRegion || process.env.BEDROCK_REGION,
+    };
+  }
+
+  /**
    * Create a model configuration from a string or AIModel object
    * Automatically detects provider from model name if string is provided
    */

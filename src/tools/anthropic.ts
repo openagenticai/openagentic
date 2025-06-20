@@ -5,6 +5,7 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
+import { ProviderManager } from '../providers/manager';
 
 // Supported Anthropic Claude models with validation
 const SUPPORTED_MODELS = [
@@ -90,15 +91,14 @@ const rawAnthropicTool = tool({
     });
 
     try {
-      const awsAccessKeyId = process.env.BEDROCK_ACCESS_KEY_ID;
-      const awsSecretAccessKey = process.env.BEDROCK_SECRET_ACCESS_KEY;
+      const bedrockCredentials = ProviderManager.getBedrockCredentials();
       let modelInstance: any;
-      if (awsAccessKeyId && awsSecretAccessKey) {
+      if (bedrockCredentials.accessKeyId && bedrockCredentials.secretAccessKey) {
         console.log('Using Bedrock');
         const bedrock = createAmazonBedrock({
-          region: process.env.BEDROCK_REGION,
-          accessKeyId: process.env.BEDROCK_ACCESS_KEY_ID,
-          secretAccessKey: process.env.BEDROCK_SECRET_ACCESS_KEY,
+          region: bedrockCredentials.region,
+          accessKeyId: bedrockCredentials.accessKeyId,
+          secretAccessKey: bedrockCredentials.secretAccessKey,
         });
         // TODO: Add support for other Bedrock model versions
         if(model.includes('sonnet')) {

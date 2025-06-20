@@ -36,7 +36,17 @@ export type Message = z.infer<typeof MessageSchema>;
 // API KEY MAP TYPE
 // =============================================================================
 
-export type ApiKeyMap = Record<string, string>;
+export type ApiKeyMap = Record<string, string> & {
+  // AWS credentials for S3 and other services
+  awsAccessKeyId?: string;
+  awsSecretAccessKey?: string;
+  awsRegion?: string;
+  awsS3Bucket?: string;
+  // AWS Bedrock credentials (for Anthropic via Bedrock)
+  bedrockAccessKeyId?: string;
+  bedrockSecretAccessKey?: string;
+  bedrockRegion?: string;
+};
 
 // =============================================================================
 // CORE MESSAGE TYPES (AI SDK COMPATIBLE)
