@@ -70,14 +70,27 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
       additionalPaths: ['src/components', 'src/components/__tests__']
     }
   },
+  
+  // News Specialist Orchestrator
   {
     orchestratorId: 'news_specialist',
     description: 'News Specialist Orchestrator - Creates accurate news articles',
     input: 'Please create an article covering the Starship 36 explosion at the Starbase launch facility shortly after 11pm on Wednesday June 18th, 2025 (0400 GMT Thursday, June 19th 2025).',
-    requiredTools: ['github_contents', 'anthropic_chat', 'gemini_chat', 'openai_text_generation'],
+    requiredTools: ['perplexity_search', 'newsdata_search', 'gemini_chat', 'grok_chat', 'openai_image_generator', 'anthropic_chat'],
     expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
-    skipIfMissingEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENAI_API_KEY'],
-    timeout: 180000, // 3 minutes for article creation
+    skipIfMissingEnv: ['PERPLEXITY_API_KEY', 'NEWSDATA_API_KEY', 'GOOGLE_API_KEY', 'XAI_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY'],
+    timeout: 240000, // 4 minutes for comprehensive article creation
+  },
+  
+  // Flash Headlines Orchestrator
+  {
+    orchestratorId: 'flash_headlines',
+    description: 'Flash Headlines Orchestrator - Generate top 10 news headlines with images',
+    input: 'Generate the top 10 current technology news headlines with accompanying images',
+    requiredTools: ['gemini_chat', 'gemini_image_generator'],
+    expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
+    skipIfMissingEnv: ['GOOGLE_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME'],
+    timeout: 180000, // 3 minutes for headline generation and images
   },
 ];
 
@@ -461,6 +474,7 @@ Usage:
 Examples:
   npm run test:orchestrators -- --orchestrator video_creator
   npm run test:orchestrators -- --orchestrator code_assessment
+  npm run test:orchestrators -- --orchestrator flash_headlines
 
 Environment Variables Required:
 
@@ -478,6 +492,21 @@ Environment Variables Required:
   ANTHROPIC_API_KEY=your_anthropic_key    # For code quality analysis
   GOOGLE_API_KEY=your_google_key          # For technical analysis
   OPENAI_API_KEY=your_openai_key          # For synthesis
+
+# For News Specialist Orchestrator:
+  PERPLEXITY_API_KEY=your_perplexity_key  # For fact-checking research
+  NEWSDATA_API_KEY=your_newsdata_key      # For breaking news
+  GOOGLE_API_KEY=your_google_key          # For Gemini analysis
+  XAI_API_KEY=your_xai_key               # For Grok storytelling
+  OPENAI_API_KEY=your_openai_key          # For image generation
+  ANTHROPIC_API_KEY=your_anthropic_key    # For HTML formatting
+
+# For Flash Headlines Orchestrator:
+  GOOGLE_API_KEY=your_google_key          # For Gemini headline generation and images
+  AWS_ACCESS_KEY_ID=your_aws_key          # For S3 storage
+  AWS_SECRET_ACCESS_KEY=your_aws_secret   # For S3 storage
+  AWS_REGION=us-east-1                    # AWS region
+  S3_BUCKET_NAME=your-bucket-name         # S3 bucket for images
 
 Note: These orchestrators are complex and may take several minutes to complete.
 They involve multiple AI model calls and external service integrations.
