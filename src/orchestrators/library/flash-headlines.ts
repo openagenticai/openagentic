@@ -38,22 +38,23 @@ export class FlashHeadlinesOrchestrator extends MultiAIOrchestrator {
       const headlines = await this.generateHeadlines(topic, context);
 
       // Step 2: Generate images for each headline in parallel
-      console.log('🎨 Step 2: Generating images for each headline');
-      const headlinesWithImages = await this.generateHeadlineImages(headlines, context);
+      // console.log('🎨 Step 2: Generating images for each headline');
+      // const headlinesWithImages = await this.generateHeadlineImages(headlines, context);
 
       console.log('✅ Flash Headlines generation completed successfully');
 
       return {
-        headlines: headlinesWithImages,
+        headlines,
+        // headlines: headlinesWithImages,
         topic: topic || 'Current News',
         generatedAt: new Date().toISOString(),
-        count: headlinesWithImages.length,
-        summary: `Generated ${headlinesWithImages.length} news headlines with accompanying images`,
+        count: headlines.length,
+        summary: `Generated ${headlines.length} news headlines with accompanying images`,
         metadata: {
           model: 'gemini-1.5-flash',
           imageModel: 'gemini-2.0-flash-preview-image-generation',
           workflow: 'flash-headlines',
-          totalHeadlines: headlinesWithImages.length,
+          totalHeadlines: headlines.length,
         },
       };
 
