@@ -164,10 +164,10 @@ export class ProviderManager {
     const userKeys = this.userApiKeys;
     
     return {
-      accessKeyId: userKeys?.awsAccessKeyId || process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: userKeys?.awsSecretAccessKey || process.env.AWS_SECRET_ACCESS_KEY,
-      region: userKeys?.awsRegion || process.env.AWS_REGION,
-      bucketName: userKeys?.awsS3Bucket || process.env.S3_BUCKET_NAME,
+      accessKeyId: userKeys?.awsAccessKeyId || process.env.MY_AWS_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: userKeys?.awsSecretAccessKey || process.env.MY_AWS_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY,
+      region: userKeys?.awsRegion || process.env.MY_AWS_REGION || process.env.AWS_REGION,
+      bucketName: userKeys?.awsS3Bucket || process.env.MY_S3_BUCKET_NAME || process.env.S3_BUCKET_NAME,
     };
   }
 
