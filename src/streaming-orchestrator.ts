@@ -41,6 +41,7 @@ export class StreamingOrchestrator {
     enableStatisticsLogging?: boolean;
     enableStreamingLogging?: boolean;
     onFinish?: (result: any) => void | Promise<void>;
+    messages?: CoreMessage[];
   } & OrchestratorOptions) {
     // Use ProviderManager for centralized model creation
     this.model = ProviderManager.createModel(options.model);
@@ -87,6 +88,17 @@ export class StreamingOrchestrator {
       });
     }
 
+    // Add initial messages if provided
+    if (options.messages && options.messages.length > 0) {
+      const convertedMessages = this.convertCoreToInternal(options.messages.filter(m => m.role !== 'system'));
+      this.messages.push(...convertedMessages);
+      
+      this.log('💬', 'Initial messages added', {
+        messageCount: convertedMessages.length,
+        messageTypes: convertedMessages.map(m => m.role),
+      });
+    }
+
     this.log('🔧', 'StreamingOrchestrator initialized', {
       model: `${this.model.provider}/${this.model.model}`,
       toolsCount: this.tools.size,
@@ -97,6 +109,7 @@ export class StreamingOrchestrator {
       hasOrchestrator: !!this.orchestrator,
       orchestratorId: this.orchestrator?.id,
       orchestratorType: this.orchestrator?.type,
+      initialMessages: this.messages.length,
     });
   }
 
