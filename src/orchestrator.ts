@@ -385,6 +385,7 @@ export class Orchestrator {
       toolCallsUsed: toolCallsUsed.length,
       tokensUsed: result.usage?.totalTokens,
       finishReason: result.finishReason,
+      usage: result.usage,
     });
 
     const executionResult: ExecutionResult = {
@@ -392,6 +393,7 @@ export class Orchestrator {
       result: result.text,
       messages: this.messages,
       iterations: this.iterations,
+      usage: result.usage,
       toolCallsUsed,
     };
 
@@ -494,6 +496,7 @@ export class Orchestrator {
       messagesInHistory: this.messages.length,
       tokensUsed: result.usage?.totalTokens,
       finishReason: result.finishReason,
+      usage: result.usage,
     });
 
     const executionResult: ExecutionResult = {
@@ -501,6 +504,7 @@ export class Orchestrator {
       result: result.text,
       messages: this.messages,
       iterations: this.iterations,
+      usage: result.usage,
       toolCallsUsed,
     };
 
