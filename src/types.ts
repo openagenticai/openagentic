@@ -130,6 +130,11 @@ export const ExecutionResultSchema = z.object({
     averageStepDuration: z.number(),
     averageToolCallDuration: z.number(),
   }).optional(),
+  usage: z.object({
+    totalTokens: z.number(),
+    promptTokens: z.number(),
+    completionTokens: z.number(),
+  }).optional(),
 });
 
 export type ExecutionResult = z.infer<typeof ExecutionResultSchema>;
