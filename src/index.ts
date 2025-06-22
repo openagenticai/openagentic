@@ -2,7 +2,6 @@ import { Orchestrator } from './orchestrator';
 import { StreamingOrchestrator } from './streaming-orchestrator';
 import { ProviderManager } from './providers/manager';
 import type { AIModel, ApiKeyMap, OrchestratorOptions } from './types';
-import type { CoreMessage } from './types';
 
 // =============================================================================
 // CORE EXPORTS - SIMPLIFIED
@@ -46,7 +45,6 @@ export function createAgent(options: {
   enableTimingLogging?: boolean;
   enableStatisticsLogging?: boolean;
   enableStreamingLogging?: boolean;
-  messages?: CoreMessage[];
   /** 
    * API keys for various providers. Can include:
    * - Provider keys: openai, anthropic, google, etc.
@@ -79,7 +77,6 @@ export function createStreamingAgent(options: {
   enableStatisticsLogging?: boolean;
   enableStreamingLogging?: boolean;
   onFinish?: (result: any) => void | Promise<void>;
-  messages?: CoreMessage[];
   /** 
    * API keys for various providers. Can include:
    * - Provider keys: openai, anthropic, google, etc.
