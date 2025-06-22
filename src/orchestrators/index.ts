@@ -2,6 +2,11 @@
 // ORCHESTRATOR EXPORTS
 // =============================================================================
 
+import { codeAssessmentOrchestrator } from './library/code-assessment';
+import { flashHeadlinesOrchestrator } from './library/flash-headlines';
+import { newsSpecialistOrchestrator } from './library/news-specialist';
+import { videoCreatorOrchestrator } from './library/video-creator';
+
 // Registry functions
 export * from './registry';
 
@@ -19,6 +24,26 @@ export { videoCreatorOrchestrator } from './library/video-creator';
 export { codeAssessmentOrchestrator } from './library/code-assessment';
 export { newsSpecialistOrchestrator } from './library/news-specialist';
 export { flashHeadlinesOrchestrator } from './library/flash-headlines';
+
+export interface OrchestratorInfo {
+  id: string;
+  name: string;
+  description: string;
+  type: 'prompt-based' | 'custom-logic' | 'multi-ai';
+  systemPrompt?: string;
+  allowedTools?: string[];
+}
+
+export const orchestratorDescriptions: OrchestratorInfo[] = [videoCreatorOrchestrator, codeAssessmentOrchestrator, newsSpecialistOrchestrator, flashHeadlinesOrchestrator].map(o => {
+  return {
+    id: o.id,
+    name: o.name,
+    description: o.description,
+    type: o.type,
+    systemPrompt: 'systemPrompt' in o ? o.systemPrompt : undefined,
+    allowedTools: 'allowedTools' in o ? o.allowedTools : undefined,
+  }
+});
 
 // Helper function to ensure all built-in orchestrators are loaded
 export function loadBuiltInOrchestrators(): void {
