@@ -241,7 +241,7 @@ const rawGeminiTTSTool = tool({
         wavBuffer,
         fileName,
         'audio/wav',
-        `Gemini TTS ${is_dialogue ? 'dialogue' : 'speech'}: ${text.substring(0, 100)}`
+        `TTS Audio`
       );
 
       // Calculate audio duration estimate (rough approximation)

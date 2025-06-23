@@ -664,7 +664,7 @@ ${style === 'detailed' ? '- Provides comprehensive coverage with supporting deta
         htmlContent,
         htmlFilename,
         'text/html',
-        metadata.description || `Generated report: ${filename}`
+        `Generated report: ${filename}`
       );
 
       console.log(`✅ Result uploaded to S3: ${s3Url}`, {

@@ -148,7 +148,7 @@ const rawOpenAIImageTool = tool({
         imageBuffer,
         fileName,
         'image/png',
-        `OpenAI ${model} generated image: ${prompt.substring(0, 100)}`
+        `OpenAI ${model} generated image`
       );
 
       // Log completion
