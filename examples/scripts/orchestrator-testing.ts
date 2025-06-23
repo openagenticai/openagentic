@@ -67,7 +67,8 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
     skipIfMissingEnv: ['GITHUB_TOKEN', 'ANTHROPIC_API_KEY', 'GOOGLE_API_KEY', 'OPENAI_API_KEY'],
     timeout: 180000, // 3 minutes for code analysis
     orchestratorParams: {
-      additionalPaths: ['src/components', 'src/components/__tests__']
+      additionalPaths: ['src/components', 'src/components/__tests__'],
+      provideDiff: true
     }
   },
   
@@ -269,7 +270,8 @@ class OrchestratorTester {
         success: validation.valid,
         duration,
         result: {
-          agentResult: typeof result.result === 'string' ? result.result.substring(0, 500) + '...' : result.result,
+          // agentResult: typeof result.result === 'string' ? result.result.substring(0, 500) + '...' : result.result,
+          agentResult: result.result,
           toolsUsed: result.toolCallsUsed || [],
           iterations: result.iterations || 0,
           hasExpectedKeys: validation.valid,

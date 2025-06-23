@@ -40,6 +40,10 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
       throw new Error('Please provide repository information in the format: owner/repo or a GitHub URL');
     }
 
+    // Check if diff generation is requested
+    const shouldProvideDiff = context.orchestratorParams?.provideDiff === true;
+    console.log(`🔄 Diff generation: ${shouldProvideDiff ? 'Enabled' : 'Disabled'}`);
+
     try {
       // Step 1: Fetch code from GitHub
       console.log('📥 Step 1: Fetching code from GitHub repository');
@@ -56,14 +60,31 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
       console.log('🧩 Step 3: Synthesizing findings with GPT-4o');
       const synthesis = await this.synthesizeAnalysisFindings(analysisResults, codeData);
 
-      // Step 4: Generate comprehensive report
-      console.log('📄 Step 4: Generating comprehensive report');
-      const report = await this.generateFinalReport(codeData, analysisResults, synthesis);
+      // Step 4 & 5: Generate report and diff in parallel (if requested)
+      console.log('📄 Step 4: Generating comprehensive report and diff (if requested)');
+      
+      // Always generate the report
+      const reportPromise = this.generateFinalReport(codeData, analysisResults, synthesis);
+      
+      // Conditionally generate diff
+      let diffResult: { content: string; metadata: any } | null = null;
+      let finalReport: { content: string; metadata: any };
+      
+      if (shouldProvideDiff) {
+        const [report, diff] = await Promise.all([
+          reportPromise,
+          this.generatePRDiff(codeData, analysisResults, synthesis, context)
+        ]);
+        diffResult = diff;
+        finalReport = report;
+      } else {
+        finalReport = await reportPromise;
+      }
 
-      // Step 5: Upload to S3
-      console.log('📤 Step 5: Uploading report to S3');
+      // Step 6: Upload report to S3
+      console.log('📤 Step 6: Uploading report to S3');
       const reportUrl = await this.uploadResult(
-        report.content,
+        finalReport.content,
         `code-assessment-${repoInfo.owner}-${repoInfo.repo}`,
         {
           title: `Code Assessment: ${repoInfo.owner}/${repoInfo.repo}`,
@@ -75,7 +96,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
 
       console.log('✅ Code Assessment completed successfully');
 
-      return {
+      const result: any = {
         repository: `${repoInfo.owner}/${repoInfo.repo}`,
         reportUrl,
         summary: synthesis.executiveSummary,
@@ -88,9 +109,20 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
           filesAnalyzed: codeData.files.length,
           totalLines: codeData.totalLines,
           analysisModels: ['claude-sonnet-4-20250514', 'gemini-1.5-pro', 'gpt-4o'],
-          reportLength: report.content.length,
+          reportLength: finalReport.content.length,
         },
       };
+
+      // Add diff to result if generated
+      if (diffResult && shouldProvideDiff) {
+        result.prDiff = {
+          content: diffResult.content,
+          metadata: diffResult.metadata,
+        };
+        console.log('📋 PR diff generated and included in result');
+      }
+
+      return result;
 
     } catch (error) {
       console.error('❌ Code Assessment failed:', error);
@@ -843,6 +875,153 @@ This assessment was conducted using OpenAgentic's multi-AI orchestrator with the
     });
 
     return { content: reportContent, metadata };
+  }
+
+  /**
+   * Generate PR diff with suggested improvements using Anthropic
+   */
+  private async generatePRDiff(
+    codeData: { repository: string; files: any[]; totalLines: number },
+    analysisResults: { claude: ParallelAIResult; gemini: ParallelAIResult },
+    synthesis: { executiveSummary: string; detailedFindings: string; recommendations: string },
+    context: OrchestratorContext
+  ): Promise<{ content: string; metadata: any }> {
+    
+    console.log('🔄 Generating PR diff with suggested improvements');
+
+    // Find the Anthropic tool
+    const anthropicTool = context.tools.find(tool => tool.toolId === 'anthropic_chat');
+    if (!anthropicTool || !anthropicTool.execute) {
+      throw new Error('Anthropic tool not available. Please ensure anthropic_chat tool is included.');
+    }
+
+    // Prepare code context for diff generation
+    const codeContext = this.prepareCodeContextForDiff(codeData);
+    
+    // Create diff generation prompt
+    const diffPrompt = `
+You are an expert software engineer tasked with creating a Git diff that implements the code improvements identified in a comprehensive code analysis.
+
+## Repository Context
+**Repository:** ${codeData.repository}
+**Files Analyzed:** ${codeData.files.length}
+**Total Lines:** ${codeData.totalLines}
+
+## Analysis Results Summary
+${synthesis.detailedFindings}
+
+## Current Codebase
+${codeContext}
+
+## Task: Generate Git Diff
+Create a Git diff in standard format that implements the most critical and actionable improvements from the analysis. Focus on:
+
+1. **Security fixes** - Input validation, authentication, sanitization
+2. **Performance optimizations** - React memoization, bundle improvements, query optimization
+3. **Code quality improvements** - DRY refactoring, type safety, error handling
+4. **Quick wins** - Simple fixes with high impact
+
+## Requirements:
+- Use standard Git diff format: \`diff --git a/filename b/filename\`
+- Include file headers with \`index\` lines (you can use placeholder hashes like 8a3809d..44bd5cf)
+- Use \`@@\` for hunk headers with line numbers
+- Prefix removed lines with \`-\`
+- Prefix added lines with \`+\`
+- Include context lines (unchanged lines) around changes
+- Focus on concrete, implementable changes with clear benefits
+- Prioritize changes that address security vulnerabilities and performance issues
+- Limit to 3-5 most impactful changes to keep the diff manageable
+
+## Example Format:
+\`\`\`
+diff --git a/src/components/UserInput.tsx b/src/components/UserInput.tsx
+index 1234567..abcdefg 100644
+--- a/src/components/UserInput.tsx
++++ b/src/components/UserInput.tsx
+@@ -10,8 +10,12 @@ export const UserInput = ({ onSubmit }) => {
+   const handleSubmit = (input: string) => {
+-    // Vulnerable to XSS
+-    database.query("SELECT * FROM users WHERE name = '" + input + "'");
++    // Secure implementation with validation and parameterized queries
++    const sanitizedInput = validator.escape(input);
++    if (!sanitizedInput || sanitizedInput.length > 100) {
++      throw new Error('Invalid input');
++    }
++    database.query("SELECT * FROM users WHERE name = ?", [sanitizedInput]);
+   };
+ 
+   return (
+\`\`\`
+
+Generate a comprehensive but focused Git diff that implements the most valuable improvements identified in the analysis.`;
+
+    try {
+      // Generate diff using Anthropic
+      const diffResponse = await anthropicTool.execute({
+        prompt: diffPrompt,
+        model: 'claude-sonnet-4-20250514',
+        maxTokens: 3000,
+        temperature: 0.2,
+      }, { toolCallId: 'diff-generation', messages: [] });
+
+      if (!diffResponse.success) {
+        throw new Error(`Diff generation failed: ${diffResponse.error || 'Unknown error'}`);
+      }
+
+      const diffContent = diffResponse.text;
+      
+      console.log('✅ PR diff generation completed', {
+        diffLength: diffContent.length,
+        model: 'claude-sonnet-4-20250514',
+        tokensUsed: diffResponse.usage?.totalTokens || 0,
+      });
+
+      const metadata = {
+        repository: codeData.repository,
+        generatedAt: new Date().toISOString(),
+        model: 'claude-sonnet-4-20250514',
+        tokensUsed: diffResponse.usage?.totalTokens || 0,
+        diffLength: diffContent.length,
+        basedOnAnalysis: {
+          claudeSuccess: analysisResults.claude.success,
+          geminiSuccess: analysisResults.gemini.success,
+        },
+      };
+
+      return { content: diffContent, metadata };
+
+    } catch (error) {
+      console.error('❌ PR diff generation failed:', error);
+      throw new Error(`Failed to generate PR diff: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Prepare simplified code context for diff generation
+   */
+  private prepareCodeContextForDiff(codeData: { repository: string; files: any[]; totalLines: number }): string {
+    // Show file structure and key snippets for context
+    const filesSummary = codeData.files.map(file => {
+      // Show first 50 lines of each file for context
+      const lines = file.content.split('\n');
+      const preview = lines.slice(0, 50).join('\n');
+      const hasMore = lines.length > 50;
+      
+      return `
+**File: ${file.path}** (${file.size} bytes, ${lines.length} lines)
+\`\`\`
+${preview}${hasMore ? '\n... (truncated)' : ''}
+\`\`\`
+`;
+    }).join('\n');
+
+    return `
+**File Structure:**
+${codeData.files.map(f => `- ${f.path} (${f.content.split('\n').length} lines)`).join('\n')}
+
+**Key Files Content:**
+${filesSummary}
+`;
   }
 }
 
