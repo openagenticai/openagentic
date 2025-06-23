@@ -1,6 +1,7 @@
 import { MultiAIOrchestrator, type ParallelAIResult, type ToolChainResult, type AnalysisAggregation } from '../multi-ai';
 import type { OrchestratorContext, CoreMessage, OpenAgenticTool } from '../../types';
 import { registerOrchestrator } from '../registry';
+import { uploadFileToS3, S3Directory, generateFileName } from '../../utils/s3';
 
 const FILE_LIMIT = 50;
 
@@ -13,6 +14,7 @@ const FILE_LIMIT = 50;
  * 3. GPT-4o synthesizes findings into executive summary
  * 4. Generate comprehensive markdown report
  * 5. Upload to S3 as professional HTML report
+ * 6. Generate PR diff and upload to S3 as text file (if requested)
  */
 export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
   
@@ -67,7 +69,7 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
       const reportPromise = this.generateFinalReport(codeData, analysisResults, synthesis);
       
       // Conditionally generate diff
-      let diffResult: { content: string; metadata: any } | null = null;
+      let diffResult: { content: string; metadata: any; url: string } | null = null;
       let finalReport: { content: string; metadata: any };
       
       if (shouldProvideDiff) {
@@ -116,10 +118,11 @@ export class CodeAssessmentOrchestrator extends MultiAIOrchestrator {
       // Add diff to result if generated
       if (diffResult && shouldProvideDiff) {
         result.prDiff = {
-          content: diffResult.content,
+          url: diffResult.url,
           metadata: diffResult.metadata,
+          size: diffResult.content.length,
         };
-        console.log('📋 PR diff generated and included in result');
+        console.log('📋 PR diff generated, uploaded to S3, and URL included in result');
       }
 
       return result;
@@ -580,13 +583,13 @@ Focus on implementations that provide measurable performance improvements and co
   }
 
   /**
-   * Prepare code context for analysis
+   * Prepare code context for analysis with less aggressive truncation
    */
   private prepareCodeContext(codeData: { repository: string; files: any[]; totalLines: number }): string {
     const filesSummary = codeData.files.map(file => `
 **File: ${file.path}** (${file.size} bytes)
 \`\`\`
-${file.content.substring(0, 2000)}${file.content.length > 2000 ? '\n... (truncated)' : ''}
+${file.content.substring(0, 5000)}${file.content.length > 5000 ? '\n... (truncated for analysis)' : ''}
 \`\`\`
 `).join('\n');
 
@@ -878,14 +881,14 @@ This assessment was conducted using OpenAgentic's multi-AI orchestrator with the
   }
 
   /**
-   * Generate PR diff with suggested improvements using Anthropic
+   * Generate PR diff with suggested improvements using Anthropic with increased token limits
    */
   private async generatePRDiff(
     codeData: { repository: string; files: any[]; totalLines: number },
     analysisResults: { claude: ParallelAIResult; gemini: ParallelAIResult },
     synthesis: { executiveSummary: string; detailedFindings: string; recommendations: string },
     context: OrchestratorContext
-  ): Promise<{ content: string; metadata: any }> {
+  ): Promise<{ content: string; metadata: any; url: string }> {
     
     console.log('🔄 Generating PR diff with suggested improvements');
 
@@ -895,12 +898,12 @@ This assessment was conducted using OpenAgentic's multi-AI orchestrator with the
       throw new Error('Anthropic tool not available. Please ensure anthropic_chat tool is included.');
     }
 
-    // Prepare code context for diff generation
-    const codeContext = this.prepareCodeContextForDiff(codeData);
+    // Prepare enhanced code context for diff generation with more content
+    const codeContext = this.prepareEnhancedCodeContextForDiff(codeData);
     
-    // Create diff generation prompt
+    // Create diff generation prompt with focus on comprehensive changes
     const diffPrompt = `
-You are an expert software engineer tasked with creating a Git diff that implements the code improvements identified in a comprehensive code analysis.
+You are an expert software engineer tasked with creating a comprehensive Git diff that implements the code improvements identified in a detailed code analysis.
 
 ## Repository Context
 **Repository:** ${codeData.repository}
@@ -913,24 +916,26 @@ ${synthesis.detailedFindings}
 ## Current Codebase
 ${codeContext}
 
-## Task: Generate Git Diff
-Create a Git diff in standard format that implements the most critical and actionable improvements from the analysis. Focus on:
+## Task: Generate Comprehensive Git Diff
+Create a detailed Git diff in standard format that implements the most critical and actionable improvements from the analysis. Focus on:
 
 1. **Security fixes** - Input validation, authentication, sanitization
-2. **Performance optimizations** - React memoization, bundle improvements, query optimization
+2. **Performance optimizations** - React memoization, bundle improvements, query optimization  
 3. **Code quality improvements** - DRY refactoring, type safety, error handling
-4. **Quick wins** - Simple fixes with high impact
+4. **Architecture improvements** - Better patterns, separation of concerns
+5. **Testing enhancements** - Add missing tests, improve coverage
 
 ## Requirements:
 - Use standard Git diff format: \`diff --git a/filename b/filename\`
-- Include file headers with \`index\` lines (you can use placeholder hashes like 8a3809d..44bd5cf)
+- Include file headers with \`index\` lines (use placeholder hashes like 8a3809d..44bd5cf)
 - Use \`@@\` for hunk headers with line numbers
 - Prefix removed lines with \`-\`
 - Prefix added lines with \`+\`
-- Include context lines (unchanged lines) around changes
+- Include sufficient context lines (unchanged lines) around changes
 - Focus on concrete, implementable changes with clear benefits
-- Prioritize changes that address security vulnerabilities and performance issues
-- Limit to 3-5 most impactful changes to keep the diff manageable
+- **Generate as many valuable improvements as possible** - don't limit to just 3-5 changes
+- Include detailed comments explaining the improvements
+- Ensure all changes are syntactically correct and follow best practices
 
 ## Example Format:
 \`\`\`
@@ -953,14 +958,14 @@ index 1234567..abcdefg 100644
    return (
 \`\`\`
 
-Generate a comprehensive but focused Git diff that implements the most valuable improvements identified in the analysis.`;
+Generate a comprehensive Git diff that addresses as many security, performance, and quality issues as possible. Include explanatory comments for each improvement.`;
 
     try {
-      // Generate diff using Anthropic
+      // Generate diff using Anthropic with increased token limits
       const diffResponse = await anthropicTool.execute({
         prompt: diffPrompt,
         model: 'claude-sonnet-4-20250514',
-        maxTokens: 3000,
+        maxTokens: 10000, // Increased from 3000 to 8000 for more comprehensive diffs
         temperature: 0.2,
       }, { toolCallId: 'diff-generation', messages: [] });
 
@@ -970,10 +975,14 @@ Generate a comprehensive but focused Git diff that implements the most valuable 
 
       const diffContent = diffResponse.text;
       
-      console.log('✅ PR diff generation completed', {
+      // Upload diff to S3 as a text file
+      const diffUrl = await this.uploadDiffToS3(diffContent, codeData.repository);
+      
+      console.log('✅ PR diff generation and upload completed', {
         diffLength: diffContent.length,
         model: 'claude-sonnet-4-20250514',
         tokensUsed: diffResponse.usage?.totalTokens || 0,
+        s3Url: diffUrl,
       });
 
       const metadata = {
@@ -988,7 +997,7 @@ Generate a comprehensive but focused Git diff that implements the most valuable 
         },
       };
 
-      return { content: diffContent, metadata };
+      return { content: diffContent, metadata, url: diffUrl };
 
     } catch (error) {
       console.error('❌ PR diff generation failed:', error);
@@ -997,20 +1006,58 @@ Generate a comprehensive but focused Git diff that implements the most valuable 
   }
 
   /**
-   * Prepare simplified code context for diff generation
+   * Upload diff content to S3 as a text file
    */
-  private prepareCodeContextForDiff(codeData: { repository: string; files: any[]; totalLines: number }): string {
-    // Show file structure and key snippets for context
+  private async uploadDiffToS3(diffContent: string, repository: string): Promise<string> {
+    console.log('📤 Uploading diff to S3 as text file');
+
+    try {
+      // Generate filename for the diff
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const repoName = repository.replace('/', '-');
+      const diffFileName = `code-assessment-diff-${repoName}-${timestamp}.txt`;
+
+      // Convert diff content to buffer
+      const diffBuffer = Buffer.from(diffContent, 'utf-8');
+
+      // Upload to S3 in documents directory
+      const diffUrl = await uploadFileToS3(
+        diffBuffer,
+        diffFileName,
+        'text/plain',
+        S3Directory.DOCUMENTS,
+        `PR diff for code assessment of ${repository}`
+      );
+
+      console.log('✅ Diff uploaded to S3', {
+        filename: diffFileName,
+        size: diffBuffer.length,
+        url: diffUrl,
+      });
+
+      return diffUrl;
+
+    } catch (error) {
+      console.error('❌ Failed to upload diff to S3:', error);
+      throw new Error(`Failed to upload diff to S3: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  /**
+   * Prepare enhanced code context for diff generation with more comprehensive content
+   */
+  private prepareEnhancedCodeContextForDiff(codeData: { repository: string; files: any[]; totalLines: number }): string {
+    // Show file structure and more comprehensive snippets for context
     const filesSummary = codeData.files.map(file => {
-      // Show first 50 lines of each file for context
+      // Show more lines of each file for better context (increased from 50 to 150)
       const lines = file.content.split('\n');
-      const preview = lines.slice(0, 50).join('\n');
-      const hasMore = lines.length > 50;
+      const preview = lines.slice(0, 150).join('\n');
+      const hasMore = lines.length > 150;
       
       return `
 **File: ${file.path}** (${file.size} bytes, ${lines.length} lines)
 \`\`\`
-${preview}${hasMore ? '\n... (truncated)' : ''}
+${preview}${hasMore ? '\n... (truncated - showing first 150 lines)' : ''}
 \`\`\`
 `;
     }).join('\n');
