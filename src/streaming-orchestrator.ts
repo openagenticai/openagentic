@@ -421,7 +421,7 @@ export class StreamingOrchestrator {
       maxSteps: this.maxIterations,
       onStepFinish: this.createStepFinishCallback(),
       onChunk: this.createChunkCallback(),
-      onFinish: this.createFinishCallback(),
+      onFinish: this.onFinishCallback,
       onError: this.createErrorCallback(),
     };
 
@@ -451,10 +451,16 @@ export class StreamingOrchestrator {
       prompt: this.sanitizeForLogging(input),
       systemMessage: systemMessage ? 'present' : 'none',
       toolsEnabled: this.tools.size > 0,
+      hasUserOnFinish: !!this.onFinishCallback,
     });
 
     try {
-      return streamText(streamConfig);
+      const result = await streamText(streamConfig);
+      
+      // Handle internal logging after stream completes
+      this.handleStreamCompletion();
+      
+      return result;
     } catch (error) {
       this.log('❌', 'StreamText execution failed', {
         error: error instanceof Error ? error.message : JSON.stringify(error),
@@ -481,6 +487,7 @@ export class StreamingOrchestrator {
       messageTypes: inputMessages.map(m => m.role),
       hasSystemMessage: inputMessages.some(m => m.role === 'system'),
       lastMessageRole: inputMessages[inputMessages.length - 1]?.role,
+      hasUserOnFinish: !!this.onFinishCallback,
     });
 
     const streamConfig: any = {
@@ -489,7 +496,7 @@ export class StreamingOrchestrator {
       maxSteps: this.maxIterations,
       onStepFinish: this.createStepFinishCallback(),
       onChunk: this.createChunkCallback(),
-      onFinish: this.createFinishCallback(),
+      onFinish: this.onFinishCallback,
       onError: this.createErrorCallback(),
     };
 
@@ -529,7 +536,12 @@ export class StreamingOrchestrator {
     ];
 
     try {
-      return streamText(streamConfig);
+      const result = await streamText(streamConfig);
+      
+      // Handle internal logging after stream completes
+      this.handleStreamCompletion();
+      
+      return result;
     } catch (error) {
       this.log('❌', 'StreamText execution failed', {
         error: error instanceof Error ? error.message : JSON.stringify(error),
@@ -695,48 +707,6 @@ export class StreamingOrchestrator {
           chunkType: chunk.type || 'unknown',
         });
       }
-    };
-  }
-
-  private createFinishCallback() {
-    return async (result: any) => {
-      // First, call the user-provided onFinish callback if it exists
-      if (this.onFinishCallback) {
-        try {
-          this.log('🎯', 'Calling user onFinish callback', {
-            hasResult: !!result,
-            resultKeys: result ? Object.keys(result) : [],
-          });
-
-          // Handle both sync and async callbacks
-          const callbackResult = this.onFinishCallback(result);
-          if (callbackResult && typeof callbackResult.then === 'function') {
-            await callbackResult;
-          }
-
-          this.log('✅', 'User onFinish callback completed successfully');
-        } catch (error) {
-          // Log callback error but don't break the internal flow
-          this.log('❌', 'User onFinish callback failed', {
-            error: error instanceof Error ? error.message : JSON.stringify(error),
-            stackTrace: error instanceof Error ? error.stack : undefined,
-          });
-        }
-      }
-
-      // Then execute the existing internal logging logic
-      const executionStats = this.calculateExecutionStats();
-      
-      this.log('🏁', 'Streaming completed', {
-        totalDuration: executionStats.totalDuration,
-        stepsExecuted: executionStats.stepsExecuted,
-        toolCallsExecuted: executionStats.toolCallsExecuted,
-        chunksProcessed: this.chunksProcessed,
-        totalTextLength: this.totalTextLength,
-        averageChunkSize: this.chunksProcessed > 0 ? Math.round(this.totalTextLength / this.chunksProcessed) : 0,
-        finishReason: result.finishReason,
-        tokensUsed: result.usage?.totalTokens,
-      });
     };
   }
 
@@ -942,5 +912,20 @@ export class StreamingOrchestrator {
       averageStepDuration: Math.round(averageStepDuration),
       averageToolCallDuration: Math.round(averageToolCallDuration),
     };
+  }
+
+  private handleStreamCompletion(): void {
+    const executionStats = this.calculateExecutionStats();
+    
+    this.log('🏁', 'Streaming completed', {
+      totalDuration: executionStats.totalDuration,
+      stepsExecuted: executionStats.stepsExecuted,
+      toolCallsExecuted: executionStats.toolCallsExecuted,
+      chunksProcessed: this.chunksProcessed,
+      totalTextLength: this.totalTextLength,
+      averageChunkSize: this.chunksProcessed > 0 ? Math.round(this.totalTextLength / this.chunksProcessed) : 0,
+      finishReason: this.onFinishCallback ? 'user_callback' : 'internal_logging',
+      tokensUsed: this.onFinishCallback ? undefined : executionStats.totalDuration,
+    });
   }
 }
