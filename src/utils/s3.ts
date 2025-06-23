@@ -445,7 +445,7 @@ export async function uploadImageToS3(
       fileName,
       finalContentType,
       S3Directory.IMAGES,
-      description || 'Image upload'
+      'Image upload'
     );
 
   } catch (error) {
@@ -498,7 +498,7 @@ export async function uploadAudioToS3(
       fileName,
       finalContentType,
       S3Directory.AUDIO,
-      description || 'Audio upload'
+      'Audio upload'
     );
 
   } catch (error) {
@@ -551,7 +551,7 @@ export async function uploadVideoToS3(
       fileName,
       finalContentType,
       S3Directory.VIDEOS,
-      description || 'Video upload'
+      'Video upload'
     );
 
   } catch (error) {
@@ -605,7 +605,7 @@ export async function uploadHtmlToS3(
       finalFileName,
       contentType,
       S3Directory.WEBSITES,
-      description || 'HTML website upload'
+      'HTML website upload'
     );
 
   } catch (error) {

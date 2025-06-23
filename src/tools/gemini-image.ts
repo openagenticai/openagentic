@@ -168,7 +168,7 @@ const rawGeminiImageTool = tool({
         imageBuffer,
         fileName,
         imageFile.mimeType || 'image/jpeg',
-        `Gemini ${model} generated image: ${prompt.substring(0, 100)}`
+        `Gemini ${model} generated image:`
       );
 
       // Log completion

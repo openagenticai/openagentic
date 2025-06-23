@@ -194,7 +194,7 @@ const rawVideoGenerationTool = tool({
           videoBuffer,
           fileName,
           'video/mp4',
-          `Gemini Veo 2.0 generated video: ${prompt.substring(0, 100)}`
+          `Gemini Veo 2.0 generated video`
         );
 
         videoUrls.push(s3Url);

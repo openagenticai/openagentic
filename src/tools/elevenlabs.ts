@@ -302,7 +302,7 @@ const rawElevenLabsTool = tool({
         audioBuffer,
         fileName,
         'audio/mpeg',
-        `ElevenLabs ${mode} - ${description}`
+        `ElevenLabs TTS ${mode}`
       );
 
       // Log completion
