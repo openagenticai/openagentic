@@ -43,8 +43,26 @@ OpenAgentic provides a comprehensive framework for creating AI-powered agents th
 
 ### Installation
 
+OpenAgentic works with all major Node.js package managers:
+
+**npm:**
 ```bash
 npm install openagentic
+```
+
+**pnpm:**
+```bash
+pnpm add openagentic
+```
+
+**yarn:**
+```bash
+yarn add openagentic
+```
+
+**bun:**
+```bash
+bun add openagentic
 ```
 
 ### Basic Usage
