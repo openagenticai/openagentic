@@ -32,9 +32,9 @@ const rawGitHubTool = tool({
     ref
   }) => {
     // Validate API key
-    const apiKey = process.env.GITHUB_TOKEN || process.env.GITHUB_API_KEY;
+    const apiKey = process.env.MY_GITHUB_TOKEN || process.env.GITHUB_TOKEN || process.env.GITHUB_API_KEY;
     if (!apiKey) {
-      throw new Error('GITHUB_TOKEN or GITHUB_API_KEY environment variable is required');
+      throw new Error('MY_GITHUB_TOKEN or GITHUB_TOKEN or GITHUB_API_KEY environment variable is required');
     }
 
     // Validate inputs
