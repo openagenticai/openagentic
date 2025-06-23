@@ -64,7 +64,7 @@ const rawGeminiTool = tool({
   
   execute: async ({ 
     prompt, 
-    model = 'gemini-2.5-pro',
+    model = 'gemini-1.5-pro',
     maxTokens = 1000,
     temperature = 0.7,
     topP,
