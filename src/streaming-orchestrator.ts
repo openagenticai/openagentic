@@ -903,19 +903,4 @@ export class StreamingOrchestrator {
       averageToolCallDuration: Math.round(averageToolCallDuration),
     };
   }
-
-  private handleStreamCompletion(): void {
-    const executionStats = this.calculateExecutionStats();
-    
-    this.log('🏁', 'Streaming completed', {
-      totalDuration: executionStats.totalDuration,
-      stepsExecuted: executionStats.stepsExecuted,
-      toolCallsExecuted: executionStats.toolCallsExecuted,
-      chunksProcessed: this.chunksProcessed,
-      totalTextLength: this.totalTextLength,
-      averageChunkSize: this.chunksProcessed > 0 ? Math.round(this.totalTextLength / this.chunksProcessed) : 0,
-      finishReason: this.onFinishCallback ? 'user_callback' : 'internal_logging',
-      tokensUsed: this.onFinishCallback ? undefined : executionStats.totalDuration,
-    });
-  }
 }
