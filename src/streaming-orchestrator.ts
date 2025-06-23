@@ -455,12 +455,7 @@ export class StreamingOrchestrator {
     });
 
     try {
-      const result = await streamText(streamConfig);
-      
-      // Handle internal logging after stream completes
-      this.handleStreamCompletion();
-      
-      return result;
+      return streamText(streamConfig);
     } catch (error) {
       this.log('❌', 'StreamText execution failed', {
         error: error instanceof Error ? error.message : JSON.stringify(error),
@@ -536,12 +531,7 @@ export class StreamingOrchestrator {
     ];
 
     try {
-      const result = await streamText(streamConfig);
-      
-      // Handle internal logging after stream completes
-      this.handleStreamCompletion();
-      
-      return result;
+      return streamText(streamConfig);
     } catch (error) {
       this.log('❌', 'StreamText execution failed', {
         error: error instanceof Error ? error.message : JSON.stringify(error),
