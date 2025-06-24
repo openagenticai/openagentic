@@ -71,7 +71,7 @@ const TEST_CASES: TestCase[] = [
     description: 'Google Gemini multimodal understanding',
     parameters: {
       prompt: 'What is AI?',
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash-lite-preview-06-17',
       temperature: 0.7,
       maxTokens: 1000
     },

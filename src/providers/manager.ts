@@ -50,17 +50,27 @@ export const providerConfigs = {
         cost: { input: 0.003, output: 0.015 },
         description: 'Balanced Claude 4 model for most use cases'
       },
+      'claude-3-7-sonnet-latest': { 
+        contextWindow: 200000, 
+        cost: { input: 0.003, output: 0.015 },
+        description: 'Latest Claude 3.7 Sonnet model'
+      },
+      'claude-3-5-sonnet-latest': { 
+        contextWindow: 200000, 
+        cost: { input: 0.003, output: 0.015 },
+        description: 'Latest Claude 3.5 Sonnet model'
+      },
     }
   },
   google: {
     baseURL: 'https://generativelanguage.googleapis.com/v1beta',
     models: {
-      'gemini-2.5-pro-preview-06-05': { 
+      'gemini-2.5-pro': { 
         contextWindow: 2000000, 
         cost: { input: 0.001, output: 0.002 },
         description: 'Latest Gemini 2.5 Pro preview model'
       },
-      'gemini-2.5-flash-preview-05-20': { 
+      'gemini-2.5-flash': { 
         contextWindow: 1000000, 
         cost: { input: 0.0005, output: 0.001 },
         description: 'Fast Gemini 2.5 Flash preview model'
@@ -75,17 +85,22 @@ export const providerConfigs = {
         cost: { input: 0.000075, output: 0.0003 },
         description: 'Fast and efficient Gemini 1.5 model'
       },
+      'gemini-2.5-flash-lite-preview-06-17': { 
+        contextWindow: 1000000, 
+        cost: { input: 0.000075, output: 0.0003 },
+        description: 'Fast and efficient Gemini 2.5 Flash Lite preview model'
+      },
     }
   },
   'google-vertex': {
     baseURL: 'https://us-central1-aiplatform.googleapis.com',
     models: {
-      'gemini-2.5-pro-preview-06-05': { 
+      'gemini-2.5-pro': { 
         contextWindow: 2000000, 
         cost: { input: 0.001, output: 0.002 },
         description: 'Latest Gemini 2.5 Pro preview model via Vertex AI'
       },
-      'gemini-2.5-flash-preview-05-20': { 
+      'gemini-2.5-flash': { 
         contextWindow: 1000000, 
         cost: { input: 0.0005, output: 0.001 },
         description: 'Fast Gemini 2.5 Flash preview model via Vertex AI'
