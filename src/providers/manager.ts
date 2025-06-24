@@ -60,11 +60,6 @@ export const providerConfigs = {
         cost: { input: 0.003, output: 0.015 },
         description: 'Latest Claude 3.5 Sonnet model'
       },
-      'claude-3-5-haiku-latest': { 
-        contextWindow: 200000, 
-        cost: { input: 0.003, output: 0.015 },
-        description: 'Latest Claude 3.5 Haiku model'
-      },
     }
   },
   google: {
