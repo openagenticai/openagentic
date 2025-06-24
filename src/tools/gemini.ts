@@ -9,9 +9,10 @@ import { toOpenAgenticTool } from './utils';
 const SUPPORTED_MODELS = [
   'gemini-1.5-pro',
   'gemini-1.5-flash',
+  // Note: new Gemini models are not yet supported by SDK (seeing empty responses)
   // 'gemini-2.5-pro',
-  // 'gemini-2.5-flash', 
-  // 'gemini-2.5-flash-lite-preview-06-17',
+  // 'gemini-2.5-flash',
+  'gemini-2.5-flash-lite-preview-06-17'
 ] as const;
 
 const rawGeminiTool = tool({
@@ -24,9 +25,8 @@ const rawGeminiTool = tool({
     
     model: z.string()
       .optional()
-      .default('gemini-1.5-pro')
-      .describe('Gemini model to use (gemini-1.5-pro, gemini-1.5-flash)'),
-      // .describe('Gemini model to use (gemini-1.5-pro, gemini-1.5-flash, gemini-2.5-pro, gemini-2.5-flash, gemini-2.5-flash-lite-preview-06-17)'),
+      .default('gemini-2.5-flash-lite-preview-06-17')
+      .describe('Gemini model to use (gemini-1.5-pro, gemini-1.5-flash, gemini-2.5-flash-lite-preview-06-17)'),
     
     maxTokens: z.number()
       .int()
@@ -64,7 +64,7 @@ const rawGeminiTool = tool({
   
   execute: async ({ 
     prompt, 
-    model = 'gemini-1.5-pro',
+    model = 'gemini-2.5-flash-lite-preview-06-17',
     maxTokens = 1000,
     temperature = 0.7,
     topP,
