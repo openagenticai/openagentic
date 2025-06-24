@@ -2,7 +2,7 @@ import { tool, type GeneratedFile } from 'ai';
 import { z } from 'zod';
 import { generateText } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import type { ToolDetails } from '../types';
+import type { ToolDetails, CoreMessage } from '../types';
 import { toOpenAgenticTool } from './utils';
 import { uploadImageToS3, generateImageFileName } from '../utils/s3';
 
@@ -32,12 +32,28 @@ const IMAGE_STYLES = [
 ] as const;
 
 const rawGeminiImageTool = tool({
-  description: 'Generate high-quality images using Google Gemini models with automatic S3 upload and storage',
+  description: 'Generate high-quality images using Google Gemini models with automatic S3 upload and storage. Supports both text prompts and messages with images for reference-based generation.',
   parameters: z.object({
+    // Support either a string prompt OR message array
     prompt: z.string()
       .min(1)
       .max(4000)
-      .describe('The text prompt to generate an image from (required, max 4000 characters)'),
+      .optional()
+      .describe('The text prompt to generate an image from (max 4000 characters). Use this OR messages, not both.'),
+    
+    messages: z.array(z.object({
+      role: z.enum(['system', 'user', 'assistant', 'tool']),
+      content: z.union([
+        z.string(),
+        z.array(z.object({
+          type: z.string(),
+          text: z.string().optional(),
+          image: z.union([z.string(), z.any()]).optional(),
+          mimeType: z.string().optional(),
+        }))
+      ]),
+    })).optional()
+      .describe('Array of messages that may contain text and images. Use this OR prompt, not both.'),
     
     model: z.string()
       .optional()
@@ -61,6 +77,7 @@ const rawGeminiImageTool = tool({
   
   execute: async ({ 
     prompt,
+    messages,
     model = 'gemini-2.0-flash-preview-image-generation',
     style,
     aspectRatio = '1:1',
@@ -72,13 +89,30 @@ const rawGeminiImageTool = tool({
       throw new Error('GOOGLE_API_KEY environment variable is required');
     }
 
-    // Validate prompt
-    if (!prompt || prompt.trim().length === 0) {
-      throw new Error('Prompt cannot be empty');
+    // Validate input - must have either prompt or messages, but not both
+    if (!prompt && !messages) {
+      throw new Error('Either prompt (string) or messages (array) must be provided');
     }
 
-    if (prompt.length > 4000) {
-      throw new Error('Prompt exceeds maximum length of 4000 characters');
+    if (prompt && messages) {
+      throw new Error('Cannot provide both prompt and messages. Use either prompt (for text-only) or messages (for text + images)');
+    }
+
+    // Basic validation for prompt
+    if (prompt) {
+      if (prompt.trim().length === 0) {
+        throw new Error('Prompt cannot be empty');
+      }
+      if (prompt.length > 4000) {
+        throw new Error('Prompt exceeds maximum length of 4000 characters');
+      }
+    }
+
+    // Basic validation for messages
+    if (messages) {
+      if (messages.length === 0) {
+        throw new Error('Messages array cannot be empty');
+      }
     }
 
     // Validate model
@@ -86,11 +120,17 @@ const rawGeminiImageTool = tool({
       throw new Error(`Model "${model}" not in supported list. Supported models: ${SUPPORTED_MODELS.join(', ')}`);
     }
 
+    // Count images in messages for logging
+    const imageCount = messages ? countImagesInMessages(messages as CoreMessage[]) : 0;
+    const promptText = prompt || extractTextFromMessages(messages as CoreMessage[]);
+
     // Start logging
     console.log('🎨 Gemini Image Generation Tool - Generation started:', {
       timestamp: new Date().toISOString(),
-      prompt: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
-      promptLength: prompt.length,
+      inputType: prompt ? 'string_prompt' : 'message_array',
+      prompt: promptText.substring(0, 100) + (promptText.length > 100 ? '...' : ''),
+      promptLength: promptText.length,
+      referenceImagesCount: imageCount,
       model,
       style,
       aspectRatio,
@@ -103,30 +143,38 @@ const rawGeminiImageTool = tool({
         apiKey,
       });
 
-      // Enhance prompt with style and aspect ratio guidance
-      let enhancedPrompt = prompt.trim();
-      if (style) {
-        enhancedPrompt = `Create a ${style} style image: ${enhancedPrompt}`;
-      }
-      if (aspectRatio !== '1:1') {
-        enhancedPrompt += ` (aspect ratio: ${aspectRatio})`;
-      }
-      if (quality === 'high') {
-        enhancedPrompt += ' (high quality, detailed)';
-      }
-
-      console.log('🤖 Calling Gemini with enhanced prompt for image generation...');
-
-      // Generate image using Gemini with image output modality
-      const result = await generateText({
+      // Build generation configuration
+      let generateConfig: any = {
         model: google(model),
-        prompt: enhancedPrompt,
         providerOptions: {
           google: { 
             responseModalities: ['TEXT', 'IMAGE'],
           },
         },
-      });
+      };
+
+      if (prompt) {
+        // Simple prompt case - enhance with style and quality guidance
+        let enhancedPrompt = prompt.trim();
+        if (style) {
+          enhancedPrompt = `Create a ${style} style image: ${enhancedPrompt}`;
+        }
+        if (aspectRatio !== '1:1') {
+          enhancedPrompt += ` (aspect ratio: ${aspectRatio})`;
+        }
+        if (quality === 'high') {
+          enhancedPrompt += ' (high quality, detailed)';
+        }
+
+        generateConfig.prompt = enhancedPrompt;
+      } else {
+        generateConfig.messages = messages;
+      }
+
+      console.log('🤖 Calling Gemini for image generation...');
+
+      // Generate image using Gemini with image output modality
+      const result = await generateText(generateConfig);
 
       // Check if we have generated files
       if (!result.files || result.files.length === 0) {
@@ -160,7 +208,7 @@ const rawGeminiImageTool = tool({
                        'jpg'; // Default fallback
 
       // Generate filename for S3 upload
-      const fileName = generateImageFileName(prompt, extension);
+      const fileName = generateImageFileName(promptText, extension);
 
       // Upload to S3
       console.log('📤 Uploading generated image to S3...');
@@ -182,6 +230,8 @@ const rawGeminiImageTool = tool({
         imageSize: imageBuffer.length,
         mimeType: imageFile.mimeType,
         originalName: imageFile.name,
+        inputType: prompt ? 'string_prompt' : 'message_array',
+        referenceImagesUsed: imageCount,
       });
 
       // Return structured result
@@ -193,16 +243,18 @@ const rawGeminiImageTool = tool({
         style,
         aspectRatio,
         quality,
-        originalPrompt: prompt.trim(),
-        enhancedPrompt,
+        originalPrompt: promptText,
+        inputType: prompt ? 'string_prompt' : 'message_array',
+        referenceImagesCount: imageCount,
         generatedText: result.text || null,
         metadata: {
           generatedAt: new Date().toISOString(),
-          promptLength: prompt.length,
+          promptLength: promptText.length,
           fileSize: imageBuffer.length,
           mimeType: imageFile.mimeType,
           originalFileName: imageFile.name,
           uploadedToS3: true,
+          referenceImagesUsed: imageCount,
         },
       };
 
@@ -212,7 +264,9 @@ const rawGeminiImageTool = tool({
         style,
         aspectRatio,
         quality,
-        promptLength: prompt.length,
+        promptLength: promptText.length,
+        inputType: prompt ? 'string_prompt' : 'message_array',
+        referenceImagesCount: imageCount,
         error: error instanceof Error ? error.message : String(error),
       });
 
@@ -291,6 +345,44 @@ const rawGeminiImageTool = tool({
   },
 });
 
+// Helper function to count images in messages
+function countImagesInMessages(messages: CoreMessage[]): number {
+  let imageCount = 0;
+  
+  for (const message of messages) {
+    if (Array.isArray(message.content)) {
+      for (const part of message.content) {
+        if (part.type === 'image') {
+          imageCount++;
+        }
+      }
+    }
+  }
+  
+  return imageCount;
+}
+
+// Helper function to extract text from messages for logging
+function extractTextFromMessages(messages: CoreMessage[]): string {
+  const textParts: string[] = [];
+
+  for (const message of messages) {
+    if (typeof message.content === 'string') {
+      if (message.content.trim()) {
+        textParts.push(message.content.trim());
+      }
+    } else if (Array.isArray(message.content)) {
+      for (const part of message.content) {
+        if (part.type === 'text' && part.text?.trim()) {
+          textParts.push(part.text.trim());
+        }
+      }
+    }
+  }
+
+  return textParts.join(' ');
+}
+
 const toolDetails: ToolDetails = {
   toolId: 'gemini_image_generator',
   name: 'Gemini Image Generator',
@@ -307,6 +399,8 @@ const toolDetails: ToolDetails = {
     'Create watercolor and traditional art style images',
     'Generate images with specific aspect ratios for different use cases',
     'Create high-quality detailed images for professional use',
+    'Generate images using reference images for style and composition guidance',
+    'Create variations and modifications of existing images',
   ],
   logo: 'https://www.openagentic.org/tools/gemini.svg',
 };

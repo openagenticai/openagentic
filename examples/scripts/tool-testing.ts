@@ -178,6 +178,10 @@ const TEST_CASES: TestCase[] = [
     description: 'Google Gemini image generation with S3 upload',
     parameters: {
       prompt: 'A serene mountain landscape with a crystal clear lake reflecting the sky',
+      // messages: [
+      //   { role: 'user', content: 'Add a hat to the person in the image' },
+      //   { role: 'user', content: [{ type: 'image', image: 'ADD_URL_HERE' }] }
+      // ],
       model: 'gemini-2.0-flash-preview-image-generation',
       style: 'photorealistic',
       aspectRatio: '1:1',
