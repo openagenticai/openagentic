@@ -25,6 +25,9 @@ export * from './orchestrators';
 export * from './types';
 export type { ApiKeyMap } from './types'; // Explicit export for better IDE support
 
+// Re-export LangChain utilities
+export { convertLangchainTool } from './tools/utils';
+
 // =============================================================================
 // AGENT CREATION FUNCTIONS
 // =============================================================================

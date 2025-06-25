@@ -38,12 +38,10 @@
     "clean": "rimraf dist",
     "example:basic": "tsx examples/scripts/basic-agent.ts",
     "example:streaming": "tsx examples/scripts/streaming-agent.ts",
-    "example:s3": "tsx examples/scripts/s3-upload-example.ts",
-    "example:openai": "tsx examples/scripts/openai-tool-example.ts",
-    "example:tools": "tsx examples/scripts/tool-creation.ts",
     "example:messages": "tsx examples/scripts/message-array-example.ts",
     "example:logging": "tsx examples/scripts/logging-example.ts",
-    "example:streaming-callback": "tsx examples/scripts/streaming-agent-with-callback.ts"
+    "example:streaming-callback": "tsx examples/scripts/streaming-agent-with-callback.ts",
+    "example:langchain": "tsx examples/scripts/langchain-example.ts"
   },
   "keywords": [
     "ai",
