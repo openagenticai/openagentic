@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { openaiTool } from '../src/tools/openai';
+import { openaiTool } from '../../src/tools/openai';
 
 describe('OpenAI Text Generation Tool', () => {
   beforeEach(() => {
@@ -49,8 +49,14 @@ describe('OpenAI Text Generation Tool', () => {
       delete process.env.OPENAI_API_KEY;
 
       try {
+        if(!openaiTool.execute) {
+          throw new Error('OpenAI tool is not defined');
+        }
         await openaiTool.execute({
           prompt: 'Test prompt',
+        }, {
+          toolCallId: 'test-tool-call-id',
+          messages: [],
         });
         fail('Should have thrown an error for missing API key');
       } catch (error) {
@@ -63,8 +69,14 @@ describe('OpenAI Text Generation Tool', () => {
 
     it('should validate empty prompt', async () => {
       try {
+        if(!openaiTool.execute) {
+          throw new Error('OpenAI tool is not defined');
+        }
         await openaiTool.execute({
           prompt: '',
+        }, {
+          toolCallId: 'test-tool-call-id',
+          messages: [],
         });
         fail('Should have thrown an error for empty prompt');
       } catch (error) {
@@ -77,8 +89,14 @@ describe('OpenAI Text Generation Tool', () => {
       const longPrompt = 'a'.repeat(50001);
       
       try {
+        if(!openaiTool.execute) {
+          throw new Error('OpenAI tool is not defined');
+        }
         await openaiTool.execute({
           prompt: longPrompt,
+        }, {
+          toolCallId: 'test-tool-call-id',
+          messages: [],
         });
         fail('Should have thrown an error for prompt too long');
       } catch (error) {
@@ -117,9 +135,15 @@ describe('OpenAI Text Generation Tool', () => {
   describe('Error Handling', () => {
     it('should handle malformed input gracefully', async () => {
       try {
+        if(!openaiTool.execute) {
+          throw new Error('OpenAI tool is not defined');
+        }
         await openaiTool.execute({
           prompt: null as any,
-        });
+        }, {
+          toolCallId: 'test-tool-call-id',
+          messages: [],
+          });
         fail('Should have thrown an error for null prompt');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
