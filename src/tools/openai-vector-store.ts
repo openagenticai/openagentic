@@ -223,7 +223,7 @@ export const openaiVectorStoreTool = toOpenAgenticTool(rawOpenAIVectorStoreTool,
     'Filter documents by metadata attributes',
     'Build custom retrieval systems with OpenAI embeddings'
   ],
-  logo: '🔍'
+  logo: 'https://www.openagentic.org/tools/openai.svg'
 });
 
 export default openaiVectorStoreTool; 

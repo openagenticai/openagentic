@@ -228,5 +228,5 @@ export const unsplashTool = toOpenAgenticTool(rawUnsplashTool, {
     'Finding images with specific orientations or colors',
     'Getting properly attributed photos for content',
   ],
-  logo: '📷',
+  logo: 'https://www.openagentic.org/tools/unsplash.svg',
 }); 
