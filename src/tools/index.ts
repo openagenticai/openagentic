@@ -5,6 +5,7 @@
 // Import all individual tools
 export { openaiTool } from './openai';
 export { openaiImageTool } from './openai-image';
+export { openaiVectorStoreTool } from './openai-vector-store';
 export { geminiImageTool } from './gemini-image';
 export { anthropicTool } from './anthropic';
 export { geminiTool } from './gemini';
@@ -20,6 +21,7 @@ export { videoGenerationTool } from './video-generation';
 export { geminiTtsTool } from './gemini-tts';
 export { inceptionLabsTool } from './inception-labs';
 export { htmlComposerTool } from './html-composer';
+export { unsplashTool } from './unsplash';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -30,6 +32,7 @@ export { toOpenAgenticTool } from './utils';
 
 import { openaiTool } from './openai';
 import { openaiImageTool } from './openai-image';
+import { openaiVectorStoreTool } from './openai-vector-store';
 import { geminiImageTool } from './gemini-image';
 import { anthropicTool } from './anthropic';
 import { geminiTool } from './gemini';
@@ -45,12 +48,13 @@ import { videoGenerationTool } from './video-generation';
 import { geminiTtsTool } from './gemini-tts';
 import { inceptionLabsTool } from './inception-labs';
 import { htmlComposerTool } from './html-composer';
+import { unsplashTool } from './unsplash';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool];
-export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool, htmlComposerTool];
+export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool, htmlComposerTool, unsplashTool, openaiVectorStoreTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================

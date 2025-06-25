@@ -38,12 +38,11 @@
     "clean": "rimraf dist",
     "example:basic": "tsx examples/scripts/basic-agent.ts",
     "example:streaming": "tsx examples/scripts/streaming-agent.ts",
-    "example:s3": "tsx examples/scripts/s3-upload-example.ts",
-    "example:openai": "tsx examples/scripts/openai-tool-example.ts",
-    "example:tools": "tsx examples/scripts/tool-creation.ts",
     "example:messages": "tsx examples/scripts/message-array-example.ts",
     "example:logging": "tsx examples/scripts/logging-example.ts",
-    "example:streaming-callback": "tsx examples/scripts/streaming-agent-with-callback.ts"
+    "example:streaming-callback": "tsx examples/scripts/streaming-agent-with-callback.ts",
+    "example:langchain": "tsx examples/scripts/langchain-example.ts",
+    "vector-store:create": "tsx scripts/createVectorStore.ts"
   },
   "keywords": [
     "ai",
@@ -96,10 +95,13 @@
     "@aws-sdk/client-s3": "^3.830.0",
     "@elevenlabs/elevenlabs-js": "^2.2.0",
     "@google/genai": "^1.4.0",
+    "@langchain/core": "^0.3.61",
+    "@langchain/openai": "^0.5.15",
     "@octokit/rest": "^22.0.0",
     "ai": "^4.3.16",
     "dotenv": "^16.5.0",
     "qrcode": "^1.5.4",
+    "unsplash-js": "^7.0.19",
     "zod": "^3.25.64"
   },
   "peerDependenciesMeta": {},

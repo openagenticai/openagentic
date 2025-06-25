@@ -181,6 +181,87 @@ your-bucket/
 │   └── uploads/        # Generic files
 ```
 
+## 🔗 Using LangChain Tools
+
+OpenAgentic provides seamless compatibility with LangChain tools, allowing you to use the vast ecosystem of LangChain tools alongside native OpenAgentic tools.
+
+### Auto-Conversion
+
+LangChain tools are automatically detected and converted when passed to `createAgent()`:
+
+```typescript
+import { createAgent } from 'openagentic';
+import { DallEAPIWrapper } from '@langchain/openai';
+import { SerpAPI } from '@langchain/community/tools/serpapi';
+
+// LangChain tools are automatically converted
+const agent = createAgent({
+  model: 'gpt-4o-mini',
+  tools: [
+    new DallEAPIWrapper(), // LangChain tool - auto-converted
+    new SerpAPI()          // LangChain tool - auto-converted
+  ],
+});
+
+const result = await agent.execute('Generate an image of a sunset and search for sunset photography tips');
+```
+
+### Manual Conversion
+
+For more control over the conversion process:
+
+```typescript
+import { convertLangchainTool, createAgent } from 'openagentic';
+import { DallEAPIWrapper } from '@langchain/openai';
+
+// Create LangChain tool
+const dalleTool = new DallEAPIWrapper({
+  model: 'dall-e-3',
+  n: 1
+});
+
+// Convert with custom options
+const convertedTool = await convertLangchainTool(dalleTool, {
+  toolId: 'custom_dalle',
+  useCases: [
+    'Generate marketing visuals',
+    'Create concept art',
+    'Prototype designs'
+  ],
+  logo: '🎨'
+});
+
+const agent = createAgent({
+  model: 'gpt-4o-mini',
+  tools: [convertedTool]
+});
+```
+
+### Mixed Tool Usage
+
+Combine LangChain tools with native OpenAgentic tools:
+
+```typescript
+import { createAgent, qrcodeTool, openaiTool } from 'openagentic';
+import { DallEAPIWrapper } from '@langchain/openai';
+
+const agent = createAgent({
+  model: 'gpt-4o-mini',
+  tools: [
+    openaiTool,               // Native OpenAgentic tool
+    new DallEAPIWrapper(),    // LangChain tool (auto-converted)
+    qrcodeTool               // Native OpenAgentic tool
+  ]
+});
+```
+
+### Supported LangChain Tool Types
+
+- **Tool** - Basic LangChain tools with `call()` method
+- **StructuredTool** - Advanced tools with schema and `invoke()` method
+- **DynamicTool** - Dynamically created tools
+- **Custom Tools** - Any tool implementing LangChain's tool interface
+
 ## 🎯 Advanced Features
 
 ### Multi-Provider Support

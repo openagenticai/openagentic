@@ -65,9 +65,41 @@ export class Orchestrator {
       enableStatisticsLogging: options.enableStatisticsLogging ?? false,
     };
     
-    // Register tools with validation
+    // Register tools with validation and LangChain auto-conversion
     if (options.tools) {
-      options.tools.forEach((tool, index) => {
+      // Auto-convert LangChain tools if present (tree-shaking friendly)
+      let processedTools = options.tools;
+      
+      try {
+        // Dynamic import for tree-shaking - only loads if tools are present
+        const { hasLangChainTools, autoConvertLangChainTools } = require('./tools/utils');
+        
+        if (hasLangChainTools(options.tools)) {
+          // Convert synchronously since we're in constructor
+          // Note: This requires the conversion to be sync or we need to make constructor async
+          console.log('🔗 Detected LangChain tools, converting...');
+          
+          // Convert each tool individually to avoid async issues
+          processedTools = options.tools.map((tool) => {
+            if (tool && typeof tool === 'object' && 
+                typeof tool.name === 'string' && 
+                typeof tool.description === 'string' &&
+                (typeof tool.call === 'function' || typeof tool.invoke === 'function')) {
+              
+              // This is a LangChain tool - convert it synchronously
+              const { convertLangchainToolSync } = require('./tools/utils');
+              return convertLangchainToolSync(tool);
+            }
+            return tool;
+          });
+        }
+      } catch (error) {
+        // If utils can't be loaded or conversion fails, continue with original tools
+        console.warn('⚠️ LangChain tool conversion failed, using original tools:', error);
+        processedTools = options.tools;
+      }
+      
+      processedTools.forEach((tool, index) => {
         const toolName = tool.toolId;
       
         // Ensure toolId uniqueness

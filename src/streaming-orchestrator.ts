@@ -29,7 +29,7 @@ export class StreamingOrchestrator {
 
   constructor(options: {
     model: string | AIModel;
-    tools?: OpenAgenticTool[];
+    tools?: any[];
     systemPrompt?: string;
     maxIterations?: number;
     customLogic?: (input: string, context: any) => Promise<any>;
@@ -74,9 +74,39 @@ export class StreamingOrchestrator {
     // Store user-provided onFinish callback
     this.onFinishCallback = options.onFinish;
     
-    // Register tools with validation
+    // Register tools with validation and LangChain auto-conversion
     if (options.tools) {
-      options.tools.forEach(tool => this.addTool(tool));
+      // Auto-convert LangChain tools if present (tree-shaking friendly)
+      let processedTools = options.tools;
+      
+      try {
+        // Dynamic import for tree-shaking - only loads if tools are present
+        const { hasLangChainTools } = require('./tools/utils');
+        
+        if (hasLangChainTools(options.tools)) {
+          console.log('🔗 Detected LangChain tools in streaming orchestrator, converting...');
+          
+          // Convert each tool individually to avoid async issues
+          processedTools = options.tools.map((tool) => {
+            if (tool && typeof tool === 'object' && 
+                typeof tool.name === 'string' && 
+                typeof tool.description === 'string' &&
+                (typeof tool.call === 'function' || typeof tool.invoke === 'function')) {
+              
+              // This is a LangChain tool - convert it synchronously
+              const { convertLangchainToolSync } = require('./tools/utils');
+              return convertLangchainToolSync(tool);
+            }
+            return tool;
+          });
+        }
+      } catch (error) {
+        // If utils can't be loaded or conversion fails, continue with original tools
+        console.warn('⚠️ LangChain tool conversion failed in streaming orchestrator, using original tools:', error);
+        processedTools = options.tools;
+      }
+      
+      processedTools.forEach(tool => this.addTool(tool));
     }
     
     // Add system prompt if provided (orchestrator may override this)
