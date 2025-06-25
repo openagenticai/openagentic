@@ -41,7 +41,8 @@
     "example:messages": "tsx examples/scripts/message-array-example.ts",
     "example:logging": "tsx examples/scripts/logging-example.ts",
     "example:streaming-callback": "tsx examples/scripts/streaming-agent-with-callback.ts",
-    "example:langchain": "tsx examples/scripts/langchain-example.ts"
+    "example:langchain": "tsx examples/scripts/langchain-example.ts",
+    "vector-store:create": "tsx scripts/createVectorStore.ts"
   },
   "keywords": [
     "ai",

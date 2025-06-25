@@ -278,6 +278,18 @@ const TEST_CASES: TestCase[] = [
     },
     expectedKeys: ['success', 'query', 'photos', 'totalResults'],
     skipIfMissingEnv: ['UNSPLASH_ACCESS_KEY']
+  },
+  {
+    toolId: 'openai_vector_store_search',
+    description: 'OpenAI vector store search for relevant documents',
+    parameters: {
+      vectorStoreId: 'vs_685c044a84888191b669c7b4435444a8',
+      query: 'please provide a high-level overview of how to add a new BIP',
+      maxNumResults: 2,
+      rewriteQuery: true
+    },
+    expectedKeys: ['success', 'query', 'results', 'totalResults'],
+    skipIfMissingEnv: ['OPENAI_API_KEY']
   }
 ];
 
