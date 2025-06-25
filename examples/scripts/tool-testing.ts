@@ -241,20 +241,43 @@ const TEST_CASES: TestCase[] = [
   },
   {
     toolId: 'html_composer',
-    description: 'Claude-powered HTML report generation',
+    description: 'HTML composer for responsive landing page',
     parameters: {
-      title: 'OpenAgentic Framework Overview',
+      title: 'Bean There, Done That - Coffee Shop',
       content: {
-        introduction: 'OpenAgentic is a TypeScript framework for building AI agents with self-contained tool orchestration.',
-        features: ['Simplified Agent Creation', 'Self-Contained Tools', 'Dual Execution Modes', 'Enterprise-Ready Features'],
-        conclusion: 'The framework provides a comprehensive solution for AI-powered applications.'
+        hero: {
+          heading: 'Welcome to Bean There, Done That',
+          subtitle: 'The finest coffee experience in town',
+          description: 'Discover our locally roasted beans and artisanal brewing methods'
+        },
+        about: {
+          heading: 'About Us',
+          content: 'We are passionate coffee enthusiasts committed to bringing you the perfect cup every time. Our beans are ethically sourced and roasted to perfection.'
+        },
+        contact: {
+          heading: 'Visit Us',
+          address: '123 Coffee Street, Brew City, BC 12345',
+          phone: '(555) 123-BREW',
+          hours: 'Mon-Fri: 6AM-8PM, Sat-Sun: 7AM-9PM'
+        }
       },
-      theme: 'tech',
+      theme: 'business',
       includeStyles: true,
-      includeMetadata: true
+      includeMetadata: true,
+      designInstructions: 'Create a warm, inviting design with coffee-themed colors (browns, creams) and modern typography'
     },
     expectedKeys: ['success', 'htmlUrl', 'fileName', 'htmlContent'],
     skipIfMissingEnv: ['ANTHROPIC_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
+  },
+  {
+    toolId: 'unsplash_search',
+    description: 'Unsplash image search for nature photos',
+    parameters: {
+      query: 'nature landscape sunset',
+      orientation: 'landscape'
+    },
+    expectedKeys: ['success', 'query', 'photos', 'totalResults'],
+    skipIfMissingEnv: ['UNSPLASH_ACCESS_KEY']
   }
 ];
 
