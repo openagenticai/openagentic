@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.3.0
+
+### Minor Changes
+
+- 56eee80: Launching OpenAgentic - a framework to facilitate agentic, multi-tool queries
+
 ## 1.0.1
 
 ### Minor Changes
