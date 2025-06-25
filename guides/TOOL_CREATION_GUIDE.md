@@ -469,27 +469,7 @@ Tools that use AI capabilities:
 
 ## Testing Your Tool
 
-Create a simple test to verify your tool works:
-
-```typescript
-// test-my-tool.ts
-import { myTool } from './src/tools/my-tool';
-
-async function testTool() {
-  try {
-    const result = await myTool.execute({
-      text: 'Hello, world!',
-      format: 'json',
-    });
-    
-    console.log('✅ Tool test passed:', result);
-  } catch (error) {
-    console.error('❌ Tool test failed:', error);
-  }
-}
-
-testTool();
-```
+Check out our [tool testing script](../examples/scripts/tool-testing.ts).
 
 ## Using Your Tool
 
