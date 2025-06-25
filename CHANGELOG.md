@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.4.0
+
+### Minor Changes
+
+- 5c37f9f: Add langchain, Unsplash, and OpenAI Vector Store Search tool support
+
 ## 2.3.0
 
 ### Minor Changes
