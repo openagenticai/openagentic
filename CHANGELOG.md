@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.4.1
+
+### Patch Changes
+
+- db55ca1: update tool logos
+
 ## 2.4.0
 
 ### Minor Changes
