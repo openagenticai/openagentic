@@ -324,7 +324,7 @@ Contributors are recognized in:
 
 ## 📚 Additional Resources
 
-- [Tool Creation Guide](guides/TOOL_CREATION_GUIDE.md)
+- [Vercel AI SDK Docs](https://ai-sdk.dev/docs/ai-sdk-ui)
 
 ## 🤝 Getting Help
 
