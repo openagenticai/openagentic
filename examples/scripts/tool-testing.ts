@@ -312,6 +312,16 @@ const TEST_CASES: TestCase[] = [
     },
     expectedKeys: ['success', 'text', 'model', 'usage'],
     skipIfMissingEnv: ['GROQ_API_KEY']
+  },
+  {
+    toolId:'luma_image_generation',
+    description: 'Luma image generation',
+    parameters: {
+      prompt: 'A serene mountain landscape with a crystal clear lake reflecting the sky',
+      model: 'photon-1'
+    },
+    expectedKeys: ['success', 'imageUrl', 'fileName', 'model'],
+    skipIfMissingEnv: ['LUMA_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
   }
 ];
 

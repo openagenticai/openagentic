@@ -24,6 +24,7 @@ export { htmlComposerTool } from './html-composer';
 export { unsplashTool } from './unsplash';
 export { slackPosterTool } from './slack-poster';
 export { groqTool } from './groq';
+export { lumaImageTool } from './luma-image';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -53,12 +54,13 @@ import { htmlComposerTool } from './html-composer';
 import { unsplashTool } from './unsplash';
 import { slackPosterTool } from './slack-poster';
 import { groqTool } from './groq';
+import { lumaImageTool } from './luma-image';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
 export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool, groqTool];
-export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool, htmlComposerTool, unsplashTool, openaiVectorStoreTool, slackPosterTool];
+export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool, htmlComposerTool, unsplashTool, openaiVectorStoreTool, slackPosterTool, lumaImageTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================
