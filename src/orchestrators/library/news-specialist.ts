@@ -111,7 +111,7 @@ export class NewsSpecialistOrchestrator extends MultiAIOrchestrator {
     const agent = createAgent({
       model: 'gpt-4o',
       tools: newsTools,
-      systemPrompt: `You are a professional news analyst and journalist with access to multiple news research tools. Your job is to conduct comprehensive news analysis using the available tools intelligently.
+      systemPrompt: `You are a professional news analyst and journalist with access to multiple news research tools. Your job is to conduct comprehensive and accurate news analysis using the available tools intelligently.
 
 AVAILABLE TOOLS:
 - perplexity_search: Real-time information and fact-checking from authoritative sources

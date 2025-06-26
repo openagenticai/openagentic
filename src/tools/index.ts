@@ -22,6 +22,8 @@ export { geminiTtsTool } from './gemini-tts';
 export { inceptionLabsTool } from './inception-labs';
 export { htmlComposerTool } from './html-composer';
 export { unsplashTool } from './unsplash';
+export { slackPosterTool } from './slack-poster';
+export { groqTool } from './groq';
 
 // Tool utilities
 export { toOpenAgenticTool } from './utils';
@@ -49,12 +51,14 @@ import { geminiTtsTool } from './gemini-tts';
 import { inceptionLabsTool } from './inception-labs';
 import { htmlComposerTool } from './html-composer';
 import { unsplashTool } from './unsplash';
+import { slackPosterTool } from './slack-poster';
+import { groqTool } from './groq';
 
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
-export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool];
-export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool, htmlComposerTool, unsplashTool, openaiVectorStoreTool];
+export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool, groqTool];
+export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool, htmlComposerTool, unsplashTool, openaiVectorStoreTool, slackPosterTool];
 export const allTools = [...utilityTools, ...aiTools];
 
 // =============================================================================

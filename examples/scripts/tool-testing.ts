@@ -290,6 +290,28 @@ const TEST_CASES: TestCase[] = [
     },
     expectedKeys: ['success', 'query', 'results', 'totalResults'],
     skipIfMissingEnv: ['OPENAI_API_KEY']
+  },
+  {
+    toolId: 'slack_poster',
+    description: 'Slack post publishing',
+    parameters: {
+      text: 'Testing SignSchool Slack Poster tool! 🚀 #SignSchool #AI #Slack #Test',
+      conversationId: 'C093APKHPHS',
+    },
+    expectedKeys: ['success', 'tweet', 'metadata'],
+    skipIfMissingEnv: ['SLACK_BOT_TOKEN']
+  },
+  {
+    toolId: 'groq_chat',
+    description: 'Groq chat',
+    parameters: {
+      prompt: 'What is the capital of France?',
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      maxTokens: 1000
+    },
+    expectedKeys: ['success', 'text', 'model', 'usage'],
+    skipIfMissingEnv: ['GROQ_API_KEY']
   }
 ];
 

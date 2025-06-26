@@ -1,5 +1,5 @@
 import { MultiAIOrchestrator } from '../multi-ai';
-import type { OrchestratorContext, CoreMessage, OpenAgenticTool } from '../../types';
+import type { OrchestratorContext, CoreMessage } from '../../types';
 import { registerOrchestrator } from '../registry';
 
 /**
