@@ -290,6 +290,38 @@ const TEST_CASES: TestCase[] = [
     },
     expectedKeys: ['success', 'query', 'results', 'totalResults'],
     skipIfMissingEnv: ['OPENAI_API_KEY']
+  },
+  {
+    toolId: 'slack_poster',
+    description: 'Slack post publishing',
+    parameters: {
+      text: 'Testing SignSchool Slack Poster tool! 🚀 #SignSchool #AI #Slack #Test',
+      conversationId: 'C093APKHPHS',
+    },
+    expectedKeys: ['success', 'tweet', 'metadata'],
+    skipIfMissingEnv: ['SLACK_BOT_TOKEN']
+  },
+  {
+    toolId: 'groq_chat',
+    description: 'Groq chat',
+    parameters: {
+      prompt: 'What is the capital of France?',
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.7,
+      maxTokens: 1000
+    },
+    expectedKeys: ['success', 'text', 'model', 'usage'],
+    skipIfMissingEnv: ['GROQ_API_KEY']
+  },
+  {
+    toolId:'luma_image_generation',
+    description: 'Luma image generation',
+    parameters: {
+      prompt: 'A serene mountain landscape with a crystal clear lake reflecting the sky',
+      model: 'photon-1'
+    },
+    expectedKeys: ['success', 'imageUrl', 'fileName', 'model'],
+    skipIfMissingEnv: ['LUMA_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME']
   }
 ];
 
