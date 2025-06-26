@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.5.0
+
+### Minor Changes
+
+- 8d783b3: Add groq, slack, and luma tools
+
 ## 2.4.1
 
 ### Patch Changes
