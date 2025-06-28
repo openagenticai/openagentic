@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.6.3
+
+### Patch Changes
+
+- c8b07ca: remove dalle img models
+
 ## 2.6.2
 
 ### Patch Changes
