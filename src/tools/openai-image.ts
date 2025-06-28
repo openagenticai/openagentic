@@ -6,22 +6,23 @@ import { uploadImageToS3, generateImageFileName } from '../utils/s3';
 import { openai } from '@ai-sdk/openai';
 
 // Supported models with validation
+// TODO: Add DALL-E 3 and DALL-E 2 back when more stable
 const SUPPORTED_MODELS = [
-  'dall-e-3',
-  'dall-e-2',
+  // 'dall-e-3',
+  // 'dall-e-2',
   'gpt-image-1',
 ] as const;
 
 // Supported image sizes for each model
 const MODEL_SIZES = {
-  'dall-e-3': ['1024x1024', '1024x1792', '1792x1024'],
-  'dall-e-2': ['256x256', '512x512', '1024x1024'],
+  // 'dall-e-3': ['1024x1024', '1024x1792', '1792x1024'],
+  // 'dall-e-2': ['256x256', '512x512', '1024x1024'],
   'gpt-image-1': ['1024x1024', '1536x1024', '1024x1536'],
 } as const;
 
 const MODEL_QUALITY = {
-  'dall-e-3': 'standard',
-  'dall-e-2': 'standard',
+  // 'dall-e-3': 'standard',
+  // 'dall-e-2': 'standard',
   'gpt-image-1': 'high',
 } as const;
 
@@ -36,12 +37,12 @@ const rawOpenAIImageTool = tool({
     model: z.string()
       .optional()
       .default('gpt-image-1')
-      .describe('The model to use (dall-e-3, dall-e-2, gpt-image-1, default: gpt-image-1)'),
+      .describe('The model to use (gpt-image-1)'),
     
     size: z.string()
       .optional()
       .default('1024x1024')
-      .describe('The size of the image - DALL-E 3: 1024x1024, 1024x1792, 1792x1024 | DALL-E 2: 256x256, 512x512, 1024x1024 | GPT-Image-1: 1024x1024, 1536x1024, 1024x1536'),
+      .describe('The size of the image - 1024x1024, 1536x1024, 1024x1536'),
     
     // quality: z.string()
     //   .optional()
