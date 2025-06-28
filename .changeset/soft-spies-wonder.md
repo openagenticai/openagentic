@@ -1,5 +1,0 @@
----
-"openagentic": patch
----
-
-fix readme
