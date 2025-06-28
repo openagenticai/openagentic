@@ -1,5 +1,6 @@
 import { S3Client, PutObjectCommand, type PutObjectCommandInput } from '@aws-sdk/client-s3';
 import { ProviderManager } from '../providers/manager';
+import { randomUUID } from 'crypto';
 
 // =============================================================================
 // TYPES AND INTERFACES
@@ -359,8 +360,11 @@ export async function uploadFileToS3(
     // Validate file size (generic limit)
     validateFileSize(buffer.length, FileType.GENERIC);
 
-    // Sanitize filename
+    // Sanitize filename; TODO: cleanup dynamic file names
+    const uuid = randomUUID();
+    fileName = uuid;
     const sanitizedFileName = sanitizeFilename(fileName);
+    
     
     // Construct S3 key (path)
     const key = `${directory}/${sanitizedFileName}`;
