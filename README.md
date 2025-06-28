@@ -79,26 +79,34 @@ for await (const chunk of streamingAgent.stream('Search for the latest AI news')
 
 ## 🛠️ Built-in Tools
 
-OpenAgentic comes with 17+ pre-built tools organized into categories:
+OpenAgentic comes with 50+ pre-built tools organized into categories:
 
-### AI & Search Tools (8)
+### AI & Search Tools (11)
 - **OpenAI Text Generation** - GPT model integration
 - **Anthropic Chat** - Claude model integration  
 - **Gemini Chat** - Google's Gemini models
 - **Grok Chat** - xAI's Grok models
 - **Llama Chat** - Meta's Llama models
+- **Mistral Chat** - Mistral AI's models
+- **Cohere Chat** - Cohere AI's models
 - **Perplexity Search** - AI-powered web search
 - **Web Search** - General web search capabilities
 - **Inception Labs** - Advanced AI chat
+- **Groq** - Groq's models
 
-### Utility Tools (9)
+
+### Utility Tools (13)
 - **GitHub Integration** - Repository and file access
-- **QR Code Generator** - Customizable QR code creation
 - **News Search** - Real-time news with filtering
-- **Image Generation** - OpenAI DALL-E and Gemini imaging
-- **Text-to-Speech** - ElevenLabs and Gemini TTS
+- **QR Code Generator** - Customizable QR code creation
+- **Image Generation (3)** - OpenAI DALL-E, Unsplash, Luma, and Gemini imaging
+- **Text-to-Speech (2)** - ElevenLabs and Gemini TTS
 - **Video Generation** - Google Veo video creation
 - **HTML Composer** - Dynamic web page generation
+- **Vector Store Search** - OpenAI vector store search
+- **Slack Poster** - Post in Slack channels
+
+### [LangChain Tools](https://js.langchain.com/docs/integrations/tools/) (27+)
 
 ### Usage Example
 

@@ -106,6 +106,30 @@ const TEST_CASES: TestCase[] = [
     skipIfMissingEnv: ['LLAMA_API_KEY']
   },
   {
+    toolId: 'mistral_ai_chat',
+    description: 'Mistral AI chat for code generation and explanation',
+    parameters: {
+      prompt: 'Write a simple Python function to calculate the factorial of a number with explanation.',
+      model: 'mistral-small-latest',
+      temperature: 0.5,
+      maxTokens: 300
+    },
+    expectedKeys: ['success', 'text', 'model', 'usage'],
+    skipIfMissingEnv: ['MISTRAL_API_KEY']
+  },
+  {
+    toolId: 'cohere_ai_chat',
+    description: 'Cohere AI chat for business communication and analysis',
+    parameters: {
+      prompt: 'Explain the benefits of using AI in customer service for small businesses.',
+      model: 'command-r-plus',
+      temperature: 0.6,
+      maxTokens: 350
+    },
+    expectedKeys: ['success', 'text', 'model', 'usage'],
+    skipIfMissingEnv: ['COHERE_API_KEY']
+  },
+  {
     toolId: 'perplexity_search',
     description: 'Perplexity AI search for recent AI developments',
     parameters: {
