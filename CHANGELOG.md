@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.6.1
+
+### Patch Changes
+
+- 9995e72: fix readme
+
 ## 2.6.0
 
 ### Minor Changes
