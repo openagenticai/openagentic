@@ -8,10 +8,12 @@ export { openaiImageTool } from './openai-image';
 export { openaiVectorStoreTool } from './openai-vector-store';
 export { geminiImageTool } from './gemini-image';
 export { anthropicTool } from './anthropic';
+export { cohereTool } from './cohere';
 export { geminiTool } from './gemini';
 export { githubTool } from './github';
 export { grokTool } from './grok';
 export { llamaTool } from './llama';
+export { mistralTool } from './mistral';
 export { newsdataTool } from './newsdata';
 export { perplexityTool } from './perplexity';
 export { qrcodeTool } from './qrcode';
@@ -38,10 +40,12 @@ import { openaiImageTool } from './openai-image';
 import { openaiVectorStoreTool } from './openai-vector-store';
 import { geminiImageTool } from './gemini-image';
 import { anthropicTool } from './anthropic';
+import { cohereTool } from './cohere';
 import { geminiTool } from './gemini';
 import { githubTool } from './github';
 import { grokTool } from './grok';
 import { llamaTool } from './llama';
+import { mistralTool } from './mistral';
 import { newsdataTool } from './newsdata';
 import { perplexityTool } from './perplexity';
 import { qrcodeTool } from './qrcode';
@@ -59,7 +63,7 @@ import { lumaImageTool } from './luma-image';
 import { type ToolDetails } from '../types'
 
 // Categorized tool collections
-export const aiTools = [openaiTool, anthropicTool, geminiTool, grokTool, llamaTool, perplexityTool, websearchTool, inceptionLabsTool, groqTool];
+export const aiTools = [openaiTool, anthropicTool, cohereTool, geminiTool, grokTool, llamaTool, mistralTool, perplexityTool, websearchTool, inceptionLabsTool, groqTool];
 export const utilityTools = [githubTool, newsdataTool, qrcodeTool, openaiImageTool, geminiImageTool, elevenlabsTool, videoGenerationTool, geminiTtsTool, htmlComposerTool, unsplashTool, openaiVectorStoreTool, slackPosterTool, lumaImageTool];
 export const allTools = [...utilityTools, ...aiTools];
 
