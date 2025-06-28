@@ -9,7 +9,7 @@ A powerful TypeScript framework for building AI agents with self-contained tool 
 ## ✨ Features
 
 - 🤖 **Multi-Provider AI Support** - OpenAI, Anthropic, Google, xAI, Perplexity, and more
-- 🔧 **17+ Built-in Tools** - From QR codes to video generation, GitHub integration to web search  
+- 🔧 **50+ Built-in Tools** - From QR codes to video generation, GitHub integration to web search  
 - ⚡ **Streaming & Non-Streaming** - Real-time responses or batch processing
 - 🎯 **Smart Orchestration** - Custom logic and prompt-based orchestrators
 - 📝 **TypeScript Native** - Full type safety with Zod validation
