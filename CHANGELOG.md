@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.6.0
+
+### Minor Changes
+
+- 34ee509: add new tools
+
 ## 2.5.0
 
 ### Minor Changes
