@@ -1,5 +1,11 @@
 # openagentic
 
+## 2.6.2
+
+### Patch Changes
+
+- 8d9857b: fix s3 upload file names
+
 ## 2.6.1
 
 ### Patch Changes
