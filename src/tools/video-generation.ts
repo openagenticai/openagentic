@@ -4,6 +4,7 @@ import { GoogleGenAI } from '@google/genai';
 import type { ToolDetails } from '../types';
 import { toOpenAgenticTool } from './utils';
 import { uploadVideoToS3, generateVideoFileName } from '../utils/s3';
+import { randomUUID } from 'crypto';
 
 // Supported Veo 2.0 models
 const SUPPORTED_MODELS = [
@@ -53,6 +54,8 @@ const rawVideoGenerationTool = tool({
       throw new Error('GOOGLE_API_KEY environment variable is required');
     }
 
+    const uuid = randomUUID();
+
     // Validate prompt
     if (!prompt || prompt.trim().length === 0) {
       throw new Error('Prompt cannot be empty');
@@ -85,6 +88,7 @@ const rawVideoGenerationTool = tool({
       maxWaitTime,
       model,
       usingSDK: 'GoogleGenAI SDK',
+      uuid,
     });
 
     try {
@@ -185,7 +189,7 @@ const rawVideoGenerationTool = tool({
 
         // Generate filename for S3 upload
         const videoNumber = numberOfVideos > 1 ? `_${i + 1}` : '';
-        const fileName = generateVideoFileName(`${prompt.substring(0, 50)}${videoNumber}`, 'mp4');
+        const fileName = generateVideoFileName(`${uuid}-${videoNumber}`, 'mp4');
         generatedFileNames.push(fileName);
 
         // Upload to S3
