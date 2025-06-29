@@ -40,18 +40,18 @@ bun add openagentic
 ### Basic Usage
 
 ```typescript
-import { createAgent, qrcodeTool, githubTool } from 'openagentic';
+import { createAgent, openaiTool, videoGenerationTool } from 'openagentic';
 
 // Create a simple agent
 const agent = createAgent({
   model: 'gpt-4o-mini', // Auto-detects OpenAI provider
-  tools: [qrcodeTool, githubTool], // Specify tool subset to use
-  systemPrompt: 'You are a helpful assistant with access to tools.',
+  tools: [openaiTool, videoGenerationTool], // Specify tool subset to use
+  systemPrompt: 'You use OpenAI to enhance video generation prompts (optimized for Veo video generation) before generating the video with the video generation tool.',
 });
 
 // Execute a task
 const result = await agent.execute(
-  'Create a QR code for https://github.com/openagenticai/openagentic'
+  'Create a video of a beach sunset in Miami'
 );
 
 console.log(result.result);
@@ -61,11 +61,11 @@ console.log('Tools used:', result.toolCallsUsed);
 ### Streaming Agent
 
 ```typescript
-import { createStreamingAgent, websearchTool } from 'openagentic';
+import { createStreamingAgent, websearchTool, newsdataTool } from 'openagentic';
 
 const streamingAgent = createStreamingAgent({
   model: 'claude-sonnet-4-20250514',
-  tools: [websearchTool],
+  tools: [websearchTool, newsdataTool],
   onFinish: (result) => {
     console.log('Streaming completed:', result);
   }
@@ -113,22 +113,20 @@ OpenAgentic comes with 50+ pre-built tools organized into categories:
 ```typescript
 import { 
   createAgent, 
-  qrcodeTool, 
   githubTool, 
-  openaiImageTool,
-  elevenlabsTool 
+  openaiImageTool
 } from 'openagentic';
 
 const multiToolAgent = createAgent({
   model: 'gpt-4o',
-  tools: [qrcodeTool, githubTool, openaiImageTool, elevenlabsTool],
+  tools: [githubTool, openaiImageTool],
   systemPrompt: 'You are a creative assistant with access to multiple tools.',
 });
 
 const result = await multiToolAgent.execute(`
-  1. Create a QR code for our GitHub repo
-  2. Generate an image of a futuristic robot
-  3. Convert this text to speech: "Welcome to OpenAgentic!"
+  For the Github repo https://github.com/bitcoin-ui-kit/bitcoin-ui
+  1. Summarize the repository's purpose
+  2. Create a visual that encapsulates the repository's functionality
 `);
 ```
 
@@ -142,37 +140,6 @@ OpenAgentic includes comprehensive AWS S3 integration for file uploads and manag
 - **Secure credential management** via environment variables
 - **Batch upload support** with progress tracking
 - **File size validation** and error handling
-
-### S3 Usage
-
-```typescript
-import { 
-  uploadImageToS3, 
-  uploadAudioToS3,
-  uploadVideoToS3,
-  generateImageFileName,
-  initializeS3 
-} from 'openagentic';
-
-// Initialize S3 connection
-await initializeS3();
-
-// Upload an image
-const fileName = generateImageFileName('user avatar', 'png');
-const imageUrl = await uploadImageToS3(
-  imageBuffer,
-  fileName,
-  'image/png',
-  'User profile avatar'
-);
-
-// Upload audio file
-const audioUrl = await uploadAudioToS3(
-  audioBuffer,
-  'speech-output.mp3',
-  'audio/mpeg'
-);
-```
 
 ### File Organization
 
@@ -340,11 +307,8 @@ const customAgent = createAgent({
 // Using orchestrators for advanced control
 const orchestratedAgent = createAgent({
   model: 'gpt-4o-mini',
-  tools: [websearchTool],
-  orchestrator: 'multi-ai', // Built-in orchestrator
-  orchestratorParams: {
-    fallbackModels: ['claude-sonnet-4-20250514', 'gemini-1.5-pro']
-  }
+  tools: [openaiTool, openaiImageTool],
+  orchestrator: 'enhanced_image_generation' // Built-in orchestrator
 });
 ```
 
@@ -377,7 +341,7 @@ const debugAgent = createAgent({
   enableStatisticsLogging: true
 });
 
-const result = await debugAgent.execute('Create a QR code');
+const result = await debugAgent.execute('Create a QR code for this NPM package repository: https://www.npmjs.com/package/openagentic');
 
 // Access execution statistics
 console.log('Execution stats:', result.executionStats);
@@ -488,9 +452,6 @@ npm run test:orchestrators
 
 # Advanced logging
 npm run example:logging
-
-# S3 integration
-npm run example:s3
 ```
 
 ## 🔍 Tool Development
@@ -525,7 +486,7 @@ const agent = createAgent({
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see our [CONTRIBUTING](CONTRIBUTING.md) guidelines for more details.
+This is an open-source, community project - we welcome any and all contributions! Please see our [CONTRIBUTING](CONTRIBUTING.md) guidelines for more details.
 
 ## 📄 License
 

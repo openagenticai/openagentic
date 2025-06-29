@@ -3,6 +3,7 @@
 // =============================================================================
 
 import { codeAssessmentOrchestrator } from './library/code-assessment';
+import { enhancedImageGenerationOrchestrator } from './library/enhanced-image-generation';
 import { flashHeadlinesOrchestrator } from './library/flash-headlines';
 import { newsSpecialistOrchestrator } from './library/news-specialist';
 import { videoCreatorOrchestrator } from './library/video-creator';
@@ -22,6 +23,7 @@ export { MultiAIOrchestrator } from './multi-ai';
 // Built-in orchestrators
 export { videoCreatorOrchestrator } from './library/video-creator';
 export { codeAssessmentOrchestrator } from './library/code-assessment';
+export { enhancedImageGenerationOrchestrator } from './library/enhanced-image-generation';
 export { newsSpecialistOrchestrator } from './library/news-specialist';
 export { flashHeadlinesOrchestrator } from './library/flash-headlines';
 
@@ -34,7 +36,7 @@ export interface OrchestratorInfo {
   allowedTools?: string[];
 }
 
-export const orchestratorDescriptions: OrchestratorInfo[] = [videoCreatorOrchestrator, codeAssessmentOrchestrator, newsSpecialistOrchestrator, flashHeadlinesOrchestrator].map(o => {
+export const orchestratorDescriptions: OrchestratorInfo[] = [videoCreatorOrchestrator, codeAssessmentOrchestrator, enhancedImageGenerationOrchestrator, newsSpecialistOrchestrator, flashHeadlinesOrchestrator].map(o => {
   return {
     id: o.id,
     name: o.name,
@@ -50,6 +52,7 @@ export function loadBuiltInOrchestrators(): void {
   // Import orchestrators to trigger their registration
   require('./library/video-creator');
   require('./library/code-assessment');
+  require('./library/enhanced-image-generation');
   require('./library/news-specialist');
   require('./library/flash-headlines');
   
