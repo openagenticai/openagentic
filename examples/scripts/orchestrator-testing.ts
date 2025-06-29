@@ -93,6 +93,17 @@ const ORCHESTRATOR_TEST_CASES: OrchestratorTestCase[] = [
     skipIfMissingEnv: ['GOOGLE_API_KEY', 'AWS_ACCESS_KEY_ID', 'S3_BUCKET_NAME'],
     timeout: 180000, // 3 minutes for headline generation and images
   },
+
+  // Enhanced Image Generation Orchestrator
+  {
+    orchestratorId: 'enhanced_image_generation',
+    description: 'Enhanced Image Generation Orchestrator - Use GPT-4o to enhance prompts before generating images',
+    input: 'Create a beautiful sunset landscape with mountains and a serene lake',
+    requiredTools: ['openai_text_generation', 'openai_image_generator'],
+    expectedKeys: ['success', 'result', 'toolCallsUsed', 'iterations'],
+    skipIfMissingEnv: ['OPENAI_API_KEY', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'S3_BUCKET_NAME'],
+    timeout: 180000, // 3 minutes for prompt enhancement and image generation
+  },
 ];
 
 // =============================================================================
@@ -477,6 +488,7 @@ Examples:
   npm run test:orchestrators -- --orchestrator video_creator
   npm run test:orchestrators -- --orchestrator code_assessment
   npm run test:orchestrators -- --orchestrator flash_headlines
+  npm run test:orchestrators -- --orchestrator enhanced_image_generation
 
 Environment Variables Required:
 
@@ -509,6 +521,13 @@ Environment Variables Required:
 
 # For Flash Headlines Orchestrator:
   GOOGLE_API_KEY=your_google_key          # For Gemini headline generation and images
+  AWS_ACCESS_KEY_ID=your_aws_key          # For S3 storage
+  AWS_SECRET_ACCESS_KEY=your_aws_secret   # For S3 storage
+  AWS_REGION=us-east-1                    # AWS region
+  S3_BUCKET_NAME=your-bucket-name         # S3 bucket for images
+
+# For Enhanced Image Generation Orchestrator:
+  OPENAI_API_KEY=your_openai_key          # For GPT-4o prompt enhancement and image generation
   AWS_ACCESS_KEY_ID=your_aws_key          # For S3 storage
   AWS_SECRET_ACCESS_KEY=your_aws_secret   # For S3 storage
   AWS_REGION=us-east-1                    # AWS region
