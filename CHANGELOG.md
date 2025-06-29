@@ -1,5 +1,11 @@
 # openagentic
 
+## 3.0.0
+
+### Major Changes
+
+- f4b0b06: Launch OpenAgentic
+
 ## 2.6.3
 
 ### Patch Changes
