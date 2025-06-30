@@ -1,5 +1,11 @@
 # openagentic
 
+## 3.1.1
+
+### Patch Changes
+
+- 30ecb95: fix html composer tool
+
 ## 3.1.0
 
 ### Minor Changes
