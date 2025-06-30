@@ -1,5 +1,11 @@
 # openagentic
 
+## 3.1.0
+
+### Minor Changes
+
+- 301aae1: add bedrock anthropic agent support
+
 ## 3.0.0
 
 ### Major Changes
