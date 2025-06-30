@@ -371,9 +371,10 @@ const rawHtmlComposerTool = tool({
         });
       }
 
+      const {modelInstance} = getAnthropicModelInstance(model);
       // Generate HTML using Claude with images
       const result = await generateText({
-        model: getAnthropicModelInstance(model),
+        model: modelInstance,
         messages: [
           {
             role: 'user',
@@ -414,7 +415,7 @@ const rawHtmlComposerTool = tool({
         htmlContent,
         fileName,
         'text/html',
-        `Claude-generated HTML report: ${title.trim()}`
+        `Claude-generated HTML report`
       );
 
       // Log completion
