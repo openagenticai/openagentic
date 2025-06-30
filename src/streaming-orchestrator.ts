@@ -2,6 +2,7 @@ import { streamText } from 'ai';
 import type { AIModel, CoreMessage, OpenAgenticTool, Message, LoggingConfig, LogLevel, ExecutionStats, BaseOrchestrator, OrchestratorContext, OrchestratorOptions, PromptBasedOrchestrator, CustomLogicOrchestrator } from './types';
 import { ProviderManager } from './providers/manager';
 import { resolveOrchestrator } from './orchestrators/registry';
+import { getModel } from './tools/utils';
 
 export class StreamingOrchestrator {
   private model: AIModel;
@@ -446,7 +447,7 @@ export class StreamingOrchestrator {
     const provider = await ProviderManager.createProvider(this.model);
 
     const streamConfig: any = {
-      model: provider(this.model.model),
+      model: provider(getModel(this.model.model)),
       messages: this.transformMessages(this.messages),
       maxSteps: this.maxIterations,
       onStepFinish: this.createStepFinishCallback(),
@@ -516,7 +517,7 @@ export class StreamingOrchestrator {
     });
 
     const streamConfig: any = {
-      model: provider(this.model.model),
+      model: provider(getModel(this.model.model)),
       messages: convertedMessages,
       maxSteps: this.maxIterations,
       onStepFinish: this.createStepFinishCallback(),

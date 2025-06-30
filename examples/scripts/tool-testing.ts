@@ -436,7 +436,7 @@ class ToolTester {
       
       // Create agent with single tool
       const agent = createAgent({
-        model: 'gpt-4o-mini', // Use consistent model for testing
+        model: 'claude-sonnet-4-20250514', // Use consistent model for testing
         tools: [tool],
         systemPrompt: `You are a test assistant. Use the ${tool.name} tool with the exact parameters provided. Do not modify or interpret the parameters.`,
       });

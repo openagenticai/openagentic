@@ -1,3 +1,4 @@
+import { getAnthropicModelInstance } from '../tools/utils';
 import type { AIModel, ApiKeyMap } from '../types';
 
 // Provider configuration with model metadata
@@ -229,10 +230,12 @@ export class ProviderManager {
         return createOpenAI(config);
       }
       case 'anthropic': {
-        const { createAnthropic } = await import('@ai-sdk/anthropic');
-        const config: any = {};
-        if (apiKey !== undefined) config.apiKey = apiKey;
-        return createAnthropic(config);
+        const { provider } = getAnthropicModelInstance(model.model);
+        return provider;
+        // const { createAnthropic } = await import('@ai-sdk/anthropic');
+        // const config: any = {};
+        // if (apiKey !== undefined) config.apiKey = apiKey;
+        // return createAnthropic(config);
       }
       case 'google': {
         const { createGoogleGenerativeAI } = await import('@ai-sdk/google');

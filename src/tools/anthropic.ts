@@ -88,7 +88,7 @@ const rawAnthropicTool = tool({
     });
 
     try {
-      const modelInstance = getAnthropicModelInstance(model);
+      const {modelInstance} = getAnthropicModelInstance(model);
 
       // Prepare generation config
       const generateConfig: any = {
