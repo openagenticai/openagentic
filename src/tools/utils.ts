@@ -316,22 +316,38 @@ export function toOpenAgenticTool(tool: Tool, details: ToolDetails): OpenAgentic
  }
 }
 
+export function getModel(model: string): string {
+  const bedrockCredentials = ProviderManager.getBedrockCredentials();
+  if (bedrockCredentials.accessKeyId && bedrockCredentials.secretAccessKey) {
+    if(model.includes('sonnet')) {
+      return 'us.anthropic.claude-sonnet-4-20250514-v1:0';
+    } else if(model.includes('opus')) {
+      return 'us.anthropic.claude-4-opus-20250514-v1:0';
+    } else {
+      return model;
+    }
+  } else {
+    return model;
+  }
+}
+
 export function getAnthropicModelInstance(model: string): any {
     const bedrockCredentials = ProviderManager.getBedrockCredentials();
     let modelInstance: any;
+    let provider: any;
     if (bedrockCredentials.accessKeyId && bedrockCredentials.secretAccessKey) {
         console.log('Using Bedrock');
-        const bedrock = createAmazonBedrock({
+        provider = createAmazonBedrock({
         region: bedrockCredentials.region,
         accessKeyId: bedrockCredentials.accessKeyId,
         secretAccessKey: bedrockCredentials.secretAccessKey,
         });
         // TODO: Add support for other Bedrock model versions
         if(model.includes('sonnet')) {
-        modelInstance = bedrock('us.anthropic.claude-sonnet-4-20250514-v1:0');
+        modelInstance = provider('us.anthropic.claude-sonnet-4-20250514-v1:0');
         console.log('Model: Claude Sonnet 4');
         } else if(model.includes('opus')) {
-        modelInstance = bedrock('us.anthropic.claude-4-opus-20250514-v1:0');
+        modelInstance = provider('us.anthropic.claude-4-opus-20250514-v1:0');
         console.log('Model: Claude Opus 4');
         } else {
         throw new Error(`Model "${model}" not supported`);
@@ -343,11 +359,11 @@ export function getAnthropicModelInstance(model: string): any {
         if (!apiKey) {
         throw new Error('ANTHROPIC_API_KEY environment variable is required');
         }
-        const anthropic = createAnthropic({
+        provider = createAnthropic({
         apiKey,
         });
-        modelInstance = anthropic(model);
+        modelInstance = provider(model);
         console.log('Model:', model);
     }
-    return modelInstance;
+    return {provider, modelInstance};
 }
