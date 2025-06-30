@@ -1,5 +1,0 @@
----
-"openagentic": major
----
-
-Launch OpenAgentic
